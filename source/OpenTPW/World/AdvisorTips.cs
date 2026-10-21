@@ -138,7 +138,9 @@ public static class AdvisorTips
 		["StaffHappierMechanics"] = 53, ["StaffHappierHandymen"] = 54, ["StaffHappierGuards"] = 55,
 		["StaffHappierEntertainers"] = 56, ["StaffHappierResearchers"] = 57,
 		["StrikeEndBadMechanics"] = 58, ["StrikeEndBadHandymen"] = 59, ["StrikeEndBadGuards"] = 60,
-		["StrikeEndBadEntertainers"] = 61, ["StrikeEndBadResearchers"] = 62, // (no "too cheap" sideshow line: the game speaks of prizes instead)
+		["StrikeEndBadEntertainers"] = 61, ["StrikeEndBadResearchers"] = 62,
+		// Research announcements: their text is made when raised (Advisor.Announce); the voice is the opening line's.
+		["ResearchRideResearched"] = 114, ["ResearchFeatureResearched"] = 118, // (no "too cheap" sideshow line: the game speaks of prizes instead)
 	};
 
 	private static string[]? tagSystem;
@@ -175,6 +177,11 @@ public static class AdvisorTips
 			return null;
 		return tagSystem[index].Split( '\n' ).Select( l => l.Trim() ).Where( l => l.Length > 0 ).ToArray();
 	}
+
+	/// <summary>The <c>TAG_SYSTEM.str</c> entry an advice id says, when the game has one (for its voice,
+	/// <see cref="AdvisorSpeech"/>).</summary>
+	public static int? TextIndexOf( string messageId )
+		=> messageId != null && GameText.TryGetValue( messageId, out var index ) ? index : null;
 
 	/// <summary>Whether a tip id has authored text (vs. the generic fallback) — for tests.</summary>
 	public static bool Has( string messageId ) => Tips.ContainsKey( messageId );

@@ -65,6 +65,7 @@ public sealed class Advisor : Entity
 		Current = this;
 		Name = "Advisor";
 		BuildParts();
+		LoadGlobalSpeech();
 
 		config = AdvisorConfig.Load();
 		messages = new AdvisorMessages( config );
@@ -161,42 +162,69 @@ public sealed class Advisor : Entity
 		}
 	}
 
-	// Speak the message with id `messageId`: load its lip-sync + clip and play it. The id→clip mapping is by
-	// convention (Advisor/<id>); we don't ship per-message advisor clips, so it falls back to the demo clip
-	// sp_001, which still drives a correct viseme track. Returns true when audio actually started.
+	// Speak the message with id `messageId`: one of the game's recorded takes of its TAG_SYSTEM text
+	// (AdvisorSpeech — global speech + lips.wad), else the level's own welcome clip sp_001 (the welcome itself,
+	// and the fallback for advice the game never voiced). Returns true when audio actually started.
 	private bool Speak( string messageId )
 	{
 		try
 		{
-			var theme = Level.Current?.Name ?? "jungle"; // advisor speech is per-theme (T-062)
+			if ( AdvisorTips.TextIndexOf( messageId ) is { } text && AdvisorSpeech.ClipFor( text ) is { } number
+				&& SpeakGlobal( messageId, $"sp_{number:000}" ) )
+				return true;
+
+			var theme = Level.Current?.Name ?? "jungle"; // the welcome is per-theme (T-062)
 			// The level's speech (the language overlay's voice when there is one — GameDir.DataFile).
 			var sdtPath = GameDir.DataFile( "levels", theme, "Speech", "speechHD.SDT" );
 			var speechDir = Path.GetDirectoryName( sdtPath )!;
 			if ( !File.Exists( sdtPath ) )
 				return false;
 
-			// Per-message clip if it exists, else the shared demo clip (always present in the jungle level).
 			var archive = new SdtArchive( sdtPath );
-			var clip = archive.soundFiles.FirstOrDefault( f => f.Name.Equals( messageId, StringComparison.OrdinalIgnoreCase ) )
-				?? archive.soundFiles.FirstOrDefault( f => f.Name.StartsWith( "sp_001", StringComparison.OrdinalIgnoreCase ) );
+			var clip = archive.soundFiles.FirstOrDefault( f => f.Name.StartsWith( "sp_001", StringComparison.OrdinalIgnoreCase ) );
 			if ( clip == null )
 				return false;
 
 			var lipPath = Path.Join( speechDir, "lips", $"{Path.GetFileNameWithoutExtension( clip.Name )}.LIP" );
 			if ( !File.Exists( lipPath ) )
-				lipPath = Path.Join( speechDir, "lips", "sp_001.LIP" );
-			if ( !File.Exists( lipPath ) )
 				return false;
 
-			lip = new LipSyncFile( File.OpenRead( lipPath ) );
-			clipName = clip.Name;
-			activeMessage = messageId;
-			Audio.PlaySpeech( $"advisor_{clip.Name}", clip.SoundData );
-			startTime = Time.Now;
-			Log.Info( $"[advisor] message '{messageId}' → speaking '{clipName}', {lip.Keyframes.Count} keyframes, {ClipLength:0.0}s" );
-			return true;
+			return Say( messageId, clip, new LipSyncFile( File.OpenRead( lipPath ) ) );
 		}
 		catch ( Exception e ) { Log.Warning( $"[advisor] speech failed: {e.Message}" ); return false; }
+	}
+
+	// The global speech bank (24 MB): read once, in the background while the welcome plays — reading it on the
+	// first advice stalled that frame for seconds, which the clip timer then counted as already spoken.
+	private static Task<SdtArchive?>? globalSpeech;
+
+	private static void LoadGlobalSpeech() => globalSpeech ??= Task.Run( () =>
+	{
+		var sdtPath = GameDir.DataFile( "global", "Speech", "speechHD.SDT" );
+		return File.Exists( sdtPath ) ? new SdtArchive( sdtPath ) : null;
+	} );
+
+	private bool SpeakGlobal( string messageId, string clipName )
+	{
+		LoadGlobalSpeech();
+		if ( globalSpeech!.Result is not { } bank )
+			return false;
+		var clip = bank.soundFiles.FirstOrDefault( f => Path.GetFileNameWithoutExtension( f.Name ).Equals( clipName, StringComparison.OrdinalIgnoreCase ) );
+		if ( clip == null )
+			return false;
+		using var stream = FileSystem.OpenRead( $"global/Speech/lips/{clipName}.LIP" );
+		return Say( messageId, clip, new LipSyncFile( stream ) );
+	}
+
+	private bool Say( string messageId, MP2File clip, LipSyncFile lipSync )
+	{
+		lip = lipSync;
+		clipName = clip.Name;
+		activeMessage = messageId;
+		Audio.PlaySpeech( $"advisor_{clip.Name}", clip.SoundData );
+		startTime = Time.Now;
+		Log.Info( $"[advisor] message '{messageId}' → speaking '{clipName}', {lip.Keyframes.Count} keyframes, {ClipLength:0.0}s" );
+		return true;
 	}
 
 	// When the advisor is idle, ask the scheduler whether a tip should fire now. The Advisor.sam pacing/group
@@ -335,7 +363,7 @@ public sealed class Advisor : Entity
 	/// 118 "You've researched a new feature: …").</summary>
 	public static void Announce( string messageId, string name )
 	{
-		int? tag = messageId switch { "ResearchRideResearched" => 114, "ResearchFeatureResearched" => 118, _ => null };
+		int? tag = AdvisorTips.TextIndexOf( messageId );
 		var opening = tag is { } t && AdvisorTips.GameMessageLines( t ) is { Length: > 0 } lines ? lines[0] : "You've researched";
 		AdvisorTips.Raised[messageId] = opening.EndsWith( ':' ) || opening.EndsWith( "the" ) ? $"{opening} {name}." : $"{opening}: {name}.";
 		lock ( announcements )

@@ -2,10 +2,10 @@
 
 - **Priority**: 🟡 Feature
 - **Type**: Engine / rendering
-- **Status**: ⚠️ Implemented — functionally verified (model + 5 visemes + lip-sync + speech); the **message
+- **Status**: ✅ Done — functionally verified (model + 5 visemes + lip-sync + speech); the **message
   system (`Advisor.sam`) is parsed + wired** with **per-event triggers** firing tips on real park state, and
   the **on-screen visual pass is done** (the bug head now reads as a clean bottom-right corner overlay,
-  screenshot-tuned). Per-message speech clips remain (not shipped in this install).
+  screenshot-tuned). Each message now speaks **its own recorded takes** (see "Per-message voice" below).
 - **Parent**: [T-020](T-020-lip-mouth-shapes.md) (lip-sync format + wiring done — this is the render tail).
 - **Related**: [T-031](T-031-game-audio.md).
 
@@ -106,7 +106,7 @@ assets by iterating screenshot → adjust the anchoring constants in `Advisor.cs
 
 ## Remaining
 
-- **Per-message speech clips**: map each message id to its own clip + `.LIP` (today they fall back to the
+- ~~**Per-message speech clips**~~ — **done**, see "Per-message voice" at the end. Previous notes: map each message id to its own clip + `.LIP` (today they fall back to the
   shipped `sp_001`). **RE finding (Ghidra, no-CD `tp.exe`):** the binding is a *runtime-assembled message
   database*, not a data-file manifest, so there's no quick table to lift:
   - Assets: `data/global/Speech/speechHD.SDT` holds 641 clips `sp_001..sp_641.mp2` (+ per-level
@@ -178,3 +178,17 @@ has over 20 000; TAG 78 / 82).
 `RidesNoUpgrades` (18 months in without a researched upgrade, TAG 68 — `NewResearchGroupRide` now speaks 70, "upgrades
 available that you haven't used", which is what it means), `WagesHigh` (wages over the last 3 months > 2 × income, TAG
 128; the monthly finance history now records wages), and `Bankrupted` (TAG 127) after six months in the red.
+
+## Per-message voice (2026-10-21)
+
+The mapping is a **static table in `tp.exe`** after all, reached from the lip-sync path: `FUN_00599050` ("Advisor
+says ResponseID %d", formats `\Speech\lips\sp_%03d.lip`) scans 32-byte records at `0x768fb8` until id 9999 —
+{response id, …, **clip number**, …, flags (high word 1 = the level's `LocalSpeech`), …, **`TAG_SYSTEM.str` text
+index**}. 610 responses: every advisor text has 2–3 recorded takes (e.g. text 9 "Lots of your visitors are thirsty…"
+→ `sp_020`–`sp_022`); the only local clip is each level's `sp_001`, its welcome (text 2).
+
+`AdvisorSpeech.ClipsByText` carries the table (text → takes); `Advisor.Speak` maps the advice id to its text
+(`AdvisorTips.TextIndexOf`, the existing `GameText` map), picks a take at random and plays it from
+`data/global/Speech/speechHD.SDT` with its lip-sync from `lips.wad` (the bank is preloaded in the background while
+the welcome plays). Advice the game never voiced keeps the level's `sp_001`. Verified in game: "StaffHireMechanics3"
+→ `sp_032`/`sp_033`, "CongratVisitorsHappy" → `sp_405`/`sp_407`, "FeaturesNotEnoughToilets" → `sp_233`/`sp_234`.
