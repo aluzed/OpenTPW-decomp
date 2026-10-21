@@ -681,7 +681,7 @@ public class Level
 				Researching = r.IsResearching, ResearchFraction = r.ResearchFraction,
 				ResearchQueuePos = ResearchQueue.Position( r ),
 				Reliability = r.Reliability, Broken = r.IsBroken, Closed = r.IsClosed,
-				PrizeCost = r.IsSideshow ? r.SideshowCostOfGoods : null, ChanceOfLosing = r.IsSideshow ? r.SideshowChanceOfLoosing : null,
+				DurationScale = r.DurationScale, PrizeCost = r.IsSideshow ? r.SideshowCostOfGoods : null, ChanceOfLosing = r.IsSideshow ? r.SideshowChanceOfLoosing : null,
 			} );
 		foreach ( var sh in Shop.Stalls )
 			s.Placements.Add( new SaveGame.Placement
@@ -793,6 +793,7 @@ public class Level
 					ride.RestoreProgress( p.UpgradeLevel, p.ResearchedLevel, p.Researching, p.ResearchFraction, p.Reliability, p.Broken );
 					if ( p.Closed )
 						ride.SetClosed( true );
+					ride.DurationScale = p.DurationScale;
 					if ( p.PrizeCost is { } prize )
 						ride.SideshowCostOfGoods = prize;
 					if ( p.ChanceOfLosing is { } lose )
@@ -1277,7 +1278,7 @@ public class Level
 					? grid.PointToWorld( tx + x.X + ride.ExitAppearPos.X, ty + x.Y + ride.ExitAppearPos.Y )
 					: waypoints[^1];
 				exit = exit.WithZ( terrain.SampleHeight( exit.X, exit.Y ) );
-				parkQueues.Add( new RideQueue( ride, waypoints, exit, ride.RideDuration ) );
+				parkQueues.Add( new RideQueue( ride, waypoints, exit ) );
 			}
 
 			// Car rides (tour/go-karts/water/bumper — scripts use TOUR/BUMP) get a visible moving wagon (T-032).

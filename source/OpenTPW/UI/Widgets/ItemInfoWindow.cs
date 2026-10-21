@@ -134,7 +134,9 @@ internal sealed class ItemInfoWindow : GameWindow
 		else
 		{
 			SettingBox( 0, $"Capacity : {ride.Capacity}", maxCapacity > 0 ? (float)ride.Capacity / maxCapacity : 1f );
-			SettingBox( 1, $"Duration : {ride.RideDuration:0} secs", Math.Clamp( ride.RideDuration / 120f, 0f, 1f ) );
+			// Longer rides, fewer riders an hour (the original's duration box).
+			SettingBox( 1, $"Duration : {ride.RideDuration:0} secs", (ride.DurationScale - 0.5f) / 2.5f,
+				() => ride.DurationScale -= 0.25f, () => ride.DurationScale += 0.25f );
 		}
 		if ( ride.IsSideshow )
 			SettingBox( 2, $"Price : $ {ride.TicketPrice:0}", Math.Clamp( ride.TicketPrice / 20f, 0f, 1f ),

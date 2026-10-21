@@ -11,7 +11,8 @@ public sealed class RideQueue
 	public Ride Ride { get; }
 	public IReadOnlyList<Vector3> Waypoints { get; }
 	public Vector3 ExitPoint { get; }
-	public float RideDuration { get; }
+	/// <summary>How long a ride lasts now (the ride's own, which the ride window can lengthen or shorten).</summary>
+	public float RideDuration => Ride.RideDuration;
 
 	/// <summary>Live capacity — follows the ride's current upgrade level (T-044).</summary>
 	public int Capacity => Ride.Capacity;
@@ -22,12 +23,11 @@ public sealed class RideQueue
 	// decides where it stands along the queue path, so a visible queue forms instead of a pile.
 	private readonly List<Peep> line = new();
 
-	public RideQueue( Ride ride, IReadOnlyList<Vector3> waypoints, Vector3 exitPoint, float rideDuration )
+	public RideQueue( Ride ride, IReadOnlyList<Vector3> waypoints, Vector3 exitPoint )
 	{
 		Ride = ride;
 		Waypoints = waypoints;
 		ExitPoint = exitPoint;
-		RideDuration = rideDuration;
 		ride.Queue = this; // back-reference so the ride (and its coaster train) can read occupancy
 	}
 

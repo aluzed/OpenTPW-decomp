@@ -116,7 +116,20 @@ public class Ride : Entity
 
 	/// <summary>How long a single ride lasts, in seconds (peeps stay aboard this long). Anchored to the
 	/// ride's own running animation length — see the ctor.</summary>
-	public float RideDuration { get; private set; } = 5f;
+	public float RideDuration
+	{
+		get => baseDuration * DurationScale;
+		private set => baseDuration = value;
+	}
+	private float baseDuration = 5f;
+
+	/// <summary>The player's setting for the ride's length (the ride window's duration box): 0.5–3 × its own.</summary>
+	public float DurationScale
+	{
+		get => durationScale;
+		set => durationScale = Math.Clamp( value, 0.5f, 3f );
+	}
+	private float durationScale = 1f;
 
 	/// <summary>How exciting the ride is (<c>UsageInfo.ExcitementLevel</c>) — its draw: peeps pick rides
 	/// weighted by this, so more exciting rides build longer queues.</summary>
