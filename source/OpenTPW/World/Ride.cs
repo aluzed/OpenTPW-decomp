@@ -609,6 +609,18 @@ public class Ride : Entity
 		VM.IsRunning = true;
 	}
 
+	/// <summary>Whether the player has closed the ride (the ride window's gate): no new riders, and its script
+	/// sees <c>VAR_RIDECLOSED</c>.</summary>
+	public bool IsClosed { get; private set; }
+
+	public void SetClosed( bool closed )
+	{
+		IsClosed = closed;
+		if ( VM != null )
+			VM.Variables[(int)RideVariables.VAR_RIDECLOSED] = closed ? 1 : 0;
+		Log.Info( $"[ride] {Name} {(closed ? "closed" : "opened")}" );
+	}
+
 	/// <summary>
 	/// Tell the ride script a peep is boarding by raising <c>VAR_LETMEON</c> — the per-ride "a peep wants
 	/// on" flag its load loop polls (it consumes the flag, increments its on-ride count, and runs the

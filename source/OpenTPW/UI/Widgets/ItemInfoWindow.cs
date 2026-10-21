@@ -149,7 +149,9 @@ internal sealed class ItemInfoWindow : GameWindow
 				ride.StartResearch();
 			}
 		}
-		RoundButton( Action( 672f, 93f ), "b_dooro", enabled: false );
+		// The gate: open (green light) / closed.
+		if ( RoundButton( Action( 672f, 93f ), ride.IsClosed ? "b_doorc" : "b_dooro" ) )
+			ride.SetClosed( !ride.IsClosed );
 	}
 
 	private static void RenderShop( BuildMode build, ParkFinances fin, Shop shop )

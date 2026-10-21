@@ -1210,9 +1210,15 @@ public sealed class Peep : ModelEntity
 			return;
 		}
 
-		var candidates = queues.Where( q => q != lastRoute ).ToList();
+		var open = queues.Where( q => !q.Ride.IsClosed ).ToList();
+		if ( open.Count == 0 )
+		{
+			route = null;
+			return;
+		}
+		var candidates = open.Where( q => q != lastRoute ).ToList();
 		if ( candidates.Count == 0 )
-			candidates = queues.ToList();
+			candidates = open;
 
 		// Score each ride by the authored weighted-utility scorer — excitement vs distance vs queue length
 		// (T-060) — then pick one weighted by score (so a better ride draws more peeps, but not all of them).

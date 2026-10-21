@@ -664,7 +664,7 @@ public class Level
 				UpgradeLevel = r.UpgradeLevel, ResearchedLevel = r.ResearchedLevel,
 				Researching = r.IsResearching, ResearchFraction = r.ResearchFraction,
 				ResearchQueuePos = ResearchQueue.Position( r ),
-				Reliability = r.Reliability, Broken = r.IsBroken,
+				Reliability = r.Reliability, Broken = r.IsBroken, Closed = r.IsClosed,
 			} );
 		foreach ( var sh in Shop.Stalls )
 			s.Placements.Add( new SaveGame.Placement
@@ -774,6 +774,8 @@ public class Level
 				{
 					ride.TicketPrice = p.TicketPrice;
 					ride.RestoreProgress( p.UpgradeLevel, p.ResearchedLevel, p.Researching, p.ResearchFraction, p.Reliability, p.Broken );
+					if ( p.Closed )
+						ride.SetClosed( true );
 					if ( ride.IsResearching )
 						researching.Add( (ride, p.ResearchQueuePos) );
 				}

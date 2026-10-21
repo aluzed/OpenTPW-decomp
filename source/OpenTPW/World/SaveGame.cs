@@ -59,6 +59,8 @@ public sealed class SaveGame
 		public int ResearchQueuePos { get; set; } = -1; // park-wide research-queue order (-1 = not queued)
 		public float Reliability { get; set; } = 1f;
 		public bool Broken { get; set; }
+		/// <summary>The player closed the ride (its gate).</summary>
+		public bool Closed { get; set; }
 	}
 
 	/// <summary>A hired staff member (T-059 v2): role + wander centre + optional patrol zone. Staff aren't
