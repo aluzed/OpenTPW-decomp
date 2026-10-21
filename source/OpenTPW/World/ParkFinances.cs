@@ -150,10 +150,12 @@ public sealed class ParkFinances
 	public IReadOnlyList<Loan> Loans => loans;
 	public float Debt => loans.Where( l => l.Bought ).Sum( l => l.Outstanding );
 
-	/// <summary>True once the balance has dropped below the bankruptcy limit.</summary>
-	public bool Bankrupt => Money < BankruptLimit;
+	/// <summary>True once the park has been in the red for six months running — the game's rule (TAG_SYSTEM.str 123:
+	/// "If you stay in the red for six months you will be made bankrupt"; 127: "…in the red for six months, so the banks
+	/// have closed your park"). It was a −5 000 balance, which could bankrupt a park in its first month.</summary>
+	public bool Bankrupt => MonthsInRed >= BankruptMonths;
 
-	private const float BankruptLimit = -5000f;
+	public const int BankruptMonths = 6;
 
 	/// <summary>Take a loan: principal is credited now, repaid (principal + simple APR interest) over its period.</summary>
 	public void TakeLoan( int index )

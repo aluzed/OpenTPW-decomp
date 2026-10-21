@@ -98,3 +98,7 @@ A stall's player-set price is now judged against its authored `UsageInfo.InitPri
 visit — it stays hungry/thirsty). Verified with a burger stall at 3× its price: 241 refusals (one per visitor), no
 loop, ride throughput unaffected.
 
+
+Bankruptcy follows the game's rule — six months running in the red (TAG_SYSTEM 123/127) — instead of a −5 000
+balance that could bankrupt a park in its first month; the advisor's escalation is 1 / 3 / 5 months (123/125/126) then
+`Bankrupted` (127). The HUD flags it; a game-over / restart flow is still to do.

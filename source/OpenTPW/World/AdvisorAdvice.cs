@@ -62,7 +62,7 @@ public static class AdvisorAdvice
 	private const float PriceScorePerVerdict = 10f, PriceScoreCap = 120f;
 
 	// Default scores when the .sam omits the key (matches the shipped jungle file).
-	private const float RedMonthScore = 110f, RedThreeScore = 50f, RedSixScore = 75f;
+	private const float RedMonthScore = 110f, RedThreeScore = 50f, RedSixScore = 75f, BankruptedScore = 100000f;
 	private const float ThirstyPerPerson = 1f, HungryPerPerson = 1f, ResearchScore = 40f, CongratScore = 60f;
 	private const float CongratHappiness = 75f; // average happiness worth a "well done"
 	// Milestone reactions (T-054/T-055): winning the level's golden ticket is the loudest tip; a challenge
@@ -76,9 +76,11 @@ public static class AdvisorAdvice
 
 		// Escalating "in the red" warning by how long the park has been losing money (the higher MonthsInRed
 		// score wins once the park has been in debt long enough).
-		if ( s.Money < 0f )
+		if ( s.Money < 0f && s.MonthsInRed >= ParkFinances.BankruptMonths )
+			list.Add( ("Bankrupted", GroupGeneral, c.Param( "Bankrupted", "Score" ) ?? BankruptedScore) );
+		else if ( s.Money < 0f )
 		{
-			if ( s.MonthsInRed >= 6 )
+			if ( s.MonthsInRed >= 5 )
 				list.Add( ("InTheRedSixMonths", GroupGeneral, c.Param( "InTheRedSixMonths", "Score" ) ?? RedSixScore) );
 			else if ( s.MonthsInRed >= 3 )
 				list.Add( ("InTheRedThreeMonths", GroupGeneral, c.Param( "InTheRedThreeMonths", "Score" ) ?? RedThreeScore) );

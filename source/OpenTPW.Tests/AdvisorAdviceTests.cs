@@ -35,11 +35,12 @@ CongratVisitorsHappy.Score				60
 	public void InTheRedEscalatesWithMonths()
 	{
 		var c = Cfg();
-		string One( ParkSnapshot s ) => AdvisorAdvice.Evaluate( s, c ).Single( a => a.Id.StartsWith( "InTheRed" ) ).Id;
+		string One( ParkSnapshot s ) => AdvisorAdvice.Evaluate( s, c ).Single( a => a.Id.StartsWith( "InTheRed" ) || a.Id == "Bankrupted" ).Id;
 
 		Assert.AreEqual( "InTheRedMonthLeft", One( Healthy() with { Money = -100f, MonthsInRed = 1 } ) );
 		Assert.AreEqual( "InTheRedThreeMonths", One( Healthy() with { Money = -100f, MonthsInRed = 3 } ) );
-		Assert.AreEqual( "InTheRedSixMonths", One( Healthy() with { Money = -100f, MonthsInRed = 8 } ) );
+		Assert.AreEqual( "InTheRedSixMonths", One( Healthy() with { Money = -100f, MonthsInRed = 5 } ) );
+		Assert.AreEqual( "Bankrupted", One( Healthy() with { Money = -100f, MonthsInRed = 8 } ) );
 	}
 
 	[TestMethod]
