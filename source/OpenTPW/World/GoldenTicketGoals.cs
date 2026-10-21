@@ -44,7 +44,9 @@ public sealed class GoldenTicketGoals
 			Awarded = true;
 			Log.Info( "[ticket] GOLDEN TICKET awarded — every level goal met!" );
 			// Celebrate: every ride launches a firework (P_EFFECT_FW1explosion), the award effect T-055 lacked.
-			foreach ( var ride in Entity.All.OfType<Ride>() )
+			// (A snapshot: each firework adds particle entities to Entity.All — iterating it live threw
+			// "Collection was modified" and killed the game the moment the ticket was won.)
+			foreach ( var ride in Entity.All.OfType<Ride>().ToList() )
 				ride.Celebrate();
 		}
 	}
