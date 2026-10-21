@@ -29,7 +29,7 @@ public readonly record struct ParkFacilities(
 	int Mechanics, int Handymen, int Guards, int Entertainers,
 	int Rides, int WornRides, int BrokenRides, int Shops, int Sideshows, int Toilets,
 	int Litter, int Visitors, int NeedingToilet, int Misbehaving, int Days, int WaitingAtGate = 0, float WorstToiletFilth = 0f,
-	int Researchers = 0, float Money = 0f, float Debt = 0f );
+	int Researchers = 0, float Money = 0f, float Debt = 0f, bool AnyUpgradeResearched = true );
 
 /// <summary>
 /// Maps the live park state to advisor message candidates — <c>(id, group, score)</c> for the
@@ -207,6 +207,11 @@ public static class AdvisorAdvice
 		if ( f.Rides > 0 && f.Sideshows > 0 && f.Money > P( "SideshowsBuildMoreSideshows", "WealthMoreThan", 20000f )
 			&& f.Sideshows < P( "SideshowsBuildMoreSideshows", "SideshowsPerRideRatio", 0.2f ) * f.Rides )
 			Add( "SideshowsBuildMoreSideshows", P( "SideshowsBuildMoreSideshows", "Score", 80f ) );
+
+		// Well into the game without a single ride upgrade researched (RidesNoUpgrades).
+		if ( f.Rides > 0 && !f.AnyUpgradeResearched
+			&& f.Days >= P( "RidesNoUpgrades", "MonthsIntoGameForConsideration", 18f ) * GameClock.DaysPerMonth )
+			Add( "RidesNoUpgrades", P( "RidesNoUpgrades", "Score", 80f ) );
 
 		// No toilets while enough visitors need one.
 		if ( f.Toilets == 0 && f.NeedingToilet > P( "FeaturesNoToilets", "MorePeopleThanThisNeeding", 25f ) )

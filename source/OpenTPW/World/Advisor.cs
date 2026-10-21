@@ -301,6 +301,7 @@ public sealed class Advisor : Entity
 			Days: GameClock.Current?.TotalDays ?? 0,
 			WaitingAtGate: Level.WaitingAtGate,
 			Researchers: Hired( StaffRole.Researcher ),
+			AnyUpgradeResearched: rides.Any( r => r.ResearchedLevel > 0 || r.UpgradeLevel > 0 ),
 			Money: ParkFinances.Current?.Money ?? 0f,
 			Debt: ParkFinances.Current?.Debt ?? 0f,
 			WorstToiletFilth: Shop.Stalls.Where( s => s.Kind == ShopKind.Toilet ).Select( s => s.Filth ).DefaultIfEmpty( 0f ).Max() );
