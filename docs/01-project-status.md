@@ -10,7 +10,7 @@ crack or a patch of the original game: it is a new C# engine that:
 3. Re-implements the game logic (ride-script VM, terrain, UI…).
 
 You therefore **need a legal copy of the game** to provide the assets — which the
-`.7z` at the repo root supplies (see [03](03-disc-compatibility.md)).
+`.7z` in the git-ignored `iso/` folder supplies (see [03](03-disc-compatibility.md)).
 
 ## Maturity
 

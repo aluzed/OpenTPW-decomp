@@ -137,20 +137,21 @@ sudo apt-get install -y ccd2iso          # or 'bchunk'
 Extract the disc image from the archive:
 
 ```bash
-cd /var/www/reverse/OpenTPW
-7z e "jeu-02988-theme_park_world-pcwin.7z" "Theme Park World/Theme Park World.img"
+cd /var/www/recomp/OpenTPW-decomp
+7z e "iso/jeu-02988-theme_park_world-pcwin.7z" -oiso "Theme Park World/Theme Park World.img"
 ```
 
 Convert and mount (one option):
 
 ```bash
-ccd2iso "Theme Park World.img" tpw.iso     # CloneCD 2352-byte sectors → 2048 ISO
+ccd2iso "iso/Theme Park World.img" iso/tpw.iso     # CloneCD 2352-byte sectors → 2048 ISO
 mkdir -p /tmp/tpw-cd
-sudo mount -o loop,ro tpw.iso /tmp/tpw-cd
+sudo mount -o loop,ro iso/tpw.iso /tmp/tpw-cd
 ls /tmp/tpw-cd/DATA            # the assets OpenTPW needs
 ```
 
-> The `*.7z`, `*.img`, `*.iso`, `*.ccd`, `*.sub` patterns are git-ignored — never
+> Disc images and the no-CD archive live in `iso/` (git-ignored, like the `*.7z`, `*.img`,
+> `*.iso`, `*.ccd`, `*.sub` patterns) — never
 > commit game data. See [03-disc-compatibility.md](03-disc-compatibility.md).
 
 ---

@@ -14,11 +14,11 @@ Usage:
     python3 tools/ccd-img-to-iso.py <input.img> <output.iso>
 
 Example (from the repo's disc archive):
-    7z e "jeu-02988-theme_park_world-pcwin.7z" "Theme Park World/Theme Park World.img"
-    python3 tools/ccd-img-to-iso.py "Theme Park World.img" tpw.iso
-    7z x tpw.iso DATA -oinstall        # install/DATA now holds the game assets
+    7z e "iso/jeu-02988-theme_park_world-pcwin.7z" -oiso "Theme Park World/Theme Park World.img"
+    python3 tools/ccd-img-to-iso.py "iso/Theme Park World.img" iso/tpw.iso
+    7z x iso/tpw.iso Data -oinstall        # install/Data now holds the game assets
     export OPENTPW_GAMEPATH="$PWD/install"   # Game.cs checks for a lowercase 'data':
-    ln -s DATA install/data                  #   (case-sensitive on Linux)
+    ln -s Data install/data                  #   (case-sensitive on Linux)
 
 Supports Mode 1 (user data at offset 16) and Mode 2 Form 1 (offset 24); the mode is
 read from each sector's header byte, so mixed tracks convert correctly.

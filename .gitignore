@@ -375,3 +375,7 @@ dumps
 *.img
 *.ccd
 *.sub
+
+# Local disc images, no-CD archives and extracted game data
+/iso/
+/install/

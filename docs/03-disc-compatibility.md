@@ -53,19 +53,19 @@ compressed installer). Two paths:
 
 ### Path A — Extract / mount the image (recommended, no Windows)
 1. Extract the `.img` from the archive:
-   `7z e "jeu-02988-theme_park_world-pcwin.7z" "Theme Park World/Theme Park World.img"`
+   `7z e "iso/jeu-02988-theme_park_world-pcwin.7z" -oiso "Theme Park World/Theme Park World.img"`
 2. Convert the raw image (Mode 1, 2352-byte sectors) to a plain 2048-byte `.iso`, then
    copy out `DATA/`:
    ```bash
-   python3 tools/ccd-img-to-iso.py "Theme Park World.img" tpw.iso
-   7z x tpw.iso DATA -oinstall          # install/DATA holds the assets
+   python3 tools/ccd-img-to-iso.py "iso/Theme Park World.img" iso/tpw.iso
+   7z x iso/tpw.iso Data -oinstall          # install/Data holds the assets
    ```
    (`tools/ccd-img-to-iso.py` is the bundled, no-extra-tools equivalent of
    `ccd2iso`/`bchunk`; `7z`/`fuseiso` can't read the raw `.img` directly.)
 3. Point OpenTPW's **`GamePath`** at the folder containing `data/` (here `install/`):
    - `export OPENTPW_GAMEPATH="$PWD/install"` (overrides the setting — see [T-006](tickets/T-006-gamepath-config.md)).
    - ⚠️ On Linux the initial check (`Game.cs`) looks for a **lowercase** `data`, while the
-     disc has `DATA` — add `ln -s DATA install/data` (the runtime VFS is already
+     disc has `Data` — add `ln -s Data install/data` (the runtime VFS is already
      case-insensitive). Mind the hardcoded `\` separators too — see [04](04-linux-compatibility.md).
    - Default (Windows): `C:\Program Files (x86)\Bullfrog\Theme Park World` (`Settings.Designer.cs`).
 
