@@ -120,6 +120,7 @@ All format/VM decoding and the core gameplay loop are done. Open work falls into
 | [T-072](T-072-placement-grid-scale.md) | 🟠 Medium | ✅ Done | **Bug**: grid was 16-unit tiles on the terrain centroid → now **10-unit tiles from (0,0)** (measured), rides re-centred on their footprint, river/lake = water + walkable forecourt from the `.lnd` mask, autoplace on the biggest open lawn, `3d.shader` fog fixed |
 | [T-073](T-073-magenta-materials.md) | 🟠 Medium | ✅ Done | **Bug**: magenta faces on hallow/fantasy/space rides (>16 materials per mesh → `MaterialSlots`; shared textures → `sharetex.wad` fallback), coaster track texture read from `coaster.sam`, and the **Space lobby island now loads** |
 | [T-074](T-074-visitor-arrivals.md) | 🟠 Medium | ⚠️ Implemented | **Visitor arrivals**: groups at the gate from `Arrival.*` (sized by park rating), stays from `PeepInfo.ExitLevel`, departures leave for good — the golden-ticket crowd goals are reachable. Data-driven approximation; exact formula (bus-based, RE notes recorded) still to reverse |
+| [T-075](T-075-native-memory-growth.md) | 🟡 Low | ☐ To do | Slow **native** memory growth (~13 MB/min, GC heap flat) with visitor turnover — per-entity GPU state likely never released |
 
 Priority legend: 🔴 blocking · 🟠 important · 🟡 desirable/feature · ⚪ technical debt/polish.
 Status legend: ✅ done · ⚠️ partial · ☐ to do · 🗂️ split into focused tickets · ⏸️ deferred.

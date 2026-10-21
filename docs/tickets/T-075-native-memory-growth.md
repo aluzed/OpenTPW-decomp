@@ -1,0 +1,23 @@
+# T-075 — Slow native memory growth with visitor turnover
+
+- **Priority**: 🟡 Low/Medium (a long session grows; not a crash)
+- **Type**: Engine / rendering resources
+- **Status**: ☐ To do — measured 2026-10-21
+
+## Observed
+
+Jungle autoplace park with arrivals (T-074), ~250 visitors turning over:
+- 10-minute soak: 0 exceptions, clean exit; process RSS 830 MB → 1.19 GB (plateaus at times).
+- `dotnet-counters` over 3 minutes: **GC heap stable at ~100 MB**, working set +13 MB/min → the growth is
+  **native** (Vulkan/driver/GPU buffers), not managed objects.
+
+## Suspects
+
+Every arriving visitor creates two `ModelEntity`s (sprite + shadow), every particle burst several; entities are
+removed from `Entity.All` when they leave/expire, but per-entity GPU state (uniform buffers / resource sets created
+on first draw, see `Material.Set( "ObjectUniformBuffer", … )` and the resource-set cache) may never be released.
+
+## Scope
+
+1. Confirm with a counter of live Veldrid resources (or `VK_LAYER` stats) before/after a few thousand arrivals.
+2. Give `Entity` removal a dispose path for per-entity GPU state (or pool peep entities instead of re-creating).
