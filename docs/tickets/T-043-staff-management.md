@@ -72,3 +72,10 @@ reach a destination in the patrol area"). `CAdvisor::HandleStaffInfo` drives the
 ## Affected files
 
 `source/OpenTPW/World/Staff.cs`, `source/OpenTPW/World/Build/*`, `ParkFinances.cs`, `Level.cs`, UI.
+
+## Update (2026-10-21) — wages by role
+
+Each role's wage follows `Standard.sam`'s `PerTypeStaffConsts[n].PayMultiplier` (handyman 10, mechanic 30,
+entertainer 15, guard 20, researcher 35) around the previous flat 1.5/s average — a mechanic costs three handymen,
+a researcher 3.5. The authored `BaseWage × PayMultiplier` is in a time unit not yet pinned, so only the ratios are
+used (`Staff.WagePerSecond`, unit-tested).

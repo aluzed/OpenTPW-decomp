@@ -38,7 +38,28 @@ public readonly record struct PatrolZone( Vector3 Center, float Radius )
 /// </summary>
 public sealed class Staff : ModelEntity
 {
-	private const float WagePerSecond = 1.5f; // ongoing cost
+	// Wages: the park-wide level stays at an average of 1.5/s per member of staff, split by Standard.sam's
+	// PerTypeStaffConsts[n].PayMultiplier (handyman 10, mechanic 30, entertainer 15, guard 20, researcher 35 — their
+	// mean is 22): a mechanic costs three handymen. (The authored BaseWage × multiplier is in an unknown time unit,
+	// so only the ratios are taken.)
+	private const float AverageWagePerSecond = 1.5f;
+	private const float AveragePayMultiplier = 22f;
+
+	/// <summary><c>PerTypeStaffConsts[n].PayMultiplier</c> by role (Standard.sam order: handyman, mechanic, entertainer,
+	/// guard, researcher).</summary>
+	public static float[] PayMultipliers { get; set; } = { 10f, 30f, 15f, 20f, 35f };
+
+	/// <summary>The wage per second for a role (pure).</summary>
+	public static float WagePerSecond( StaffRole role )
+	{
+		int i = role switch
+		{
+			StaffRole.Handyman => 0, StaffRole.Mechanic => 1, StaffRole.Entertainer => 2,
+			StaffRole.Guard => 3, _ => 4,
+		};
+		float m = i < PayMultipliers.Length ? PayMultipliers[i] : AveragePayMultiplier;
+		return AverageWagePerSecond * m / AveragePayMultiplier;
+	}
 	private const float CheerRadius = 35f;     // entertainer reach
 	private const float CheerPerSecond = 8f;   // happiness lifted per second for visitors in range
 	private const float ReachDistance = 3f;    // how close counts as "arrived" / "picked up"
@@ -166,7 +187,7 @@ public sealed class Staff : ModelEntity
 
 	protected override void OnUpdate()
 	{
-		ParkFinances.Current?.PayWages( WagePerSecond * Time.Delta );
+		ParkFinances.Current?.PayWages( WagePerSecond( Role ) * Time.Delta );
 		shadow.Position = Position.WithZ( terrain.SampleHeight( Position.X, Position.Y ) + 0.12f );
 
 		switch ( role )

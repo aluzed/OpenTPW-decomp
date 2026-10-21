@@ -176,6 +176,10 @@ public class Level
 				Peep.GoodRideHappiness = goodRide;
 			if ( float.TryParse( peepSam["PeepInfo.OKRide"], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var okRide ) )
 				Peep.OkRideHappiness = okRide;
+			// Staff pay ratios by role.
+			var pay = Enumerable.Range( 0, 5 ).Select( i => peepSam[$"PerTypeStaffConsts[{i}].PayMultiplier"] ).ToArray();
+			if ( pay.All( v => float.TryParse( v, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out _ ) ) )
+				Staff.PayMultipliers = pay.Select( v => float.Parse( v, System.Globalization.CultureInfo.InvariantCulture ) ).ToArray();
 			// Pranksters and their stink bombs.
 			if ( float.TryParse( peepSam["PeepInfo.PrankeryLikelihood"], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var prankery ) )
 				Peep.PrankeryLikelihood = prankery;
