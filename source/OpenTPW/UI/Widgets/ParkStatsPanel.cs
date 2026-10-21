@@ -160,6 +160,11 @@ internal sealed class ParkStatsPanel : HudPanel
 				lines.Add( "BUILD: pick an item on the right -->" );
 		}
 
+		// What the crowd thinks, in the game's own words (THOUGHTS.str) — the two most common thoughts.
+		var crowd = CrowdThoughts.Summary( Peep.CrowdThoughtTally() );
+		if ( crowd.Length > 0 )
+			lines.Add( $"CROWD: {crowd}" );
+
 		// Park rating = average visitor happiness (T-039); shown as a coloured gauge under the stats.
 		float rating = Peep.AverageHappiness;
 		if ( rating >= 0f )

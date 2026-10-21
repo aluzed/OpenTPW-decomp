@@ -193,6 +193,22 @@ public sealed class Peep : ModelEntity
 
 	private float energy = MaxEnergy;
 	private float energyDrainPerSec = MaxEnergy / 120f; // set per visitor from the ExitLevel stay
+	private bool amidLitter; // standing among litter (≥ 2 pieces near) — "Too messy"
+
+	/// <summary>What this visitor is thinking (a <see cref="CrowdThoughts"/> / THOUGHTS.str index).</summary>
+	public int Thought => CrowdThoughts.For( hunger / HungerThreshold, thirst / ThirstThreshold, bladder / BladderThreshold,
+		happiness, amidLitter, route != null && route.PositionOf( this ) >= LongQueue );
+	private const int LongQueue = 12; // a place this far back in a line is "Queue too long"
+
+	/// <summary>How many live visitors think each thought (by THOUGHTS.str index).</summary>
+	public static Dictionary<int, int> CrowdThoughtTally()
+	{
+		var tally = new Dictionary<int, int>();
+		foreach ( var e in Entity.All )
+			if ( e is Peep { riding: false } p )
+				tally[p.Thought] = tally.GetValueOrDefault( p.Thought ) + 1;
+		return tally;
+	}
 
 	// This peep's walking lane: a fixed offset within a tile (±3 of 10 units) applied to intermediate waypoints.
 	private readonly Vector3 laneOffset = new( ((float)Random.Shared.NextDouble() - 0.5f) * 6f, ((float)Random.Shared.NextDouble() - 0.5f) * 6f, 0f );
@@ -351,6 +367,7 @@ public sealed class Peep : ModelEntity
 		if ( Random.Shared.NextDouble() < LitterChancePerSec * Time.Delta && !Staff.GuardNear( Position ) )
 			_ = new Litter( Position );
 		int nearbyLitter = CountNearbyLitter();
+		amidLitter = nearbyLitter >= 2;
 		if ( nearbyLitter > 0 )
 			happiness = Math.Max( 0f, happiness - LitterPenaltyPerSec * nearbyLitter * Time.Delta );
 
