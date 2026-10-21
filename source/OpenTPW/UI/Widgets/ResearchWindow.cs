@@ -32,11 +32,12 @@ internal sealed class ResearchWindow : GameWindow
 	private static readonly Rectangle Ok = At( 884f, 404f, 42f, 42f );
 	private const float FirstRow = 88f, RowStep = 76f;
 
-	private static readonly (BuildCategory? Category, string Icon, string Label)[] Fields =
+	// Each field, with its effort slider's hint and its previous / next item hint (UIHELPTEXT 244–258).
+	private static readonly (BuildCategory? Category, string Icon, string Label, int EffortHint, int PickHint)[] Fields =
 	{
-		(BuildCategory.Rides, "b_srides", "Rides"), (BuildCategory.Sideshows, "b_sshows", "Sideshows"),
-		(BuildCategory.Shops, "b_sshops", "Shops"), (BuildCategory.Features, "b_sfeature", "Scenery"),
-		(null, "b_upgrade", "Ride upgrades"),
+		(BuildCategory.Rides, "b_srides", "Rides", 244, 249), (BuildCategory.Sideshows, "b_sshows", "Sideshows", 247, 255),
+		(BuildCategory.Shops, "b_sshops", "Shops", 246, 253), (BuildCategory.Features, "b_sfeature", "Scenery", 248, 257),
+		(null, "b_upgrade", "Ride upgrades", 245, 251),
 	};
 
 	private static Texture? pill, nameBox, tube, fluid;
@@ -55,17 +56,27 @@ internal sealed class ResearchWindow : GameWindow
 		DrawFrame( "w_res" );
 		DrawHeading( "Research Lab", 505f, 0f, 52f );
 
-		// The scientists' power (grade-weighted researchers), down the left; their face under it.
+		// The scientists' power (grade-weighted researchers, at the work rate), down the left, the work rate's −/+ under
+		// it (UIHELPTEXT 238; the bar's hint says how hard they work, 239–243); their face under that.
 		DrawInset( Power );
 		float power = Staff.ResearchPower;
 		Fill( Power with { Height = Power.Height * Math.Clamp( power / 10f, 0f, 1f ) }, SolidOf( 60, 200, 110 ) );
+		if ( research != null )
+		{
+			if ( Contains( Power, MouseBase() ) )
+				Hint( 239 + research.WorkRate );
+			if ( RoundButton( At( 126f, 340f, 22f, 22f ), "b_minus", enabled: research.WorkRate > 0, hint: 238 ) )
+				research.WorkRate--;
+			if ( RoundButton( At( 182f, 340f, 22f, 22f ), "b_plus", enabled: research.WorkRate < ItemResearch.MaxRate, hint: 238 ) )
+				research.WorkRate++;
+		}
 		Text( Small, $"{power:0.#}", 165f, 344f, 11f, default, TextAlign.Center );
 		if ( UiTexture( "h_resrcher" ) is { } face )
 			Fill( Face, face );
 
 		for ( int i = 0; i < Fields.Length; i++ )
 		{
-			var (category, icon, label) = Fields[i];
+			var (category, icon, label, effortHint, pickHint) = Fields[i];
 			float top = FirstRow + i * RowStep;
 
 			// Effort: a pill with the share filled, −/+ either side.
@@ -75,16 +86,16 @@ internal sealed class ResearchWindow : GameWindow
 			{
 				float effort = research.EffortOf( cat );
 				DrawGauge( At( 256f, top + 18f, 72f, 10f ), effort / 100f );
-				if ( RoundButton( At( 229f, top + 12f, 22f, 22f ), "b_minus", enabled: effort > 0f ) )
+				if ( RoundButton( At( 229f, top + 12f, 22f, 22f ), "b_minus", enabled: effort > 0f, hint: effortHint ) )
 					research.SetEffort( cat, effort - 5f );
-				if ( RoundButton( At( 333f, top + 12f, 22f, 22f ), "b_plus", enabled: effort < 100f ) )
+				if ( RoundButton( At( 333f, top + 12f, 22f, 22f ), "b_plus", enabled: effort < 100f, hint: effortHint ) )
 					research.SetEffort( cat, effort + 5f );
 			}
 
 			RoundButton( At( 372f, top - 4f, 56f, 56f ), icon );
 
 			// What is being researched, and how far.
-			var box = At( 440f, top, 270f, 46f );
+			var box = At( 440f, top, 248f, 46f );
 			Fill( box, NameBox );
 			var (name, fraction) = Target( category, research );
 			if ( fraction > 0f )
@@ -92,10 +103,22 @@ internal sealed class ResearchWindow : GameWindow
 			Text( Small, label, 450f, top + 6f, 11f, TitleInk );
 			Text( Small, name ?? "Nothing to research", 450f, top + 24f, 11f, name == null ? new( 0.6f, 0.6f, 0.6f ) : default );
 			if ( name != null )
-				Text( Small, $"{fraction * 100f:0} %", 700f, top + 24f, 11f, Progress, TextAlign.Right );
+				Text( Small, $"{fraction * 100f:0} %", 680f, top + 24f, 11f, Progress, TextAlign.Right );
+			if ( Contains( box, MouseBase() ) )
+				Hint( 259 );
+
+			// Previous / next item to research (not for the upgrades: those follow the rides' own research).
+			if ( category is { } pick && research != null )
+			{
+				bool choice = research.Candidates( pick ).Count > 1;
+				if ( RoundButton( At( 692f, top, 22f, 22f ), "b_sleft", enabled: choice, hint: pickHint ) )
+					research.Choose( pick, -1 );
+				if ( RoundButton( At( 692f, top + 24f, 22f, 22f ), "b_sright", enabled: choice, hint: pickHint + 1 ) )
+					research.Choose( pick, +1 );
+			}
 
 			// The fluid tube fills as the work nears completion.
-			var tubeRect = At( 722f, top + 10f, 130f, 26f );
+			var tubeRect = At( 726f, top + 10f, 126f, 26f );
 			Fill( tubeRect, TubeGlass );
 			Fill( tubeRect with { Width = tubeRect.Width * fraction }, Fluid );
 		}

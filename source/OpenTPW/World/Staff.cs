@@ -84,7 +84,8 @@ public sealed class Staff : ModelEntity
 	/// <summary>The research speed of the researchers at work, in grade-1 researchers (<c>ResearchAbility</c>; none
 	/// while they strike).</summary>
 	public static float ResearchPower => StaffStrikes.Current?.IsStriking( StaffRole.Researcher ) == true ? 0f
-		: Entity.All.OfType<Staff>().Where( s => s.Role == StaffRole.Researcher ).Sum( s => StaffGrades.Current.ResearchFactor( s.Grade ) );
+		: Entity.All.OfType<Staff>().Where( s => s.Role == StaffRole.Researcher ).Sum( s => StaffGrades.Current.ResearchFactor( s.Grade ) )
+			* (ItemResearch.Current?.RateSpeedFactor ?? 1f);
 
 	// ---- Grade, training, energy and morale (Standard.sam PerGradeStaffConsts / *ConstsPerGrade, see StaffGrades) ----
 
@@ -340,7 +341,8 @@ public sealed class Staff : ModelEntity
 				}
 				// A job spends energy; strolling between jobs recovers half the resting rate.
 				Energy = working
-					? MathF.Max( 0f, Energy - WorkDrainPerSecond * Time.Delta )
+					? MathF.Max( 0f, Energy - WorkDrainPerSecond * Time.Delta
+						* (role == StaffRole.Researcher ? ItemResearch.Current?.RateTiringFactor ?? 1f : 1f) ) // the lab's work rate
 					: MathF.Min( 100f, Energy + grades.EnergyRecoveryPerSecond( Grade ) * 0.5f * Time.Delta );
 			}
 		}

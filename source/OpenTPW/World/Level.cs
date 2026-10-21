@@ -752,6 +752,8 @@ public class Level
 		s.Researched = ItemResearch.Current?.Unlocked.ToList();
 		s.ResearchProgress = ItemResearch.Current?.CategoryProgress ?? new();
 		s.ParkName = ParkName;
+		s.ResearchChoices = ItemResearch.Current?.Choices ?? new();
+		s.ResearchRate = ItemResearch.Current?.WorkRate ?? ItemResearch.NormalRate;
 		s.TrainingBudgets = StaffTraining.Current?.Budgets.ToDictionary( b => b.Key.ToString(), b => b.Value ) ?? new();
 
 		// Slot-menu metadata (T-061): an at-a-glance summary so the player can tell saves apart.
@@ -889,6 +891,11 @@ public class Level
 		if ( s.Researched != null )
 			ItemResearch.Current?.Restore( s.Researched, s.ResearchProgress );
 		ParkName = s.ParkName;
+		if ( ItemResearch.Current is { } lab )
+		{
+			lab.RestoreChoices( s.ResearchChoices );
+			lab.WorkRate = Math.Clamp( s.ResearchRate, 0, ItemResearch.MaxRate );
+		}
 		StaffTraining.Current = new StaffTraining();
 		foreach ( var (role, amount) in s.TrainingBudgets )
 			if ( Enum.TryParse<StaffRole>( role, out var r ) )

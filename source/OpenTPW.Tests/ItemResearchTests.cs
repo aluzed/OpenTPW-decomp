@@ -56,4 +56,36 @@ public class ItemResearchTests
 		Assert.AreEqual( 0.08f, r.ProgressOf( "ride" ), 1e-4f );
 		Assert.AreEqual( 0.02f, r.ProgressOf( "shop" ), 1e-4f );
 	}
+
+	[TestMethod]
+	public void ThePlayerCanPickWhatToResearchNext()
+	{
+		var r = new ItemResearch( new[]
+		{
+			I( "a", BuildCategory.Rides, 0, 0 ), I( "kart", BuildCategory.Rides, 1, 600 ), I( "hyena", BuildCategory.Rides, 1, 450 ),
+		}, new Dictionary<BuildCategory, float> { [BuildCategory.Rides] = 100 } );
+		r.Choose( BuildCategory.Rides, +1 );
+		Assert.AreEqual( "kart", r.Target( BuildCategory.Rides )?.Key );
+		r.Choose( BuildCategory.Rides, +1 ); // wraps round
+		Assert.AreEqual( "hyena", r.Target( BuildCategory.Rides )?.Key );
+		r.Choose( BuildCategory.Rides, -1 );
+		r.Tick( 600f / ItemResearch.PointsPerResearcherSecond, 1f );
+		Assert.IsTrue( r.IsUnlocked( "kart" ) );
+		Assert.AreEqual( "hyena", r.Target( BuildCategory.Rides )?.Key, "the pick is done: back to the cheapest" );
+
+		var again = new ItemResearch( new[] { I( "a", BuildCategory.Rides, 0, 0 ), I( "kart", BuildCategory.Rides, 1, 600 ), I( "hyena", BuildCategory.Rides, 1, 450 ) } );
+		again.RestoreChoices( new Dictionary<string, string> { ["Rides"] = "kart" } );
+		Assert.AreEqual( "kart", again.Target( BuildCategory.Rides )?.Key );
+	}
+
+	[TestMethod]
+	public void HarderWorkIsFasterAndMoreTiring()
+	{
+		var r = new ItemResearch( System.Array.Empty<ItemResearch.Item>() );
+		Assert.AreEqual( 1f, r.RateSpeedFactor );
+		r.WorkRate = ItemResearch.MaxRate;
+		Assert.IsTrue( r.RateSpeedFactor > 1f && r.RateTiringFactor > r.RateSpeedFactor );
+		r.WorkRate = 0;
+		Assert.IsTrue( r.RateSpeedFactor < 1f && r.RateTiringFactor < 1f );
+	}
 }

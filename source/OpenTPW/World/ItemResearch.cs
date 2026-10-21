@@ -100,13 +100,64 @@ public sealed class ItemResearch
 		}
 	}
 
-	/// <summary>What a category is researching now: its cheapest open, unresearched item (null when none).</summary>
-	public Item? Target( BuildCategory category )
+	/// <summary>What a category could research now: its open, unresearched items, cheapest first.</summary>
+	public List<Item> Candidates( BuildCategory category )
 	{
 		int open = OpenGroup;
 		return items.Values.Where( i => i.Category == category && i.Group <= open && !unlocked.Contains( i.Key ) )
-			.OrderBy( i => i.Group ).ThenBy( i => i.Cost ).ThenBy( i => i.Key ).Cast<Item?>().FirstOrDefault();
+			.OrderBy( i => i.Group ).ThenBy( i => i.Cost ).ThenBy( i => i.Key ).ToList();
 	}
+
+	// The item the player picked per category (the lab's previous / next arrows); the cheapest when none or gone.
+	private readonly Dictionary<BuildCategory, string> chosen = new();
+
+	/// <summary>What a category is researching now: the player's pick, else its cheapest open, unresearched item
+	/// (null when none).</summary>
+	public Item? Target( BuildCategory category )
+	{
+		var candidates = Candidates( category );
+		if ( chosen.TryGetValue( category, out var key ) && candidates.FindIndex( i => i.Key == key ) is var at and >= 0 )
+			return candidates[at];
+		return candidates.Count > 0 ? candidates[0] : null;
+	}
+
+	/// <summary>Research the previous (−1) or next (+1) candidate of <paramref name="category"/> instead (UIHELPTEXT
+	/// 249–258); the progress made so far carries over.</summary>
+	public void Choose( BuildCategory category, int step )
+	{
+		var candidates = Candidates( category );
+		if ( candidates.Count == 0 || Target( category ) is not { } current )
+			return;
+		int at = candidates.FindIndex( i => i.Key == current.Key );
+		chosen[category] = candidates[((at + step) % candidates.Count + candidates.Count) % candidates.Count].Key;
+	}
+
+	/// <summary>The player's picks, by category (saved with the park).</summary>
+	public Dictionary<string, string> Choices => chosen.ToDictionary( kv => kv.Key.ToString(), kv => kv.Value );
+
+	/// <summary>Restore the player's picks.</summary>
+	public void RestoreChoices( IReadOnlyDictionary<string, string> choices )
+	{
+		chosen.Clear();
+		foreach ( var (category, key) in choices )
+			if ( Enum.TryParse<BuildCategory>( category, out var c ) )
+				chosen[c] = key;
+	}
+
+	// ---- The scientists' work rate (UIHELPTEXT 238–243): faster research for more tired scientists ----
+
+	public const int NormalRate = 1, MaxRate = 4;
+	private static readonly float[] RateSpeed = { 0.6f, 1f, 1.3f, 1.6f, 2f };
+	private static readonly float[] RateTiring = { 0.5f, 1f, 1.5f, 2.2f, 3f };
+
+	/// <summary>0 underworked, 1 normal, 2 harder, 3 very hard, 4 flat out.</summary>
+	public int WorkRate { get; set; } = NormalRate;
+
+	/// <summary>How much faster than normal the scientists research at the work rate.</summary>
+	public float RateSpeedFactor => RateSpeed[Math.Clamp( WorkRate, 0, MaxRate )];
+
+	/// <summary>How much faster than normal the scientists tire at the work rate.</summary>
+	public float RateTiringFactor => RateTiring[Math.Clamp( WorkRate, 0, MaxRate )];
 
 	/// <summary>Whether any category has something left to research.</summary>
 	public bool Busy => effort.Keys.Any( c => Target( c ) != null );
