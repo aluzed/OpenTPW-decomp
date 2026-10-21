@@ -602,7 +602,7 @@ public sealed class Peep : ModelEntity
 			sheet = costume;
 		else if ( category == SaleCategory.Balloon && balloon == null && Souvenirs.Balloon() is { } b )
 		{
-			// SPR_BL holds four colours (blue, green, red, yellow) as pairs of frames; the first of each pair is the clean one.
+			// SPR_BL holds four colours (blue, green, red, yellow) as pairs of frames: the balloon, then it bursting.
 			balloon = new ModelEntity { Model = b.FrameModel( 2 * Random.Shared.Next( Math.Max( 1, b.FrameCount / 2 ) ) ) };
 			UpdateBalloon();
 		}

@@ -66,4 +66,36 @@ public class TpcFileTests
 		for ( int x = 13; x < 23; x++ ) Assert.IsTrue( Opaque( x, 1 ) );
 		for ( int x = 23; x < 33; x++ ) Assert.IsFalse( Opaque( x, 1 ) );
 	}
+
+	[TestMethod]
+	public void ARunRepeatsTheFollowingIndex()
+	{
+		// One 16-pixel row from the real balloon sprite (SPR_BL frame 0, row 0): FC 00 = 4 transparent,
+		// 03 81 BA 58 = 3 literals, FE C5 = index 0xC5 twice, 03 2B 66 14 = 3 literals, FC 00 = 4 transparent.
+		var b = new List<byte>();
+		void U16( int v ) { b.Add( (byte)(v & 0xFF) ); b.Add( (byte)((v >> 8) & 0xFF) ); }
+		void U32( int v ) { U16( v & 0xFFFF ); U16( (v >> 16) & 0xFFFF ); }
+		U16( 3 ); U16( 3 ); U32( 1 );
+		var pal = new byte[1024];
+		for ( int i = 1; i < 256; i++ ) { pal[i * 4] = (byte)i; pal[i * 4 + 3] = 255; } // B = index
+		b.AddRange( pal );
+		byte[] row = { 0xFC, 0x00, 0x03, 0x81, 0xBA, 0x58, 0xFE, 0xC5, 0x03, 0x2B, 0x66, 0x14, 0xFC, 0x00 };
+		U32( row.Length + 1 ); U16( 16 ); U16( 1 ); U16( 0 ); U16( 0 ); U32( 0 ); U32( 0 );
+		b.Add( (byte)row.Length );
+		b.AddRange( row );
+
+		var f = new TpcFile( b.ToArray() ).Frames[0];
+		int?[] expected = { null, null, null, null, 0x81, 0xBA, 0x58, 0xC5, 0xC5, 0x2B, 0x66, 0x14, null, null, null, null };
+		for ( int x = 0; x < 16; x++ )
+		{
+			int o = x * 4;
+			if ( expected[x] is { } index )
+			{
+				Assert.AreEqual( 255, f.Rgba[o + 3], $"x{x} opaque" );
+				Assert.AreEqual( index, f.Rgba[o + 2], $"x{x} index" ); // B channel carries the index
+			}
+			else
+				Assert.AreEqual( 0, f.Rgba[o + 3], $"x{x} transparent" );
+		}
+	}
 }

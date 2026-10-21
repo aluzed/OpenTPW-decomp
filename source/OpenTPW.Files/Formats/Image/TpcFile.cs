@@ -14,9 +14,11 @@ namespace OpenTPW;
 /// The hotspot is the frame top-left as a signed pixel offset from the sprite's anchor (feet), image X
 /// right / Y down — so a pixel at frame-local (px,py) sits at anchor-relative (hotspotX+px, hotspotY+py).
 /// <para>Each scanline is one outer command — a byte length, then that many <b>inner</b> bytes — that expands
-/// to exactly <c>width</c> pixels: a control byte <c>b ≥ 0xF0</c> skips <c>256 − b</c> transparent pixels
-/// (so <c>0xFE</c>→2, <c>0xF0</c>→16); <c>b &lt; 0xF0</c> is a literal run of <c>b</c> palette indices that
-/// follow (index 0 = transparent). Frames are decoded to straight RGBA. See docs/tickets/T-034.</para>
+/// to exactly <c>width</c> pixels, PackBits-style: a control byte <c>c ≥ 0x80</c> repeats the <b>next</b> byte
+/// (a palette index) <c>256 − c</c> times (so <c>FE C5</c> = two pixels of index 0xC5, <c>FC 00</c> = four
+/// transparent ones); <c>c &lt; 0x80</c> is a literal run of the <c>c</c> palette indices that follow. Index 0 is
+/// transparent. Checked against every scanline of the kid and balloon sheets (6 417 rows, all exactly
+/// <c>width</c> pixels). Frames are decoded to straight RGBA. See docs/tickets/T-034.</para>
 /// </summary>
 public sealed class TpcFile
 {
@@ -88,8 +90,9 @@ public sealed class TpcFile
 
 	// Decodes one frame's RLE scanlines into straight RGBA via the BGRA palette. Each scanline is one outer
 	// command — a byte length, then that many inner bytes — expanding to exactly `width` pixels: a control
-	// byte b ≥ 0xF0 skips 256−b transparent pixels; b < 0xF0 is a literal run of b palette indices that
-	// follow. (RE'd from the original inner decoder; see docs/tickets/T-034.)
+	// byte c ≥ 0x80 repeats the next palette index 256−c times; c < 0x80 is a literal run of c indices.
+	// (The earlier reading — c ≥ 0xF0 skips transparent pixels without a value byte — only held for runs of
+	// index 0, and turned every coloured run into a long bogus literal: the noisy, streaked peep sprites.)
 	private static byte[] DecodeFrame( byte[] d, int off, int len, int w, int h, byte[] palette )
 	{
 		var rgba = new byte[w * h * 4];
@@ -103,14 +106,18 @@ public sealed class TpcFile
 			int x = 0;
 			while ( x < w && q < rowEnd )
 			{
-				byte b = d[q++];
-				if ( b >= 0xF0 )                 // transparent skip of (256 − b) pixels
+				byte c = d[q++];
+				if ( c >= 0x80 )                 // run: the next index, repeated 256 − c times
 				{
-					x += 256 - b;
+					if ( q >= rowEnd )
+						break;
+					byte index = d[q++];
+					for ( int j = 0; j < 256 - c && x < w; j++ )
+						WritePixel( rgba, (row * w + x++) * 4, index, palette );
 				}
-				else                             // literal run of b palette indices
+				else                             // literal run of c palette indices
 				{
-					for ( int j = 0; j < b && x < w && q < rowEnd; j++ )
+					for ( int j = 0; j < c && x < w && q < rowEnd; j++ )
 						WritePixel( rgba, (row * w + x++) * 4, d[q++], palette );
 				}
 			}

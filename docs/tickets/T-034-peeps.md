@@ -87,6 +87,12 @@ then `0xAARRGGBB`-style colour runs, same family as the `base.lnd` landscape dat
    replacing the earlier signed-RLE approximation. Unit-tested against the verified T-034 scanline examples
    (`TpcFileTests`); verified in-game (sprites load + render, no corruption). `esprites.wad` holds sprite
    trios under `Generic/*` / `Fantasy/*`.
+   **Correction (2026-10-21): the inner RLE is PackBits-style** — a control byte `c ≥ 0x80` repeats the
+   *next* byte (a palette index) `256 − c` times, `c < 0x80` is `c` literal indices. The "skip marker" reading
+   above only held for runs of index 0 (`F2 00` = 14 × index 0 — the `00` is the run's value, not padding);
+   every coloured run (`FE C5` = two pixels of 0xC5) was decoded as a long bogus literal, which is why peeps,
+   staff and balloons rendered noisy and streaked. The corrected rule expands **all 6 417 scanlines** of the
+   kid and balloon sheets to exactly `width` pixels (the old fit managed ~⅓) and the sprites now render clean.
    - **`.ESP`** = `ESP_FILE2.00` magic (12 bytes) + the referenced texture name (`SPR_KI.TPS`), zero-padded.
    - **`.TPC`/`.FPC`** layout (read primitive `FUN_005c4f60(dst, elemSize, count, stream)` = fread):
      ```
