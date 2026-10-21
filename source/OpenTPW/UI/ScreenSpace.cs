@@ -1,5 +1,4 @@
 using System.Numerics;
-using SVector4 = System.Numerics.Vector4;
 using SVector3 = System.Numerics.Vector3;
 
 namespace OpenTPW;
@@ -15,21 +14,17 @@ internal static class ScreenSpace
 	/// <paramref name="distance"/> in front of the camera, and how wide one screen pixel is there.</summary>
 	public static bool TryAnchor( float x, float y, float distance, out SVector3 world, out float pixel )
 	{
+		// From the projection's own scale factors (M11 = 1 / (tan(fov/2) · aspect), M22 = 1 / tan(fov/2)) and the
+		// view's axes — no matrix inverse, whose precision at depths near the far plane drifted.
+		var proj = Camera.ProjMatrix;
 		world = default;
 		pixel = 0f;
-		var viewProj = Camera.ViewMatrix * Camera.ProjMatrix;
-		if ( !Matrix4x4.Invert( viewProj, out var inverse ) )
+		if ( proj.M11 <= 0f || proj.M22 <= 0f )
 			return false;
-		var fwd = Camera.Rotation.Forward.GetSystemVector3();
-		var ahead = SVector4.Transform( new SVector4( Camera.Position.GetSystemVector3() + fwd * distance, 1f ), viewProj );
-		float depth = ahead.Z / ahead.W;
-		SVector3 Unproject( float px, float py )
-		{
-			var p = SVector4.Transform( new SVector4( px / 640f - 1f, py / 360f - 1f, depth, 1f ), inverse );
-			return new SVector3( p.X, p.Y, p.Z ) / p.W;
-		}
-		world = Unproject( x, y );
-		pixel = SVector3.Distance( world, Unproject( x + 1f, y ) );
+		var (right, up, back) = Axes();
+		float ndcX = x / 640f - 1f, ndcY = y / 360f - 1f;
+		world = Camera.Position.GetSystemVector3() - back * distance + right * (ndcX * distance / proj.M11) + up * (ndcY * distance / proj.M22);
+		pixel = 2f * distance / (proj.M22 * 720f);
 		return true;
 	}
 

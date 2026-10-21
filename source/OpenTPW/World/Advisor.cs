@@ -55,8 +55,8 @@ public sealed class Advisor : Entity
 	private const float Distance = 26f;
 	private const float HeadFromRight = 195f;  // base-screen pixels from the right edge to the head's centre
 	private const float HeadUp = 150f;         // base-screen pixels from the bottom
-	private const float HeadPixels = 125f;     // the head's height on screen
-	private const float HeadUnits = 22f;       // the Bug Head mesh's diameter
+	private const float HeadPixels = 100f;     // the head's height on screen
+	private float headUnits = 22f;             // the Bug Head mesh's height in model units (measured on load)
 	private const float LeanBack = 0.26f;             // radians (15°)
 
 	/// <summary>The viseme currently shown (for the HUD label); Closed when not speaking.</summary>
@@ -88,7 +88,7 @@ public sealed class Advisor : Entity
 		{
 			// Each world dresses him for the theme (Advisor_JUN: the pith helmet…) — fall back to the plain one.
 			var theme = Level.Current?.Name ?? "";
-			string? themed = theme.Length >= 3 ? $"Advisor_{theme[..3].ToUpperInvariant()}.MD2" : null;
+			string? themed = theme.Length >= 3 && Level.Current?.InPark == true ? $"Advisor_{theme[..3].ToUpperInvariant()}.MD2" : null; // the lobby's is the plain one
 			var themeWad = Path.Join( GameDir.GamePath, "data", "levels", theme, "advisor.wad" );
 			if ( themed != null && File.Exists( themeWad ) && new WadArchive( themeWad ) is var levelWad
 				&& levelWad.GetFile( themed ) is { } themedFile )
@@ -114,6 +114,13 @@ public sealed class Advisor : Entity
 			var name = (mesh.Name ?? "").Replace( "\0", "" ).Trim();
 			var viseme = VisemeForMesh( name );
 			var isBase = viseme == null;
+			if ( name.Equals( "bug head", StringComparison.OrdinalIgnoreCase ) && mesh.Vertices.Length > 0 )
+			{
+				// The models differ in scale (the lobby's plain one vs a theme's): size him by his head.
+				Matrix4x4.Decompose( mesh.TransformMatrix, out var hs, out _, out _ );
+				float lo = mesh.Vertices.Min( v => v.Position.Z ), hi = mesh.Vertices.Max( v => v.Position.Z );
+				headUnits = MathF.Max( 1f, (hi - lo) * hs.Z );
+			}
 			if ( IsHidden( name ) )
 				continue;
 
@@ -134,7 +141,7 @@ public sealed class Advisor : Entity
 				Viseme = viseme,
 			} );
 		}
-		Log.Info( $"[advisor] built {parts.Count} part(s) from Advisor.MD2 (5 visemes + bug face)" );
+		Log.Info( $"[advisor] built {parts.Count} part(s) (5 visemes + body), head {headUnits:0.#} units" );
 	}
 
 	private static MouthShape? VisemeForMesh( string name )
@@ -266,6 +273,9 @@ public sealed class Advisor : Entity
 	// rules (min-gap, same-message gap, say-once, min-score) decide which — if any — message speaks.
 	private void ConsiderSpeaking()
 	{
+		// In the lobby he just stands there: the advice is about a park.
+		if ( Level.Current?.InPark != true && Environment.GetEnvironmentVariable( "OPENTPW_ADVISOR_DEMO" ) != "1" )
+			return;
 		bool speaking = startTime >= 0f && Time.Now - startTime <= ClipLength;
 		if ( speaking )
 			return;
@@ -446,7 +456,7 @@ public sealed class Advisor : Entity
 		if ( !ScreenSpace.TryAnchor( 1280f - HeadFromRight, HeadUp, Distance, out var anchor, out float pixel ) )
 			return;
 		var groupPos = (Vector3)anchor;
-		float groupScale = HeadPixels * pixel / HeadUnits;
+		float groupScale = HeadPixels * pixel / headUnits;
 
 		// After the loader's Y/Z swap the model stands along +Y and looks along +Z (the eyes): map +Y to the
 		// screen's up and +Z back at the camera.
