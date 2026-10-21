@@ -3,7 +3,7 @@
 - **Priority**: 🟠 Medium — two golden-ticket goals were unreachable with a fixed crowd of 30
   (`GoldenTicketLocal.PeopleInPark 200`, `AtLeastThisManyHappyPeople 150`)
 - **Type**: Gameplay / RE
-- **Status**: ⚠️ Implemented (data-driven approximation, 2026-10-21) — exact original formula still to reverse.
+- **Status**: ⚠️ Implemented (data-driven approximation + arrival bus, 2026-10-21) — exact original formula still to reverse.
   - `ArrivalScheduler` (pure, unit-tested): a group every `TimeBetweenArrivals × 0.1 s` (150 → 15 s) of
     `FixedRate + rating / PointsPerVisitor (+ NewParkBonus in year 1)`, at least `MinPeople`, capped at 250 in park.
   - Visitors stay `PeepInfo.ExitLevel ± ExitLevelVar` seconds (the .sam calls it the ExitLevel counter "in
@@ -94,3 +94,15 @@ Each visitor arrives with its type's `StartingCash` (the second column of the co
 `PeepTypes[i].PreferredExcitement.StartingCash.BoredomThreshold` key — 300–750) ± `PeepInfo.StartingCashVarPc` (15%),
 pays the admission from it, and spends it at stalls and sideshows; one who can't afford what it came for goes home.
 `SettingsPair` now keeps the rest of a `.sam` line (`Rest`) so later columns are readable. Unit-tested.
+
+## The arrival bus (2026-10-21)
+
+`ArrivalBus` now brings each arriving group. The bus body is authored (-183, -285) from the entrance tile — anchored
+there it rests inside the road tunnel of the terrain's `road_rhs bend02`, out of sight. The forecourt road is a U
+(traced from the `road_*` mesh vertices): the left arm climbs out of that tunnel, the top runs under the
+`arrival_roof` then `depart_roof` shelters, the right arm drops to the far tunnel. The bus drives out of the tunnel
+to the arrival shelter (facing along the road, lifted to the road height), releases the group there (3 s, the
+script's offload), drives on past the departure shelter and disappears into the far tunnel; groups queue while it
+runs (40 per trip). Same route in all four worlds (same entrance tile and forecourt; each world's bus is its own
+colour). The visitors still appear just outside the gate rather than walking up from the shelter, and the route is
+hand-traced rather than the original's (the engine's vehicle path is still unreversed).

@@ -475,6 +475,9 @@ public class Level
 		// once so test runs keep their crowd.
 		visitorSpawn = (gate, terrain, pathGraph);
 		arrivals = new ArrivalScheduler( arrivalSettings );
+		arrivalBus = ArrivalBus.TryCreate( $"levels/{Current.Name}", gate, terrain );
+		if ( arrivalBus != null )
+			arrivalBus.Offload = SpawnVisitors;
 		Peep.LeaveOnExit = true;
 		if ( Environment.GetEnvironmentVariable( "OPENTPW_AUTOPLACE" ) != null )
 			ToggleGates();
@@ -523,6 +526,7 @@ public class Level
 	private const int MaxWaitingAtGate = 60;
 	private static ArrivalSettings arrivalSettings = ArrivalSettings.Defaults;
 	private static (Vector3 Gate, ParkTerrain Terrain, PathGraph Paths)? visitorSpawn;
+	private static ArrivalBus? arrivalBus; // brings each arriving group to the gate (null: they appear there)
 	private static int visitorSerial;
 
 	// Spawn a group of visitors fanned out just outside the gate so they don't all stack on one tile.
@@ -1196,6 +1200,7 @@ public class Level
 		ChallengeManager.Current = null;
 		GoldenTicketGoals.Current = null;
 		WeatherSim.Current = null;
+		arrivalBus = null;
 
 		var next = new Level( theme );
 		global::Global.Render.OnUpdate += next.Update;
@@ -1261,10 +1266,14 @@ public class Level
 			int arriving = arrivals.Update( Time.Delta, Peep.AverageHappiness, GameClock.Current?.TotalDays ?? 0, inPark );
 			if ( arriving > 0 )
 			{
-				SpawnVisitors( arriving );
-				Log.Info( $"[park] {arriving} visitor(s) arrived ({inPark + arriving} in park)" );
+				if ( arrivalBus != null )
+					arrivalBus.Dispatch( arriving );
+				else
+					SpawnVisitors( arriving );
+				Log.Info( $"[park] {arriving} visitor(s) arriving ({inPark} in park)" );
 			}
 		}
+		arrivalBus?.Update( Time.Delta, Time.Now );
 		WeatherAudio.Update();                 // rain loop + thunder claps follow the weather (T-056)
 
 		// Diagnostic: periodically report the park's balance and the cumulative income/cost flows.
