@@ -49,6 +49,8 @@ public class Level
 		// Visitor arrivals belong to a loaded park; the lobby (and a park being rebuilt) starts without them (T-074).
 		arrivals = null;
 		Peep.LeaveOnExit = false;
+		GatesOpen = false;
+		openedOnce = false;
 
 		SunLight = new Sun() { Position = new( 0, 100, 100 ) };
 
@@ -418,10 +420,13 @@ public class Level
 		var gate = grid.PointToWorld( gateTx, gateTy );
 		Log.Info( $"[park] entrance gate at tile ({gateTx:0.0},{gateTy:0.0})" );
 		// The opening crowd, then arrivals in groups at the gate (T-074); departing visitors leave for good.
+		// A new park opens its gates when the player says so ("…then open the gates"); the dev autoplace park opens at
+		// once so test runs keep their crowd.
 		visitorSpawn = (gate, terrain, pathGraph);
-		SpawnVisitors( 30 );
 		arrivals = new ArrivalScheduler( arrivalSettings );
 		Peep.LeaveOnExit = true;
+		if ( Environment.GetEnvironmentVariable( "OPENTPW_AUTOPLACE" ) != null )
+			ToggleGates();
 		Log.Info( $"[park] build mode ready ({catalog.Count} catalog items), {parkQueues.Count} queues" );
 		// Staff start empty too — the player hires entertainers/handymen/guards/researchers from the
 		// catalog (T-043), each charged a hire cost and then drawing wages.
@@ -429,6 +434,28 @@ public class Level
 
 	// Visitor arrivals (T-074): the scheduler, its settings, and where/how new visitors spawn.
 	private static ArrivalScheduler? arrivals;
+
+	/// <summary>Whether the park's gates are open (the original's <c>mGatesOpen</c>): visitors only arrive while
+	/// they are. A new park starts closed.</summary>
+	public static bool GatesOpen { get; private set; }
+	private static bool openedOnce;
+
+	/// <summary>Open or close the gates. The first opening lets the opening crowd in; closing stops new arrivals
+	/// (visitors already inside stay until they leave).</summary>
+	public static void ToggleGates()
+	{
+		if ( arrivals == null )
+			return;
+		GatesOpen = !GatesOpen;
+		if ( GatesOpen && !openedOnce )
+		{
+			openedOnce = true;
+			SpawnVisitors( OpeningCrowd );
+		}
+		Log.Info( $"[park] gates {(GatesOpen ? "opened" : "closed")}" );
+	}
+
+	private const int OpeningCrowd = 30;
 	private static ArrivalSettings arrivalSettings = ArrivalSettings.Defaults;
 	private static (Vector3 Gate, ParkTerrain Terrain, PathGraph Paths)? visitorSpawn;
 	private static int visitorSerial;
@@ -1124,7 +1151,7 @@ public class Level
 		LevelSoundscape.Update();               // the park's ambient one-shots
 
 		// Visitor arrivals (T-074): a group at the gate every interval, sized by the park rating.
-		if ( arrivals != null )
+		if ( arrivals != null && GatesOpen )
 		{
 			int inPark = Entity.All.Count( e => e is Peep );
 			int arriving = arrivals.Update( Time.Delta, Peep.AverageHappiness, GameClock.Current?.TotalDays ?? 0, inPark );

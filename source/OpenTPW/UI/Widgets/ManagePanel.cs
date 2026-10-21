@@ -115,6 +115,12 @@ internal sealed class ManagePanel : HudPanel
 			list.Add( new Btn( new Rectangle( 370f, RideY, 84f, BtnH ), "FREE ROAM", zoned,
 				() => BuildMode.Current?.ClearSelectedStaffZone() ) );
 		}
+		// Nothing selected: the park gates (highlighted while closed — visitors only come once they're open).
+		else
+		{
+			list.Add( new Btn( new Rectangle( 16f, RideY, 130f, BtnH ), Level.GatesOpen ? "CLOSE PARK" : "OPEN PARK", true,
+				Level.ToggleGates, Warned: !Level.GatesOpen ) );
+		}
 		return list;
 	}
 

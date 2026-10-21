@@ -53,7 +53,7 @@ internal sealed class ParkStatsPanel : HudPanel
 		var lines = new List<string>
 		{
 			$"MONEY {fin.Money:0}",
-			$"VISITORS {visitors}",
+			Level.GatesOpen ? $"VISITORS {visitors}" : $"VISITORS {visitors}  -  PARK CLOSED (OPEN PARK, bottom left)",
 			$"ADMISSION {fin.EntryFee:0}  ([ ] adjust)",
 		};
 

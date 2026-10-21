@@ -69,3 +69,10 @@ the object and re-centres the footprint (T-072). Logging its parts: the body res
 for a game trigger (the arrival). Needs that trigger reversed (bus.RSE + the arrival object), a `DontApplyOffset`
 path in `Ride`/`RideEngine` (no footprint re-centring, keyframes in world space), then syncing a group's spawn to
 the bus's stop.
+
+## Park gates (2026-10-21)
+
+A new park now starts **closed** (the original's `mGatesOpen`; the advisor's opening line already says "…then open the
+gates"): no visitors until the player clicks **OPEN PARK** (bottom-left, highlighted while closed, shown when nothing is
+selected; the HUD says PARK CLOSED). The first opening lets the opening crowd of 30 in; arrivals only run while open;
+CLOSE PARK stops new arrivals. The `OPENTPW_AUTOPLACE` dev park opens at once. Verified with a scripted click.
