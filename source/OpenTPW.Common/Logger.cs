@@ -13,7 +13,15 @@ public class Logger
 		Error
 	};
 
-	public void Trace( object obj ) => Log( obj?.ToString(), Level.Trace );
+	/// <summary>Whether <see cref="Trace"/> lines are written: off unless <c>OPENTPW_TRACE=1</c>. The ride engine traces
+	/// every script event and animation, which buried the useful lines (thousands per minute).</summary>
+	public static bool TraceEnabled { get; set; } = Environment.GetEnvironmentVariable( "OPENTPW_TRACE" ) == "1";
+
+	public void Trace( object obj )
+	{
+		if ( TraceEnabled )
+			Log( obj?.ToString(), Level.Trace );
+	}
 	public void Info( object obj ) => Log( obj?.ToString(), Level.Info );
 	public void Info( object obj, bool quiet = false ) => Log( obj?.ToString(), Level.Info, quiet );
 	public void Warning( object obj ) => Log( obj?.ToString(), Level.Warning );

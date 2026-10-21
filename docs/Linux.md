@@ -196,3 +196,10 @@ see [03-disc-compatibility.md](03-disc-compatibility.md).
 | JDK | 21.0.11 | system | Required by Ghidra |
 | Ghidra | 12.1.2 PUBLIC | `~/ghidra_12.1.2_PUBLIC` | Reverse the original binaries |
 | 7-Zip | 23.01 | system (`/usr/bin/7z`) | Extract the provided archive |
+
+### Diagnostic output
+
+The game logs to stdout. Verbose trace lines (every ride-script event, animation and boarding cycle) are off by
+default; set **`OPENTPW_TRACE=1`** to see them. `OPENTPW_ECON_DEBUG=1` adds a periodic economy line (balance,
+income/cost flows, products sold).
+

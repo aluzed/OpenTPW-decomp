@@ -22,9 +22,7 @@ public partial class OpcodeHandlers
 		[OpcodeHandler( Opcode.COPY, "Copy a value" )]
 		public static void Copy( ref RideVM vm, Operand dest, Operand source )
 		{
-			Log.Trace( $"{dest.Value} -> {source.Value}" );
 			dest.Value = source.Value;
-			Log.Trace( $"res: {dest.Value}" );
 		}
 
 		[OpcodeHandler( Opcode.NAME, "Set ride name" )]
