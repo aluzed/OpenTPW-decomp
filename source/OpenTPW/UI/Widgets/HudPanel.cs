@@ -38,12 +38,16 @@ internal abstract class HudPanel : Panel
 
 	protected static Texture Solid( byte r, byte g, byte b, byte a ) => new( [r, g, b, a], 1, 1 );
 
-	// Draw a labelled button (filled rect + left-aligned label).
+	// Draw a labelled button (filled rect + left-aligned label). A label too long for the button is drawn smaller
+	// so it doesn't spill over its neighbour ("PRICE+ 45" ran into SELL, "FEE+ 20" into LOANS).
 	protected static void DrawButton( Rectangle rect, string label, Texture fill, float scale = LabelScale )
 	{
 		var mat = Material.UI;
 		mat.Set( "Color", fill );
 		Graphics.Quad( rect, mat );
+		int textWidth = Font.Atlas.Measure( label );
+		if ( textWidth > 0 )
+			scale = MathF.Min( scale, (rect.Width - 12f) / textWidth );
 		Graphics.DrawText( Font, label, rect.X + 8f, rect.Y + rect.Height - 7f * scale / LabelScale, TextAlign.Left, scale );
 	}
 

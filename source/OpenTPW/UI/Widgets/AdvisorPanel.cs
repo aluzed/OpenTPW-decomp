@@ -28,7 +28,9 @@ internal sealed class AdvisorPanel : HudPanel
 		Graphics.DrawText( Font, "ADVISOR", 236f, 128f, TextAlign.Left, 1.2f );
 		Graphics.DrawText( Font, tip, 236f, 106f, TextAlign.Left, 1.3f );
 
-		// Faint lip-sync diagnostic (clip + viseme), kept for debugging the speech path.
+		// Faint lip-sync diagnostic (clip + viseme), for debugging the speech path — with the debug overlay only (T-065).
+		if ( !GameSettings.Current.ShowDebug )
+			return;
 		var part = advisor.CurrentShape.MeshPartName() ?? "(closed)";
 		Graphics.DrawText( Font, $"{advisor.ClipName} {advisor.Elapsed:0.0}/{advisor.ClipLength:0.0}s  {advisor.CurrentShape} [{part}]",
 			236f, 84f, TextAlign.Left, 0.8f );
