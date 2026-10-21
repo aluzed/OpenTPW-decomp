@@ -110,6 +110,18 @@ public sealed class Peep : ModelEntity
 	private bool isPrankster;
 	private float prankTimer = PrankCheckSeconds;
 
+	// Stall-price verdicts since the advisor last looked, by AdvisorAdvice.PriceGroups.
+	private static int[] priceComplaints = new int[4], priceBargains = new int[4];
+
+	/// <summary>The stall-price complaints / bargains counted since the last call, by price group (and reset).</summary>
+	public static (int[] Complaints, int[] Bargains) TakePriceVerdicts()
+	{
+		var taken = (priceComplaints, priceBargains);
+		priceComplaints = new int[4];
+		priceBargains = new int[4];
+		return taken;
+	}
+
 	/// <summary>Purchases refused because the stall's price was far above its authored one.</summary>
 	public static int StallsRefused { get; private set; }
 
@@ -419,6 +431,7 @@ public sealed class Peep : ModelEntity
 				{
 					happiness = MathF.Max( 0f, happiness - 15f ); // MediumHappinessChange
 					StallsRefused++;
+					priceComplaints[AdvisorAdvice.PriceGroupOf( shopTarget.Category )]++;
 					refusedStalls.Add( shopTarget ); // not going back there this visit
 					shopTarget = null;
 					ResetPath();
@@ -426,6 +439,8 @@ public sealed class Peep : ModelEntity
 					return;
 				}
 				happiness = Math.Clamp( happiness + priceMood, 0f, 100f );
+				if ( priceMood != 0f && !shopTarget.IsFree )
+					(priceMood < 0f ? priceComplaints : priceBargains)[AdvisorAdvice.PriceGroupOf( shopTarget.Category )]++;
 				// No money for it: an unmet need sends the visitor home; a souvenir they can't afford is just skipped.
 				if ( shopTarget.Kind != ShopKind.Toilet && !TrySpend( shopTarget.Price ) )
 				{

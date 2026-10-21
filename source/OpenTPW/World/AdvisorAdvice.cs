@@ -14,7 +14,14 @@ public readonly record struct ParkSnapshot(
 	// Trailing defaults keep existing callers + tests compiling.
 	bool GoldenTicketWon = false,
 	bool ChallengeWon = false,
-	bool ChallengeLost = false );
+	bool ChallengeLost = false,
+	// Pricing: the entry fee's opinion (EntryFeeOpinion, 0–100) and whether the fee is above the always-happy
+	// minimum; and, per stall group (PriceGroups), how many purchases since the last tick found the price too high /
+	// a bargain.
+	float TicketSatisfaction = 50f,
+	bool FeeAboveMinimum = false,
+	int[]? PriceComplaints = null,
+	int[]? PriceBargains = null );
 
 /// <summary>
 /// Maps the live park state to advisor message candidates — <c>(id, group, score)</c> for the
@@ -27,6 +34,24 @@ public static class AdvisorAdvice
 {
 	// Message group per advice family (Advisor.sam groups: 0 general, 1 tutorial, 3 congrats, 4 research).
 	public const int GroupGeneral = 0, GroupTutorial = 1, GroupCongrats = 3, GroupResearch = 4;
+
+	/// <summary>The stall groups the original's price advice speaks about (TAG_SYSTEM.str 96–103), by index.</summary>
+	public static readonly string[] PriceGroups = { "Food", "Drinks", "Restaurant", "Shops" };
+
+	/// <summary>The price-advice group of a sale (food stalls, drinks, restaurants, souvenir shops).</summary>
+	public static int PriceGroupOf( SaleCategory c ) => c switch
+	{
+		SaleCategory.Drink => 1,
+		SaleCategory.Restaurant => 2,
+		SaleCategory.Gift or SaleCategory.Costume or SaleCategory.Balloon => 3,
+		_ => 0,
+	};
+
+	// Entry-fee advice (Advisor.sam PricingTicketTooExpensive/TooCheap defaults); stall price advice needs this many
+	// verdicts in a tick and scores this much per verdict (capped) — the .sam has no stall-pricing entries.
+	private const float TicketTooExpensiveUnder = 30f, TicketTooCheapOver = 80f, TicketPricingScore = 150f;
+	private const int PriceVerdictsToSpeak = 5;
+	private const float PriceScorePerVerdict = 10f, PriceScoreCap = 120f;
 
 	// Default scores when the .sam omits the key (matches the shipped jungle file).
 	private const float RedMonthScore = 110f, RedThreeScore = 50f, RedSixScore = 75f;
@@ -60,6 +85,23 @@ public static class AdvisorAdvice
 		if ( s.HungryVisitors > 0 )
 			list.Add( ("VisitorsHungry", GroupGeneral,
 				(c.Param( "VisitorsHungry", "ScorePerHungryPerson" ) ?? HungryPerPerson) * s.HungryVisitors) );
+
+		// The entry fee, as arriving visitors judge it.
+		if ( s.TicketSatisfaction < (c.Param( "PricingTicketTooExpensive", "TicketSatisfactionUnder" ) ?? TicketTooExpensiveUnder) )
+			list.Add( ("PricingTicketTooExpensive", GroupGeneral, c.Param( "PricingTicketTooExpensive", "Score" ) ?? TicketPricingScore) );
+		else if ( s.FeeAboveMinimum && s.TicketSatisfaction > (c.Param( "PricingTicketTooCheap", "TicketSatisfactionOver" ) ?? TicketTooCheapOver) )
+			list.Add( ("PricingTicketTooCheap", GroupGeneral, c.Param( "PricingTicketTooCheap", "Score" ) ?? TicketPricingScore) );
+
+		// Stall prices, as buyers judge them (complaints win over bargains for the same group).
+		for ( int g = 0; g < PriceGroups.Length; g++ )
+		{
+			int complaints = s.PriceComplaints is { } pc && g < pc.Length ? pc[g] : 0;
+			int bargains = s.PriceBargains is { } pb && g < pb.Length ? pb[g] : 0;
+			if ( complaints >= PriceVerdictsToSpeak )
+				list.Add( ($"Pricing{PriceGroups[g]}TooExpensive", GroupGeneral, MathF.Min( PriceScoreCap, complaints * PriceScorePerVerdict )) );
+			else if ( bargains >= PriceVerdictsToSpeak )
+				list.Add( ($"Pricing{PriceGroups[g]}TooCheap", GroupGeneral, MathF.Min( PriceScoreCap, bargains * PriceScorePerVerdict )) );
+		}
 
 		// New research finished and ready to apply.
 		if ( s.ResearchAvailable )

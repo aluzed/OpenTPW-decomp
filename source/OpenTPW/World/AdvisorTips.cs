@@ -25,6 +25,16 @@ public static class AdvisorTips
 		["CongratGoldenTicket"] = "You've won the Golden Ticket — every park goal is met. Magnificent work!",
 		["CongratChallengeWon"] = "Challenge complete! The prize is in the bank — ready for the next one?",
 		["ChallengeFailed"] = "That challenge slipped away this time. Don't worry — another will come along.",
+		["PricingTicketTooExpensive"] = "Visitors think your ticket price is too high.",
+		["PricingTicketTooCheap"] = "Visitors think your ticket price is cheap — you could raise it.",
+		["PricingFoodTooExpensive"] = "Your food is too expensive.",
+		["PricingFoodTooCheap"] = "Your food is very cheap — you could raise the price.",
+		["PricingDrinksTooExpensive"] = "Your drinks are too expensive.",
+		["PricingDrinksTooCheap"] = "Your drinks are a bargain — you could raise the price.",
+		["PricingRestaurantTooExpensive"] = "Your restaurant is too expensive.",
+		["PricingRestaurantTooCheap"] = "Your restaurant is very cheap — you could raise the price.",
+		["PricingShopsTooExpensive"] = "Your shops are too expensive.",
+		["PricingShopsTooCheap"] = "Your shops are cheap — you could raise the price.",
 	};
 
 	// Advice id → TAG_SYSTEM.str entry with the same meaning (first line only: the challenge entries continue with
@@ -41,6 +51,16 @@ public static class AdvisorTips
 		["CongratGoldenTicket"] = 120,
 		["CongratChallengeWon"] = 194, // "Challenge completed!"
 		["ChallengeFailed"] = 195,     // "Challenge failed..."
+		["PricingTicketTooExpensive"] = 94,
+		["PricingTicketTooCheap"] = 95,
+		["PricingFoodTooExpensive"] = 96,
+		["PricingFoodTooCheap"] = 97,
+		["PricingDrinksTooCheap"] = 98,
+		["PricingDrinksTooExpensive"] = 99,
+		["PricingShopsTooExpensive"] = 100,
+		["PricingShopsTooCheap"] = 101,
+		["PricingRestaurantTooExpensive"] = 102,
+		["PricingRestaurantTooCheap"] = 103,
 	};
 
 	private static string[]? tagSystem;

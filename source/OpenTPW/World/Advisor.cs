@@ -223,6 +223,8 @@ public sealed class Advisor : Entity
 	// golden ticket is won / a challenge is won or lost (T-054/T-055), rather than re-firing while the state holds.
 	private bool prevTicketAwarded;
 	private int prevChallengesWon, prevChallengesLost;
+	private readonly float[] complaintTally = new float[4], bargainTally = new float[4];
+	private const float PriceVerdictMemory = 30f; // seconds for a price verdict to fade (e-folding)
 
 	private ParkSnapshot BuildSnapshot()
 	{
@@ -230,6 +232,18 @@ public sealed class Advisor : Entity
 		float thirstThresh = config.Param( "VisitorsThirsty", "ThirstierThan" ) ?? 99f;
 		float hungerThresh = config.Param( "VisitorsHungry", "HungrierThan" ) ?? 99f;
 
+		// Stall-price verdicts: a running tally that fades over ~30 s, so a pricing problem builds up to advice.
+		var (newComplaints, newBargains) = Peep.TakePriceVerdicts();
+		float keep = MathF.Exp( -Time.Delta / PriceVerdictMemory );
+		var complaints = new int[newComplaints.Length];
+		var bargains = new int[newBargains.Length];
+		for ( int g = 0; g < complaints.Length; g++ )
+		{
+			complaintTally[g] = complaintTally[g] * keep + newComplaints[g];
+			bargainTally[g] = bargainTally[g] * keep + newBargains[g];
+			complaints[g] = (int)complaintTally[g];
+			bargains[g] = (int)bargainTally[g];
+		}
 		bool ticketAwarded = GoldenTicketGoals.Current?.Awarded ?? false;
 		int won = ChallengeManager.Current?.Won ?? 0;
 		int lost = ChallengeManager.Current?.Lost ?? 0;
@@ -249,7 +263,11 @@ public sealed class Advisor : Entity
 			ResearchAvailable: Entity.All.OfType<Ride>().Any( r => r.NextResearched ),
 			GoldenTicketWon: ticketJustWon,
 			ChallengeWon: challengeJustWon,
-			ChallengeLost: challengeJustLost );
+			ChallengeLost: challengeJustLost,
+			TicketSatisfaction: EntryFeeOpinion.ArrivalHappinessNow(),
+			FeeAboveMinimum: (fin?.EntryFee ?? 0f) > EntryFeeOpinion.Settings.MinimumEntryFee,
+			PriceComplaints: complaints,
+			PriceBargains: bargains );
 	}
 
 	protected override void OnUpdate()

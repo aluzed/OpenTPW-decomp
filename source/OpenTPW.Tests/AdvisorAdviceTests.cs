@@ -107,4 +107,24 @@ CongratVisitorsHappy.Score				60
 		var lost = AdvisorAdvice.Evaluate( Healthy() with { ChallengeLost = true }, c );
 		Assert.IsTrue( lost.Any( a => a.Id == "ChallengeFailed" && a.Group == AdvisorAdvice.GroupGeneral ) );
 	}
+
+	[TestMethod]
+	public void PricingAdviceFollowsTheVerdicts()
+	{
+		var c = new AdvisorConfig( System.Array.Empty<SettingsPair>() );
+		var dear = AdvisorAdvice.Evaluate( new ParkSnapshot( 1000f, 0, 0, 0, 50f, false, TicketSatisfaction: 20f ), c );
+		Assert.IsTrue( dear.Any( a => a.Id == "PricingTicketTooExpensive" && a.Score == 150f ) );
+		var cheapAtMinimum = AdvisorAdvice.Evaluate( new ParkSnapshot( 1000f, 0, 0, 0, 50f, false, TicketSatisfaction: 100f ), c );
+		Assert.IsFalse( cheapAtMinimum.Any( a => a.Id.StartsWith( "PricingTicket" ) ), "the minimum fee is not 'too cheap'" );
+		var cheap = AdvisorAdvice.Evaluate( new ParkSnapshot( 1000f, 0, 0, 0, 50f, false, TicketSatisfaction: 100f, FeeAboveMinimum: true ), c );
+		Assert.IsTrue( cheap.Any( a => a.Id == "PricingTicketTooCheap" ) );
+
+		var stalls = AdvisorAdvice.Evaluate( new ParkSnapshot( 1000f, 0, 0, 0, 50f, false,
+			PriceComplaints: new[] { 6, 0, 0, 2 }, PriceBargains: new[] { 9, 7, 0, 0 } ), c );
+		Assert.IsTrue( stalls.Any( a => a.Id == "PricingFoodTooExpensive" ), "complaints win over bargains" );
+		Assert.IsFalse( stalls.Any( a => a.Id == "PricingFoodTooCheap" ) );
+		Assert.IsTrue( stalls.Any( a => a.Id == "PricingDrinksTooCheap" ) );
+		Assert.IsFalse( stalls.Any( a => a.Id.StartsWith( "PricingShops" ) ), "2 complaints aren't enough" );
+		Assert.AreEqual( 3, AdvisorAdvice.PriceGroupOf( SaleCategory.Balloon ) );
+	}
 }

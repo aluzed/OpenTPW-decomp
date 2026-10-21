@@ -152,3 +152,11 @@ visitors, money warnings, research, happy visitors, golden ticket, challenge won
 Tested whether the voice clips follow the same numbering: the durations of `global/speech` `sp_NNN` (from the 637
 `.LIP` files) don't correlate with the `TAG_SYSTEM` text lengths at any offset −2…+10 (r ≈ 0.1), so the clips aren't
 indexed by message — consistent with the runtime-assembled message database noted above.
+
+## Update (2026-10-21) — pricing advice
+
+The advisor now gives the original's pricing advice: `PricingTicketTooExpensive` / `TooCheap` from the arriving
+visitors' entry-fee opinion against `Advisor.sam`'s `TicketSatisfactionUnder 30` / `Over 80` (score 150; "too cheap"
+only above the always-happy minimum fee), and per stall group — food, drinks, restaurant, souvenir shops — when
+buyers' price verdicts (`EntryFeeOpinion.StallPriceMood`) pile up (≥ 5 in a ~30 s fading tally): TAG_SYSTEM.str
+94–103 in the selected language. Long messages wrap onto two lines in the advisor panel.
