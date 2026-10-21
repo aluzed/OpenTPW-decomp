@@ -17,6 +17,7 @@
 | [06-rse-vm-opcodes.md](06-rse-vm-opcodes.md) | RSE ride-script VM: opcode table + arities |
 | [07-ghidra-render.md](07-ghidra-render.md) | Native render loop & frame pacing (DDraw + D3D execute buffers + MMX software) |
 | [08-ghidra-animation.md](08-ghidra-animation.md) | Ride animation (vertex keyframes in sibling `.md2` files) & `.sgn` signs, RE'd |
+| [10-ui-reference.md](10-ui-reference.md) | The original in-game HUD and windows, measured from captures — the target for the UI rework |
 | [Linux.md](Linux.md) | Step-by-step setup guide for the Linux toolchain (.NET, Ghidra, deps) |
 | [tickets/](tickets/) | Backlog of actionable tickets derived from build + test runs |
 
