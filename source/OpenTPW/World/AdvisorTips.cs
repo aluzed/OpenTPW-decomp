@@ -6,6 +6,9 @@ namespace OpenTPW;
 /// so OpenTPW carries its own readable tip text keyed by the advice id the rule-engine raises
 /// (<see cref="AdvisorAdvice.Evaluate"/>). This turns the talking bug head from decoration into a useful
 /// hint: the HUD shows what the advisor is actually telling you.
+/// <para>Where the game has the same advice in <c>TAG_SYSTEM.str</c> (the original advisor messages), that text is used
+/// instead — so it reads as in the original and follows the selected language (<see cref="GameLanguage"/>); the
+/// English tips below remain the fallback (and the welcome line, which has no counterpart).</para>
 /// </summary>
 public static class AdvisorTips
 {
@@ -24,12 +27,46 @@ public static class AdvisorTips
 		["ChallengeFailed"] = "That challenge slipped away this time. Don't worry — another will come along.",
 	};
 
-	/// <summary>The readable tip for an advice id, or a sensible fallback if it isn't mapped yet.</summary>
+	// Advice id → TAG_SYSTEM.str entry with the same meaning (first line only: the challenge entries continue with
+	// a prize amount the game fills in).
+	private static readonly Dictionary<string, int> GameText = new()
+	{
+		["InTheRedMonthLeft"] = 123,   // "You have run out of money! … It might be wise to take out a loan."
+		["InTheRedThreeMonths"] = 125, // "You have had no money for three months…"
+		["InTheRedSixMonths"] = 126,   // "You have had no money for five months now…" (the last warning)
+		["VisitorsThirsty"] = 9,
+		["VisitorsHungry"] = 10,
+		["NewResearchGroupRide"] = 68, // "It's about time you researched some ride upgrades…"
+		["CongratVisitorsHappy"] = 161,
+		["CongratGoldenTicket"] = 120,
+		["CongratChallengeWon"] = 194, // "Challenge completed!"
+		["ChallengeFailed"] = 195,     // "Challenge failed..."
+	};
+
+	private static string[]? tagSystem;
+
+	/// <summary>The readable tip for an advice id: the game's own message when mapped, else OpenTPW's English tip,
+	/// else a generic line.</summary>
 	public static string TextFor( string messageId )
 	{
 		if ( string.IsNullOrEmpty( messageId ) )
 			return "";
+		if ( GameText.TryGetValue( messageId, out var index ) && GameMessage( index ) is { } original )
+			return original;
 		return Tips.TryGetValue( messageId, out var text ) ? text : "The advisor has something to say...";
+	}
+
+	// TAG_SYSTEM.str entry `index`, first line, trimmed; null when unavailable.
+	private static string? GameMessage( int index )
+	{
+		if ( tagSystem == null )
+		{
+			try { tagSystem = new StringFile( GameLanguage.File( "TAG_SYSTEM.str" ) ).Entries; }
+			catch { tagSystem = Array.Empty<string>(); }
+		}
+		if ( index < 0 || index >= tagSystem.Length || string.IsNullOrWhiteSpace( tagSystem[index] ) )
+			return null;
+		return tagSystem[index].Split( '\n' )[0].Trim();
 	}
 
 	/// <summary>Whether a tip id has authored text (vs. the generic fallback) — for tests.</summary>
