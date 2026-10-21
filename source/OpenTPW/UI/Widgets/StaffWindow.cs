@@ -48,7 +48,9 @@ internal sealed class StaffWindow : GameWindow
 			return;
 
 		DrawFrame( "w_park" );
-		DrawHeading( string.IsNullOrEmpty( staff.PersonalName ) ? StaffNames.For( staff.Role ) : $"{StaffNames.For( staff.Role )} - {staff.PersonalName}", 460f, 0f, 44f );
+		if ( EditableHeading( string.IsNullOrEmpty( staff.PersonalName ) ? StaffNames.For( staff.Role ) : $"{StaffNames.For( staff.Role )} - {staff.PersonalName}", 460f, 44f, 85 ) )
+			RenameDialog.Open( Localization.Get( UIStrings.RenameStaffMember, "Rename Staff Member" ), Localization.Get( UIStrings.EmployeeName, "Employee name" ),
+				staff.PersonalName, name => staff.PersonalName = name );
 		DrawInset( Preview );
 		if ( UiTexture( Portrait( staff.Role ) ) is { } face )
 			Fill( At( 201f, 113f, 120f, 120f ), face );

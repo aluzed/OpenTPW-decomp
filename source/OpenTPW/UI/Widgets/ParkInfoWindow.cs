@@ -70,7 +70,9 @@ internal sealed class ParkInfoWindow : GameWindow
 			return;
 
 		DrawFrame( "w_park" );
-		DrawHeading( Localization.Get( UIStrings.ParkInformation, "Park Information" ), 470f, 0f, 46f );
+		if ( EditableHeading( Level.ParkName is { Length: > 0 } park ? park : Localization.Get( UIStrings.ParkInformation, "Park Information" ), 470f, 46f, 191 ) )
+			RenameDialog.Open( Localization.Get( UIStrings.RenamePark, "Rename Park" ), Localization.Get( UIStrings.ParkName, "Park name" ),
+				Level.ParkName, name => Level.ParkName = name );
 
 		// Series buttons: the series' own colour, dimmed when hidden.
 		for ( int i = 0; i < AllSeries.Length; i++ )

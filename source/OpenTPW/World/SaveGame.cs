@@ -29,6 +29,7 @@ public sealed class SaveGame
 	public List<string> GoldenTickets { get; set; } = new(); // the golden tickets won, by goal (T-055)
 	public List<string>? Researched { get; set; }              // the items researched (null: an older save — keep the start set)
 	public Dictionary<string, float> ResearchProgress { get; set; } = new(); // each category's research progress
+	public string ParkName { get; set; } = "";       // the name the player gave the park
 	public Dictionary<string, float> TrainingBudgets { get; set; } = new(); // each role's monthly training budget
 	public MetaInfo? Meta { get; set; }               // at-a-glance slot summary (T-061; null on pre-Meta saves)
 
@@ -67,6 +68,8 @@ public sealed class SaveGame
 		public float Ingredient { get; set; } = 50f;
 		/// <summary>A ride's length setting (1 = its own).</summary>
 		public float DurationScale { get; set; } = 1f;
+		/// <summary>The name the player gave a ride or stall (null: its own).</summary>
+		public string? Title { get; set; }
 		/// <summary>A ride's queue path cells from the entrance out, as x, y pairs (null: the default straight run).</summary>
 		public List<int>? Queue { get; set; }
 		public int? ChanceOfLosing { get; set; }

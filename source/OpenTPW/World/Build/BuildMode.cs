@@ -326,6 +326,14 @@ public sealed class BuildMode : Entity
 		var down = Input.Keyboard.KeysDown;
 		bool Hit( Key k ) => down.Contains( k ) && !prevDown.Contains( k );
 
+		// A text box has the keyboard (renaming): no hotkeys.
+		if ( Input.TextCapture )
+		{
+			prevDown.Clear();
+			prevDown.UnionWith( down );
+			return;
+		}
+
 		for ( int i = 0; i < NumberKeys.Length && i < Catalog.Count; i++ )
 			if ( Hit( NumberKeys[i] ) && IsBuildable( i ) && putDown == null )
 				Selected = i;

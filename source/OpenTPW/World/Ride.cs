@@ -461,6 +461,9 @@ public class Ride : Entity
 	/// <summary>The grid cells this ride's queue path reserved — freed on sell/demolish (T-041).</summary>
 	public List<(int X, int Y)> QueuePathCells { get; } = new();
 
+	/// <summary>The player renamed the ride (its window's title), so the save keeps the name.</summary>
+	public bool Renamed { get; set; }
+
 	/// <summary>The queue path leading to the entrance, which the queue tool reshapes (null: no entrance).</summary>
 	public QueuePath? QueuePath { get; set; }
 

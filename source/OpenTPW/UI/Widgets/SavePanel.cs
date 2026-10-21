@@ -76,7 +76,7 @@ internal sealed class SavePanel : GameWindow
 			bool filled = slots[i] != null;
 			if ( i > 0 )
 				Fill( At( 146f, top - 6f, 608f, 1f ), SolidOf( 24, 54, 140 ) );
-			Text( Small, $"Slot {slot}", 152f, top, 13f, TitleInk );
+			Text( Small, slots[i] is { ParkName.Length: > 0 } save ? $"Slot {slot} - {save.ParkName}" : $"Slot {slot}", 152f, top, 13f, TitleInk );
 			Text( Small, slots[i]?.Summary() ?? "- empty -", 152f, top + 22f, 11f, filled ? default : new( 0.6f, 0.6f, 0.6f ) );
 
 			Text( Small, "Save", 626f, top + 10f, 11f, default, TextAlign.Right );

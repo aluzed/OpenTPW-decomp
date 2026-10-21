@@ -18,6 +18,9 @@ public class Level
 	/// <summary>The level's folder name (e.g. <c>jungle</c>) — locates per-level assets like the minimap image.</summary>
 	public string Name { get; private init; }
 
+	/// <summary>The name the player gave the park (park information's title), empty until they do.</summary>
+	public static string ParkName { get; set; } = "";
+
 	// True when this Level is the front-end menu (no park loaded) rather than a playable park (T-063).
 	private readonly bool menuMode;
 
@@ -146,6 +149,7 @@ public class Level
 		GameClock.Current.OnNewMonth += Staff.ConsiderStrikes;
 		// Staff training budgets: spent on training as each month closes, counted with the staff costs.
 		StaffTraining.Current = new StaffTraining();
+		ParkName = "";
 		GameClock.Current.OnNewMonth += () =>
 		{
 			if ( StaffTraining.Current is not { } training || ParkFinances.Current is not { } fin )
@@ -687,7 +691,7 @@ public class Level
 		foreach ( var r in Entity.All.OfType<Ride>() )
 			s.Placements.Add( new SaveGame.Placement
 			{
-				Kind = "ride", Name = Path.GetFileName( r.Archive ),
+				Kind = "ride", Name = Path.GetFileName( r.Archive ), Title = r.Renamed ? r.Name : null,
 				TileX = r.TileX, TileY = r.TileY, Rotation = r.Rotation, TicketPrice = r.TicketPrice,
 				// Progression (T-059 v2): research/upgrade level + condition + the park-wide research-queue slot.
 				UpgradeLevel = r.UpgradeLevel, ResearchedLevel = r.ResearchedLevel,
@@ -700,7 +704,7 @@ public class Level
 		foreach ( var sh in Shop.Stalls )
 			s.Placements.Add( new SaveGame.Placement
 			{
-				Kind = "shop", Name = sh.CatalogKey, TileX = sh.TileX, TileY = sh.TileY,
+				Kind = "shop", Name = sh.CatalogKey, Title = sh.CustomName, TileX = sh.TileX, TileY = sh.TileY,
 				TicketPrice = sh.Price, // reuse the generic price field for the stall's sale price (T-041)
 				Filth = sh.Filth, Closed = sh.IsClosed, Quality = sh.Quality, Ingredient = sh.IngredientAmount,
 			} );
@@ -746,6 +750,7 @@ public class Level
 		s.GoldenTickets = GoldenTicketGoals.Current?.Won.ToList() ?? new();
 		s.Researched = ItemResearch.Current?.Unlocked.ToList();
 		s.ResearchProgress = ItemResearch.Current?.CategoryProgress ?? new();
+		s.ParkName = ParkName;
 		s.TrainingBudgets = StaffTraining.Current?.Budgets.ToDictionary( b => b.Key.ToString(), b => b.Value ) ?? new();
 
 		// Slot-menu metadata (T-061): an at-a-glance summary so the player can tell saves apart.
@@ -809,6 +814,11 @@ public class Level
 					if ( p.Closed )
 						ride.SetClosed( true );
 					ride.DurationScale = p.DurationScale;
+					if ( p.Title is { } title )
+					{
+						ride.Name = title;
+						ride.Renamed = true;
+					}
 					if ( p.Queue is { Count: >= 2 } queue )
 						ride.QueuePath?.Restore( Enumerable.Range( 0, queue.Count / 2 ).Select( i => (queue[2 * i], queue[2 * i + 1]) ) );
 					if ( p.PrizeCost is { } prize )
@@ -826,6 +836,7 @@ public class Level
 				shop.Filth = p.Filth;
 				shop.IsClosed = p.Closed;
 				shop.Quality = p.Quality;
+				shop.CustomName = p.Title;
 				shop.IngredientAmount = p.Ingredient;
 			}
 		}
@@ -875,6 +886,7 @@ public class Level
 		GoldenTicketGoals.Current?.RestoreAwarded( s.GoldenTicketAwarded, s.GoldenTickets );
 		if ( s.Researched != null )
 			ItemResearch.Current?.Restore( s.Researched, s.ResearchProgress );
+		ParkName = s.ParkName;
 		StaffTraining.Current = new StaffTraining();
 		foreach ( var (role, amount) in s.TrainingBudgets )
 			if ( Enum.TryParse<StaffRole>( role, out var r ) )
@@ -1221,7 +1233,7 @@ public class Level
 
 	/// <summary>A ride picked up to be moved (the ride window's move button): what it was, to rebuild it as it was.</summary>
 	public sealed record MovedRide( string Archive, int UpgradeLevel, int ResearchedLevel, float Reliability, bool Closed,
-		float TicketPrice, float BuildCost, int FromX, int FromY, int FromRotation, int PrizeCost, int ChanceOfLosing );
+		float TicketPrice, float BuildCost, int FromX, int FromY, int FromRotation, int PrizeCost, int ChanceOfLosing, string? Title = null );
 
 	/// <summary>Pick <paramref name="ride"/> up to move it: it leaves the park (no refund) and comes back free where it's
 	/// put down. Rides with a laid track can't be moved (the track would be lost).</summary>
@@ -1230,7 +1242,8 @@ public class Level
 		if ( ride.Track != null || ride.TileTrack != null || ride.IsResearching )
 			return null;
 		var moved = new MovedRide( ride.Archive, ride.UpgradeLevel, ride.ResearchedLevel, ride.Reliability, ride.IsClosed,
-			ride.TicketPrice, ride.BuildCost, ride.TileX, ride.TileY, ride.Rotation, ride.SideshowCostOfGoods, ride.SideshowChanceOfLoosing );
+			ride.TicketPrice, ride.BuildCost, ride.TileX, ride.TileY, ride.Rotation, ride.SideshowCostOfGoods, ride.SideshowChanceOfLoosing,
+			ride.Renamed ? ride.Name : null );
 		DemolishRide( ride, grid, refundIt: false );
 		return moved;
 	}
@@ -1247,6 +1260,11 @@ public class Level
 			ride.BuildCost = moved.BuildCost;
 			ride.SideshowCostOfGoods = moved.PrizeCost;
 			ride.SideshowChanceOfLoosing = moved.ChanceOfLosing;
+			if ( moved.Title is { } title )
+			{
+				ride.Name = title;
+				ride.Renamed = true;
+			}
 			if ( moved.Closed )
 				ride.SetClosed( true );
 		}
@@ -1342,12 +1360,12 @@ public class Level
 
 	// Sell/demolish a placed stall (T-041): free its footprint cells, refund part of the cost, remove it.
 	/// <summary>A stall picked up to be moved: what it was, to rebuild it as it was.</summary>
-	public sealed record MovedShop( float Price, float Filth, bool Closed, float BuildCost, int FromX, int FromY, float Quality, float Ingredient );
+	public sealed record MovedShop( float Price, float Filth, bool Closed, float BuildCost, int FromX, int FromY, float Quality, float Ingredient, string? Title = null );
 
 	/// <summary>Pick <paramref name="shop"/> up to move it (no refund).</summary>
 	public static MovedShop PickUpShop( Shop shop, PlacementGrid grid )
 	{
-		var moved = new MovedShop( shop.Price, shop.Filth, shop.IsClosed, shop.BuildCost, shop.TileX, shop.TileY, shop.Quality, shop.IngredientAmount );
+		var moved = new MovedShop( shop.Price, shop.Filth, shop.IsClosed, shop.BuildCost, shop.TileX, shop.TileY, shop.Quality, shop.IngredientAmount, shop.CustomName );
 		DemolishShop( shop, grid, refundIt: false );
 		return moved;
 	}
@@ -1364,6 +1382,7 @@ public class Level
 			shop.IsClosed = moved.Closed;
 			shop.BuildCost = moved.BuildCost;
 			shop.Quality = moved.Quality;
+			shop.CustomName = moved.Title;
 			shop.IngredientAmount = moved.Ingredient;
 		}
 		UiSounds.Play( UiSounds.LaySmall );
@@ -1457,6 +1476,7 @@ public class Level
 			Hud.AddChild( new MessageTags() );    // the message tags down the right edge
 			Hud.AddChild( new ParkListWindow() ); // all items / staff / visitors (park information, V)
 			Hud.AddChild( new TrainingWindow() ); // staff training budgets (from the staff list)
+			Hud.AddChild( new RenameDialog() );   // renaming a ride, stall or staff member (click their name)
 			Hud.AddChild( new FinancePanel() );   // F11 income/expense graph (T-049)
 			Hud.AddChild( new MinimapPanel() );   // corner minimap (M toggles, click pans) (T-057)
 			Hud.AddChild( new SavePanel() );      // F8 save/load slot menu with park summaries (T-061)

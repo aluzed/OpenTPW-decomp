@@ -104,7 +104,10 @@ public sealed class Shop : ModelEntity
 	}
 
 	/// <summary>Display name (for the manage UI): the stall's own <c>Info.Name</c> when its data loaded.</summary>
-	public string Name => title ?? Kind switch { ShopKind.Drink => "Drink Stall", ShopKind.Toilet => "Toilet", ShopKind.Item => "Gift Shop", ShopKind.Bin => "Litter Bin", _ => "Food Stall" };
+	/// <summary>The name the player gave the stall (shop window), else null.</summary>
+	public string? CustomName { get; set; }
+
+	public string Name => CustomName ?? title ?? Kind switch { ShopKind.Drink => "Drink Stall", ShopKind.Toilet => "Toilet", ShopKind.Item => "Gift Shop", ShopKind.Bin => "Litter Bin", _ => "Food Stall" };
 	private readonly string? title;
 
 	/// <summary>What one sale costs the park in goods (<c>UsageInfo.InitCostOfGoods</c>); the profit is the price minus this.</summary>

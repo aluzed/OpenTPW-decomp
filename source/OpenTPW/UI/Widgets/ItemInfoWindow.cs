@@ -125,7 +125,9 @@ internal sealed class ItemInfoWindow : GameWindow
 
 	private static void RenderRide( BuildMode build, ParkFinances fin, Ride ride )
 	{
-		DrawHeading( ride.Name, 460f, 0f, 44f );
+		if ( EditableHeading( ride.Name, 460f, 44f, ride.IsSideshow ? 37 : 3 ) )
+			RenameDialog.Open( Localization.Get( UIStrings.RenameItem, "Rename Item" ), Localization.Get( UIStrings.Name, "Name" ), ride.Name,
+				name => { ride.Name = name; ride.Renamed = true; } );
 		ItemPreview.For( ride.Archive, Path.GetFileName( ride.Archive ) )?.Draw( Preview );
 		Text( Small, ride.IsBroken ? "Broken down!" : ride.Riders > 0 ? $"{ride.Riders} riding" : "", 261f, 250f, 11f,
 			ride.IsBroken ? LockedInk : default, TextAlign.Center );
@@ -202,7 +204,9 @@ internal sealed class ItemInfoWindow : GameWindow
 
 	private static void RenderShop( BuildMode build, ParkFinances fin, Shop shop )
 	{
-		DrawHeading( shop.Name, 460f, 0f, 44f );
+		if ( EditableHeading( shop.Name, 460f, 44f, 22 ) )
+			RenameDialog.Open( Localization.Get( UIStrings.RenameItem, "Rename Item" ), Localization.Get( UIStrings.Name, "Name" ), shop.Name,
+				name => shop.CustomName = name );
 		if ( shop.Archive is { } archive )
 			ItemPreview.For( archive, Path.GetFileName( archive ) )?.Draw( Preview );
 

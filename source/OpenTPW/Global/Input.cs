@@ -16,6 +16,12 @@ public static partial class Input
 
 	/// <summary>The right button went down this frame (a quick click included, like <see cref="MouseLeftPressed"/>).</summary>
 	public static bool MouseRightPressed { get; private set; }
+
+	/// <summary>The characters typed this frame, as the keyboard layout produced them.</summary>
+	public static string TypedText { get; private set; } = "";
+
+	/// <summary>Set while a text box has the keyboard: the park's keys (WASD, window hotkeys) stand down.</summary>
+	public static bool TextCapture { get; set; }
 	private static bool _lastMouseRight;
 	private static bool _lastMouseLeft;
 
@@ -157,6 +163,13 @@ public static partial class Input
 		Forward = 0;
 
 		Keyboard = new KeyboardInfo( NextKeysDown( Keyboard.KeysDown, inputSnapshot.KeyEvents ) );
+		TypedText = new string( inputSnapshot.KeyCharPresses.Where( c => !char.IsControl( c ) ).ToArray() );
+		if ( TextCapture )
+		{
+			LastKeysDown = [.. KeysDown];
+			KeysDown.Clear();
+			return;
+		}
 
 		bool IsKeyPressed( Key k ) => Keyboard.KeysDown.Contains( k );
 

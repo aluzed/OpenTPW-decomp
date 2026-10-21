@@ -252,6 +252,18 @@ internal abstract class GameWindow : HudPanel
 		return new Rectangle( r.X + r.Width * 0.84f, r.Y + r.Height * 0.12f, 42f, 42f );
 	}
 
+	/// <summary>A window's title that is a name to edit (UIHELPTEXT "Name of ride - left-click to edit"): drawn as
+	/// <see cref="DrawHeading"/>, with the game's <paramref name="hint"/> under the cursor; true when clicked.</summary>
+	protected static bool EditableHeading( string title, float centreX, float top, int hint )
+	{
+		DrawHeading( title, centreX, 0f, top );
+		float w = Measure( Medium, title, 17f );
+		if ( !Contains( At( centreX - w / 2f - 6f, top - 4f, w + 12f, 26f ), MouseBase() ) )
+			return false;
+		hoverHint = UiHelp.Text( hint, "" );
+		return Input.MouseLeftPressed;
+	}
+
 	/// <summary>The window's title (yellow, centred at the top) and the balance at the top right (none when
 	/// <paramref name="right"/> is 0).</summary>
 	protected static void DrawHeading( string title, float centreX, float right, float top )
