@@ -1,7 +1,9 @@
 namespace OpenTPW;
 
 /// <summary>
-/// A piece of dropped litter lying on the ground (a small flat quad). Visitors drop it as they wander;
+/// A piece of dropped litter lying on the ground: one of the game's litter sprites (<c>esprites/Generic/Litter/SPR_LI</c>
+/// — a wrapper, a cup, a can…; frames 6/7 are sick puddles, not dropped here), drawn like a visitor's sprite (camera-facing,
+/// anchored at its hotspot, the kids' pixel scale), else a small brown quad. Visitors drop it as they wander;
 /// nearby litter sours their mood, and handymen (see <see cref="Staff"/>) roam to pick it up. Tracked in
 /// <see cref="All"/> so both peeps and handymen can find it cheaply without scanning every entity.
 /// </summary>
@@ -29,10 +31,52 @@ public sealed class Litter : ModelEntity
 
 	private Litter( Vector3 groundPos )
 	{
-		Model = SharedModel();
-		Position = groundPos.WithZ( groundPos.Z + 0.2f ); // just above the terrain to avoid z-fighting
-		Scale = new Vector3( 1.5f );
+		if ( Sheet() is { } sheet )
+		{
+			Model = sheet.FrameModel( Random.Shared.Next( Math.Min( DryLitterFrames, sheet.FrameCount ) ) );
+			Position = groundPos;
+			Scale = new Vector3( SpriteScale, 1f, SpriteScale );
+			isSprite = true;
+			FaceCamera();
+		}
+		else
+		{
+			Model = SharedModel();
+			Position = groundPos.WithZ( groundPos.Z + 0.2f ); // just above the terrain to avoid z-fighting
+			Scale = new Vector3( 1.5f );
+		}
 		Active.Add( this );
+	}
+
+	// The litter sheet's first six frames are dropped rubbish; the last two are sick puddles.
+	private const int DryLitterFrames = 6;
+	// World units per sprite pixel: a visitor (~10.4 units) is drawn from a ~43 px tall frame.
+	private const float SpriteScale = 10.4f / 43f;
+	private readonly bool isSprite;
+	private static bool sheetTried;
+	private static SpriteSheet? sheet;
+
+	private static SpriteSheet? Sheet()
+	{
+		if ( !sheetTried )
+		{
+			sheetTried = true;
+			sheet = SpriteSheet.Load( "esprites/Generic/Litter", "SPR_LI" );
+		}
+		return sheet;
+	}
+
+	protected override void OnUpdate()
+	{
+		if ( isSprite )
+			FaceCamera();
+	}
+
+	private void FaceCamera()
+	{
+		var cam = Camera.Position;
+		float yaw = MathF.Atan2( -(cam.X - Position.X), cam.Y - Position.Y );
+		Rotation = System.Numerics.Quaternion.CreateFromAxisAngle( System.Numerics.Vector3.UnitZ, yaw );
 	}
 
 	/// <summary>Remove this litter from the world (a handyman cleaned it up).</summary>

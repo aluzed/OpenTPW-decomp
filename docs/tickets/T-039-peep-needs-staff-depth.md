@@ -10,6 +10,8 @@
   bins its rubbish (random litter and the wrappers stalls hand out) instead of dropping it (`Shop.Discard`).
   Vandalism still scatters litter on the ground. Stray (non-wrapper) litter dropped to ~1 piece per 2 minutes of
   wandering (was one per 25 s, which pinned a 250-visitor park at the 300-piece cap).
+  Litter now draws as the game's own rubbish sprites (`esprites/Generic/Litter/SPR_LI`: wrapper, cup, can…, at the
+  visitors' pixel scale) instead of a brown square.
 - **Related**: [T-034](T-034-peeps.md) (needs, economy, staff — core done).
 
 ## Context
