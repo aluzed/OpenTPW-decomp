@@ -3,7 +3,8 @@ namespace OpenTPW;
 /// <summary>
 /// A ride's name sign. Ride models map their signboard to the shared <c>sign1</c>/<c>sign2</c> textures, which are
 /// placeholders — "SIGN1"/"SIGN2" on pink — that the game swaps for the ride's own name at runtime; we drew the
-/// placeholder, a pink bar by every ride. This renders the ride's name (one or two lines, scaled to fit) in the
+/// placeholder, a pink bar by every ride. (Monkey.sam even declares them: <c>SignTextures[0..1].FileName</c> =
+/// sign1.tga / sign2.tga; the other 123 rides/stalls/sideshows follow the same names by convention.) This renders the ride's name (one or two lines, scaled to fit) in the
 /// front-end's MENUMED font, dark on a cream board.
 /// </summary>
 public static class RideSign
