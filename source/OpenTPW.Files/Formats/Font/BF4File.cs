@@ -143,8 +143,10 @@ public sealed class BF4File : BaseFormat
 			var hasMetrics = block.Length >= 24;
 			var width = hasMetrics ? BinaryPrimitives.ReadUInt16LittleEndian( block.AsSpan( 16, 2 ) ) : 0;
 			var height = hasMetrics ? BinaryPrimitives.ReadUInt16LittleEndian( block.AsSpan( 18, 2 ) ) : 0;
-			var xBearing = hasMetrics ? block[20] : 0;
-			var yBearing = hasMetrics ? block[21] : 0;
+			// Signed: a glyph that starts left of the pen (j, $, digits in the CASH fonts…) stores -1 as 0xFF — read
+			// unsigned it was drawn ~255 px to the right (the stray "j" over the HUD).
+			var xBearing = hasMetrics ? (sbyte)block[20] : 0;
+			var yBearing = hasMetrics ? (sbyte)block[21] : 0;
 			var advance = hasMetrics ? BinaryPrimitives.ReadUInt16LittleEndian( block.AsSpan( 22, 2 ) ) : 0;
 			var encoding = hasMetrics
 				? (GlyphEncoding)BinaryPrimitives.ReadUInt32LittleEndian( block.AsSpan( 12, 4 ) )

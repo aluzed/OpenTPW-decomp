@@ -68,3 +68,10 @@ text is drawn (loading screen, `PurpleButton` labels).
 `source/OpenTPW.Files/Formats/Font/BF4File.cs` (`DecodeBitmap`),
 `source/OpenTPW.Files/Formats/Font/FontAtlas.cs` (alpha blit),
 `source/OpenTPW/UI/Widgets/PurpleButton.cs` (font choice).
+
+## 2026-10-21 — bearings are signed
+
+The glyph bearings (block bytes 20/21) are **signed** bytes: across the shipped fonts many glyphs start left of
+the pen or above the line (`j` = -1…-11, `$`, the digits of the CASH fonts, accented capitals → 0xFF, 0xFE…). Read
+unsigned, such a glyph was drawn ~255 px away — the stray "j" floating over the in-park HUD while "adjust" read
+"ad ust". `BF4File` now casts them to `sbyte`; unit-tested (`BearingsAreSignedBytes`), verified on the HUD.

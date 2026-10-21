@@ -46,6 +46,18 @@ public class BF4FileTests
 	}
 
 	[TestMethod]
+	public void BearingsAreSignedBytes()
+	{
+		// A 'j' starting one pixel left of the pen and an accent one pixel above the line: 0xFF / 0xFE on disk.
+		var block = GlyphBlock( 'j', 0, 0, Array.Empty<byte>() );
+		block[20] = 0xFF;
+		block[21] = 0xFE;
+		var font = new BF4File( new MemoryStream( BuildFont( block ) ) );
+		Assert.AreEqual( -1, font.Glyphs[0].XBearing );
+		Assert.AreEqual( -2, font.Glyphs[0].YBearing );
+	}
+
+	[TestMethod]
 	public void ParsesHeaderAndGlyphCharCodes()
 	{
 		var bytes = BuildFont(
