@@ -671,7 +671,7 @@ public class Level
 			{
 				Kind = "shop", Name = sh.CatalogKey, TileX = sh.TileX, TileY = sh.TileY,
 				TicketPrice = sh.Price, // reuse the generic price field for the stall's sale price (T-041)
-				Filth = sh.Filth,
+				Filth = sh.Filth, Closed = sh.IsClosed,
 			} );
 
 		// Staff (T-059 v2): role + wander centre + patrol zone — respawned on load (they roam, so no grid tile).
@@ -785,6 +785,7 @@ public class Level
 				if ( p.TicketPrice > 0f )
 					shop.Price = p.TicketPrice;
 				shop.Filth = p.Filth;
+				shop.IsClosed = p.Closed;
 			}
 		}
 

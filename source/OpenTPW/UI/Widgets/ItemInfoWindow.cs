@@ -181,6 +181,7 @@ internal sealed class ItemInfoWindow : GameWindow
 		if ( RoundButton( Action( 143f ), "b_delete_login" ) )
 			build.SellSelected();
 		RoundButton( Action( 217f ), "b_move", enabled: false );
-		RoundButton( Action( 672f, 93f ), "b_dooro", enabled: false );
+		if ( RoundButton( Action( 672f, 93f ), shop.IsClosed ? "b_doorc" : "b_dooro" ) )
+			shop.IsClosed = !shop.IsClosed;
 	}
 }

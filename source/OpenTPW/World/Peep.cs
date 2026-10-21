@@ -1114,7 +1114,7 @@ public sealed class Peep : ModelEntity
 		float bestD2 = ImpulseRadius * ImpulseRadius;
 		foreach ( var s in Shop.Stalls )
 		{
-			if ( s.Kind != ShopKind.Item || bought.Contains( s.Category ) || Cash < s.Price || refusedStalls.Contains( s ) )
+			if ( s.Kind != ShopKind.Item || s.IsClosed || bought.Contains( s.Category ) || Cash < s.Price || refusedStalls.Contains( s ) )
 				continue;
 			float d2 = (s.Position - Position).LengthSquared;
 			if ( d2 < bestD2 )
@@ -1150,7 +1150,7 @@ public sealed class Peep : ModelEntity
 			if ( urgency < 1f )
 				continue;
 			foreach ( var stall in Shop.Stalls )
-				if ( stall.Kind == kind && !refusedStalls.Contains( stall ) )
+				if ( stall.Kind == kind && !stall.IsClosed && !refusedStalls.Contains( stall ) )
 				{
 					// A toilet's queue counts as extra walk (per waiting visitor, shared over its places), so the
 					// crowd spreads over the park's toilets instead of all queueing at the nearest.

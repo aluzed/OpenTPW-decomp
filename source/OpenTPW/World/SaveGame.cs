@@ -59,7 +59,7 @@ public sealed class SaveGame
 		public int ResearchQueuePos { get; set; } = -1; // park-wide research-queue order (-1 = not queued)
 		public float Reliability { get; set; } = 1f;
 		public bool Broken { get; set; }
-		/// <summary>The player closed the ride (its gate).</summary>
+		/// <summary>The player closed the ride or shop (its gate).</summary>
 		public bool Closed { get; set; }
 	}
 

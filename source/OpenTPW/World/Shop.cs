@@ -110,6 +110,9 @@ public sealed class Shop : ModelEntity
 	/// <summary>What one sale costs the park in goods (<c>UsageInfo.InitCostOfGoods</c>); the profit is the price minus this.</summary>
 	public float CostOfGoods { get; set; }
 
+	/// <summary>Closed by the player (the shop window's gate): visitors don't use it.</summary>
+	public bool IsClosed { get; set; }
+
 	// This month's trade and last month's (the shop window's "Customers / Takings / Profit last month").
 	private int customers;
 	private float takings, goods;
@@ -221,7 +224,7 @@ public sealed class Shop : ModelEntity
 		float bestD2 = float.MaxValue;
 		foreach ( var s in Stalls )
 		{
-			if ( s.Kind != kind )
+			if ( s.Kind != kind || s.IsClosed )
 				continue;
 			float dx = s.Position.X - from.X, dy = s.Position.Y - from.Y;
 			float d2 = dx * dx + dy * dy;
