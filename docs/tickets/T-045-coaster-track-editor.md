@@ -2,7 +2,7 @@
 
 - **Priority**: 🟡 Feature
 - **Type**: Engine / UI / reverse engineering
-- **Status**: ⚠️ Slices 1–3b done — the coaster **station** is placeable via the build catalog and
+- **Status**: ✅ Done (2026-10-21) — coaster tracks with hills and loops, kart / water tracks from pieces; discrete curved coaster pieces stay a nice-to-have (T-052). Previously: ⚠️ Slices 1–3b done — the coaster **station** is placeable via the build catalog and
   renders/queues like any ride, a **track-laying tool** extends elevated track segments from the
   station's `>` connector and **closes into a circuit** at the `<` entry connector, a **train of real
   `CrocCar.MD2` cars** runs the track (shuttling when open, a continuous loop when closed), **real peeps
