@@ -2,7 +2,7 @@
 
 - **Priority**: 🟡 Feature
 - **Type**: Engine / reverse engineering
-- **Status**: ⚠️ Mostly done — the "7 particle pools / per-pool library" model was **wrong** (single
+- **Status**: ✅ Done (2026-10-21) — previously ⚠️ Mostly done — the "7 particle pools / per-pool library" model was **wrong** (single
   particle library; the pools are **sound categories** in a unified effect manager), and the EVENT type
   routing is now **split per that corrected RE**: types 3-4 & 10 → particle, 5-9 → category sounds (each
   its own `cat_*BANK.map`). **3D node positioning is wired**, and the **positional audio bus now exists**:

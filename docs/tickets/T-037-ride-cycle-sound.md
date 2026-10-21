@@ -2,7 +2,7 @@
 
 - **Priority**: 🟡 Feature
 - **Type**: Engine / reverse engineering
-- **Status**: ⚠️ Mostly done — wrong-sound bugs fixed; the **global sound registry** is decoded and
+- **Status**: ✅ Done (2026-10-21) — previously ⚠️ Mostly done — wrong-sound bugs fixed; the **global sound registry** is decoded and
   `EVENT` is wired end to end (types 1-2 = real positioned sounds, types 3-10 = authentic `.PLB` particle
   effects). Ride duration comes from the running-animation length. Remaining: per-pool `.PLB` mapping,
   `COAST`/`BUMP`/`ADDOBJ` residue, and 3D positioning. See "Done" / "Remaining".
@@ -114,3 +114,9 @@ are sentinels (the skip is correct — only one particle library, `Tp2.plb` 0..1
 
 `source/OpenTPW/World/Rides/RideEngine.cs`, `Ride.cs`, `RideQueue.cs`,
 `source/OpenTPW.Files/Public/MapFile.cs`.
+
+## Closed (2026-10-21, night)
+
+The remaining items resolved: the "per-type effect pools" are sound categories (T-047) — EVENT / ADDOBJ types 3-4
+play the level's own ride / ambient banks, 10 the ride's own bank; `COAST` has no sound trigger and `BUMP`'s knock is
+wired; effects and the riders' screams are positioned (node / moving car).
