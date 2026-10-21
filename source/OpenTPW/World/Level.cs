@@ -1124,7 +1124,11 @@ public class Level
 			grid.Clear( tx, ty, footprint );
 			return false;
 		}
-		if ( charge ) fin?.PayBuild( item.Cost );
+		if ( charge )
+		{
+			fin?.PayBuild( item.Cost );
+			UiSounds.Play( item.RidePath != null && item.Width * item.Height > 2 ? UiSounds.LayRide : UiSounds.LaySmall );
+		}
 		if ( item.RidePath != null && Entity.All.OfType<Ride>().LastOrDefault() is { } placedRide )
 		{
 			if ( placedRide.Shape.HasTrack )

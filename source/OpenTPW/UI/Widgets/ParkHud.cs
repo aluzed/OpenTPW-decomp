@@ -154,6 +154,7 @@ internal sealed class ParkHud : HudPanel
 				{
 					pressed = i;
 					pressedAt = Time.Now;
+					UiSounds.Play( UiSounds.Button );
 					Buttons[i].Act!();
 				}
 		}

@@ -169,6 +169,8 @@ public sealed class BuildMode : Entity
 	/// park (T-041). No-op if nothing is selected. Exposed for the manage UI + the Delete shortcut.</summary>
 	public void SellSelected()
 	{
+		if ( SelectedRide != null || SelectedShop != null )
+			UiSounds.Play( UiSounds.Sell );
 		if ( SelectedRide is { } ride )
 		{
 			if ( track?.Owner == ride )

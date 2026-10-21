@@ -37,6 +37,7 @@ internal sealed class GoldenTicketPanel : GameWindow
 		{
 			showing = pending.Dequeue();
 			showUntil = Time.Now + ShowSeconds;
+			UiSounds.Play( UiSounds.GoldTicket );
 		}
 		else if ( showing != null && Time.Now >= showUntil )
 			showing = null;

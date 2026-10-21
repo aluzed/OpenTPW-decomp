@@ -37,8 +37,18 @@ internal abstract class GameWindow : HudPanel
 	/// <summary>A rectangle given in capture coordinates (960×720, Y down) — the 4:3 picture centred on the base screen.</summary>
 	protected static Rectangle At( float x, float top, float w, float h ) => new( x + 160f, 720f - top - h, w, h );
 
-	/// <summary>Is the window open.</summary>
-	public bool IsOpen { get; protected set; }
+	/// <summary>Is the window open (opening it plays the original's window sound).</summary>
+	public bool IsOpen
+	{
+		get => isOpen;
+		protected set
+		{
+			if ( value && !isOpen && Time.Now > 1f )
+				UiSounds.Play( UiSounds.Open );
+			isOpen = value;
+		}
+	}
+	private bool isOpen;
 
 	private static readonly List<WeakReference<GameWindow>> windows = new();
 
@@ -137,7 +147,10 @@ internal abstract class GameWindow : HudPanel
 			Fill( draw, t, enabled ? default : Dimmed );
 		else
 			UiModel.Load( texture )?.Draw( draw, null, enabled ? default : Dimmed ); // a button with no flat texture (b_upgrade)
-		return enabled && over && Input.MouseLeftPressed;
+		bool clicked = enabled && over && Input.MouseLeftPressed;
+		if ( clicked )
+			UiSounds.Play( UiSounds.Button );
+		return clicked;
 	}
 
 	private static readonly Dictionary<int, Texture> solids = new();

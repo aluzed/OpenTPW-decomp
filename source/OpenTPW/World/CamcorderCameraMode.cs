@@ -21,6 +21,7 @@ public sealed class CamcorderCameraMode : CameraMode
 	{
 		Camera.SetCameraMode<CamcorderCameraMode>();
 		Active = true;
+		UiSounds.Play( UiSounds.Camera );
 		Log.Info( "[camera] camcorder on" );
 	}
 
