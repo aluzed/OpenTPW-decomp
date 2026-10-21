@@ -161,6 +161,7 @@ internal sealed class ParkStatsPanel : HudPanel
 					: $"STAFF {StaffNames.For( staffSel.Role )}  free roam (FIRE/SET ZONE buttons)" );
 				// Grade + training, energy and happiness (T-049 depth).
 				lines.Add( $"GRADE {staffSel.Grade}" + (staffSel.CanTrain ? $" (+{staffSel.TrainingPoints:0}%)" : "")
+					+ $"  {Localization.Get( UIStrings.MonthlyWage, "Monthly wage" )} {Staff.MonthlyWage( staffSel.Role, staffSel.Grade ):0}"
 					+ $"  ENERGY {staffSel.Energy:0}  MOOD {staffSel.Morale:0}"
 					+ (StaffStrikes.Current?.IsStriking( staffSel.Role ) == true ? "  ON STRIKE" : "") );
 			}

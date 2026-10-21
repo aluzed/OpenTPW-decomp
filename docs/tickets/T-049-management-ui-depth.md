@@ -92,3 +92,11 @@ From `Standard.sam`'s staff tables (`StaffGrades`, pure + unit-tested) and the s
   `StaffHappier*`, `StrikeEndBad*`), with the `Advisor.sam` scores. Not reversed: the handymen's extra litter-ratio
   grievance (`FUN_004c8180/FUN_004c8150` against a constant), the strike walk-out animation.
 - Saves keep each staffer's grade, training, energy and mood.
+
+## Monthly wages (2026-10-21, night)
+
+With the calendar at the original's pace (T-076) and the original's arrival rate (T-074), wages are now the authored
+**monthly** wage `PerGradeStaffConsts[grade].BaseWage × PerTypeStaffConsts[type].PayMultiplier` (a grade-1 handyman 50 a
+month, a grade-4 researcher 420), paid as it accrues over the ~173 s month (`Staff.MonthlyWage` / `WagePerSecond`) —
+the per-second level tuned for the old 8 s month (1.5/s a head) is gone. The selected staffer's HUD line shows its
+"Monthly wage" (UITEXT 65). The jungle dev park now holds its balance (≈ +900 over 160 s with five staff).

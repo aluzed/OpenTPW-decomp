@@ -38,31 +38,34 @@ public readonly record struct PatrolZone( Vector3 Center, float Radius )
 /// </summary>
 public sealed class Staff : ModelEntity
 {
-	// Wages: the park-wide level stays at an average of 1.5/s per member of staff, split by Standard.sam's
-	// PerTypeStaffConsts[n].PayMultiplier (handyman 10, mechanic 30, entertainer 15, guard 20, researcher 35 — their
-	// mean is 22): a mechanic costs three handymen. (The authored BaseWage × multiplier is in an unknown time unit,
-	// so only the ratios are taken.)
-	private const float AverageWagePerSecond = 1.5f;
+	// Wages: a monthly wage of PerGradeStaffConsts[grade].BaseWage × PerTypeStaffConsts[type].PayMultiplier (Standard.sam:
+	// BaseWage 4 / 5 / 6 / 8 / 12, multipliers handyman 10, mechanic 30, entertainer 15, guard 20, researcher 35 — a
+	// grade-1 handyman earns 50 a month, a grade-4 researcher 420), paid as it accrues over the original's ~3-minute
+	// month (T-076). The staff window's figure is the "Monthly wage" (UITEXT 65).
 	private const float AveragePayMultiplier = 22f;
 
 	/// <summary><c>PerTypeStaffConsts[n].PayMultiplier</c> by role (Standard.sam order: handyman, mechanic, entertainer,
 	/// guard, researcher).</summary>
 	public static float[] PayMultipliers { get; set; } = { 10f, 30f, 15f, 20f, 35f };
 
-	/// <summary>The wage per second for a role at a grade (pure): the role's pay ratio, scaled by the grade's
-	/// <c>BaseWage</c> relative to grade 1 (<see cref="StaffGrades.WageFactor"/>).</summary>
-	public static float WagePerSecond( StaffRole role, int grade ) => WagePerSecond( role ) * StaffGrades.Current.WageFactor( grade );
+	/// <summary>The monthly wage for a role at a grade (pure): <c>BaseWage[grade] × PayMultiplier[role]</c>.</summary>
+	public static float MonthlyWage( StaffRole role, int grade )
+		=> StaffGrades.Current.BaseWage[Math.Clamp( grade, 0, StaffGrades.MaxGrade )] * PayMultiplier( role );
 
-	/// <summary>The wage per second for a role at grade 1 (pure).</summary>
-	public static float WagePerSecond( StaffRole role )
+	/// <summary>The wage per real second for a role at a grade: its <see cref="MonthlyWage"/> over the month.</summary>
+	public static float WagePerSecond( StaffRole role, int grade ) => MonthlyWage( role, grade ) / GameClock.SecondsPerMonth;
+
+	/// <summary>The wage per real second for a role at grade 1 (pure).</summary>
+	public static float WagePerSecond( StaffRole role ) => WagePerSecond( role, 1 );
+
+	private static float PayMultiplier( StaffRole role )
 	{
 		int i = role switch
 		{
 			StaffRole.Handyman => 0, StaffRole.Mechanic => 1, StaffRole.Entertainer => 2,
 			StaffRole.Guard => 3, _ => 4,
 		};
-		float m = i < PayMultipliers.Length ? PayMultipliers[i] : AveragePayMultiplier;
-		return AverageWagePerSecond * m / AveragePayMultiplier;
+		return i < PayMultipliers.Length ? PayMultipliers[i] : AveragePayMultiplier;
 	}
 	private const float CellSize = 10f;        // one map cell (the placement grid's tile) in world units
 	private const float ReachDistance = 3f;    // how close counts as "arrived" / "picked up"

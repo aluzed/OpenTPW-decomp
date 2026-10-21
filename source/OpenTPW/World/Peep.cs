@@ -563,8 +563,11 @@ public sealed class Peep : ModelEntity
 			return;
 		}
 
-		// Being in the park is tiring; a long enough day (or a soured mood) sends the peep home.
-		energy -= energyDrainPerSec * Time.Delta;
+		// Being in the park is tiring; a long enough day (or a soured mood) sends the peep home. The stay counts down
+		// while walking about only — like the original's mExitLevel, decremented in the wandering state
+		// (FUN_00501650), not while queueing (or riding, which returned above).
+		if ( route.PositionOf( this ) < 0 )
+			energy -= energyDrainPerSec * Time.Delta;
 
 		// Visitors occasionally drop litter, and standing among litter sours the mood (until a handyman
 		// clears it). Both raise the chance the peep heads home unhappy. A nearby guard deters littering.

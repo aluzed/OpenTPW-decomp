@@ -11,8 +11,6 @@ public class StaffDepthTests
 	public void GradesScaleWagesAndWorkFromTheShippedTables()
 	{
 		var g = new StaffGrades();
-		Assert.AreEqual( 1f, g.WageFactor( 1 ), 1e-5f, "grade 1 is the tuned wage level" );
-		Assert.AreEqual( 12f / 5f, g.WageFactor( 4 ), 1e-5f, "BaseWage 12 vs 5" );
 		Assert.AreEqual( 20f, g.RepairSeconds( 0 ), 1e-5f, "MechanicConstsPerGrade[0].WorkDuration 80 turns" );
 		Assert.AreEqual( 5f, g.RepairSeconds( 4 ), 1e-5f );
 		Assert.AreEqual( 2f, g.ResearchFactor( 4 ), 1e-5f, "ResearchAbility 6 vs 3" );

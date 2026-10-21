@@ -4,8 +4,8 @@ namespace OpenTPW;
 
 /// <summary>
 /// Staff grades and training (T-049 follow-up), from <c>levels/Standard.sam</c>: every member of staff has a grade
-/// 0–4. Better-trained staff are paid more (<c>PerGradeStaffConsts[g].BaseWage</c> 4 / 5 / 6 / 8 / 12, times the
-/// role's <c>PayMultiplier</c>), rest less (<c>IdleDuration</c>), recover faster (<c>RecuperationRate</c>,
+/// 0–4. Better-trained staff are paid more (a monthly <c>PerGradeStaffConsts[g].BaseWage</c> 4 / 5 / 6 / 8 / 12, times
+/// the role's <c>PayMultiplier</c> — <see cref="Staff.MonthlyWage"/>), rest less (<c>IdleDuration</c>), recover faster (<c>RecuperationRate</c>,
 /// <c>HappinessRecuperationRate</c>) and work better: a handyman sees litter further (<c>DetectionRange</c> cells),
 /// a mechanic repairs faster (<c>WorkDuration</c>), an entertainer reaches further and cheers harder
 /// (<c>ActivationDistance</c>, <c>HappinessEffectOnCell</c>), a researcher researches faster
@@ -115,10 +115,6 @@ public sealed class StaffGrades
 
 	/// <summary>What one training percent costs at <paramref name="grade"/> (0 at the top grade: it can't improve).</summary>
 	public float CostPerTrainingPoint( StaffRole role, int grade ) => poundsPerPoint[role][Clamp( grade )];
-
-	/// <summary>A role's pay relative to a grade-1 handyman-to-researcher average: <c>BaseWage[grade]</c> over
-	/// <c>BaseWage[1]</c> (the wage level the economy was tuned at).</summary>
-	public float WageFactor( int grade ) => BaseWage[Clamp( grade )] / MathF.Max( 1e-3f, BaseWage[1] );
 
 	/// <summary>Seconds a member of staff idles between jobs.</summary>
 	public float IdleSeconds( int grade ) => IdleDuration[Clamp( grade )] / TurnsPerSecond;
