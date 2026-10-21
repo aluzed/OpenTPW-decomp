@@ -192,3 +192,11 @@ index**}. 610 responses: every advisor text has 2–3 recorded takes (e.g. text 
 `data/global/Speech/speechHD.SDT` with its lip-sync from `lips.wad` (the bank is preloaded in the background while
 the welcome plays). Advice the game never voiced keeps the level's `sp_001`. Verified in game: "StaffHireMechanics3"
 → `sp_032`/`sp_033`, "CongratVisitorsHappy" → `sp_405`/`sp_407`, "FeaturesNotEnoughToilets" → `sp_233`/`sp_234`.
+
+## Gestures (2026-10-22) — not decoded
+
+Each advisor model ships its gestures next to it (`Advisor_<THEME>m1..20.MD2`, `Advisorm1..15.MD2`). They are not
+the ride keyframe format: read with `RideKeyframeFile` they yield surface indices past the model's 18 meshes
+(s22), denormal translations (6e-40) and every morph block starting at slots 50..51 — so the header/record layout
+differs. Playing them needs that format reversed first (the loader in `tp.exe`); left for later. The advisor stays
+in his rest pose (both gloves, smiling mouth), lip-synced.
