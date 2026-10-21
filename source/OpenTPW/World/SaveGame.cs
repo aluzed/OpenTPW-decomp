@@ -140,10 +140,10 @@ public sealed class SaveGame
 	public string Summary()
 	{
 		if ( Meta is { } m )
-			return $"${m.Money:0}  Y{m.Year} M{m.Month} D{m.Day}  {m.Rides}R {m.Shops}S  {m.Visitors}v";
+			return $"Year {m.Year}, month {m.Month}, day {m.Day}  -  $ {m.Money:0}  -  {m.Rides} rides, {m.Shops} shops, {m.Visitors} visitors";
 		int rides = Placements.Count( p => p.Kind == "ride" );
 		int shops = Placements.Count( p => p.Kind == "shop" );
-		return $"${Money:0}  {rides}R {shops}S";
+		return $"$ {Money:0}  -  {rides} rides, {shops} shops";
 	}
 
 	private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };

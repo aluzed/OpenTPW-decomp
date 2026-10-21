@@ -171,10 +171,10 @@ public class SaveGameTests
 		Assert.IsNotNull( back.Meta );
 		Assert.AreEqual( 137, back.Meta!.Visitors );
 		var summary = back.Summary();
-		StringAssert.Contains( summary, "$8200" );
-		StringAssert.Contains( summary, "Y2 M5 D14" );
-		StringAssert.Contains( summary, "4R 2S" );
-		StringAssert.Contains( summary, "137v" );
+		StringAssert.Contains( summary, "$ 8200" );
+		StringAssert.Contains( summary, "Year 2, month 5, day 14" );
+		StringAssert.Contains( summary, "4 rides, 2 shops" );
+		StringAssert.Contains( summary, "137 visitors" );
 	}
 
 	[TestMethod]
@@ -187,8 +187,8 @@ public class SaveGameTests
 
 		// No Meta block (a pre-T-061 save) → summary derived from money + placement counts.
 		var summary = s.Summary();
-		StringAssert.Contains( summary, "$500" );
-		StringAssert.Contains( summary, "2R 1S" );
+		StringAssert.Contains( summary, "$ 500" );
+		StringAssert.Contains( summary, "2 rides, 1 shops" );
 	}
 
 	[TestMethod]
