@@ -371,6 +371,17 @@ public sealed class Peep : ModelEntity
 	private float wrapperTimer = -1f;
 
 	/// <summary>True when the visitor bought a balloon / costume this visit (challenge types 9 and 10).</summary>
+	/// <summary>The visitor's figures for their window (0–1 each: how pressing the need is, 1 = must go now).</summary>
+	public float Happiness => happiness;
+	public float Hunger => Math.Clamp( hunger / HungerThreshold, 0f, 1f );
+	public float ThirstLevel => Math.Clamp( thirst / ThirstThreshold, 0f, 1f );
+	public float Bladder => Math.Clamp( bladder / BladderThreshold, 0f, 1f );
+	public float EnergyLevel => Math.Clamp( energy / MaxEnergy, 0f, 1f );
+
+	/// <summary>Their name, from the game's list (<c>FEMALE_NAMES.str</c>; the visitors are a mixed crowd of kids).</summary>
+	public string PersonalName => personalName ??= VisitorNames.Random();
+	private string? personalName;
+
 	public bool HasBalloon => bought.Contains( SaleCategory.Balloon );
 	public bool HasCostume => bought.Contains( SaleCategory.Costume );
 

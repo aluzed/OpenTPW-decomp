@@ -95,7 +95,7 @@ internal sealed class ParkInfoWindow : GameWindow
 		DrawInset( ThoughtsBox );
 		var top = Peep.CrowdThoughtTally().OrderByDescending( kv => kv.Value ).Take( 3 ).ToList();
 		for ( int i = 0; i < top.Count; i++ )
-			if ( UiTexture( ThoughtIcon( top[i].Key ) ) is { } icon )
+			if ( UiTexture( ThoughtIcons.For( top[i].Key ) ) is { } icon )
 				Fill( At( 150f + i * 60f, 304f, 52f, 40f ), icon );
 		Text( Small, Localization.Get( UIStrings.Top3Thoughts, "Top 3 Thoughts" ), 235f, 348f, 11f, default, TextAlign.Center );
 
@@ -129,12 +129,4 @@ internal sealed class ParkInfoWindow : GameWindow
 					SolidOf( AllSeries[s].R, AllSeries[s].G, AllSeries[s].B )) );
 		DrawLineGraph( Graph, months, lines );
 	}
-
-	// The thought's icon in ui.wad (ti_*), by its index in THOUGHTS.str.
-	private static string ThoughtIcon( int thought ) => thought switch
-	{
-		1 => "ti_hungry", 2 => "ti_thirsty", 3 => "ti_hungthir", 4 => "ti_toilet", 5 => "ti_bad", 6 => "ti_good",
-		7 => "ti_litter", 8 => "ti_suhappy", 9 => "ti_happy", 11 => "ti_sad", 12 => "ti_bored", 13 => "ti_angry",
-		14 => "ti_sick", 15 => "ti_scared", 16 => "ti_queuebad", 17 => "ti_confused", _ => "ti_normal",
-	};
 }

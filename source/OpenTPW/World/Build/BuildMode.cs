@@ -86,6 +86,9 @@ public sealed class BuildMode : Entity
 	/// <summary>The staff member currently selected (clicked) in the Default tool — firable / zonable (T-049).</summary>
 	public Staff? SelectedStaff { get; private set; }
 
+	/// <summary>The visitor currently selected (clicked) — their window shows how they're getting on.</summary>
+	public Peep? SelectedPeep { get; private set; }
+
 	private const float StaffPickRadius = 18f;   // world distance from the clicked point that counts as "this staffer"
 	private const float DefaultZoneRadius = 80f;  // initial patrol-zone radius when first assigned
 	private const float ZoneStep = 20f;           // radius change per ZONE-/ZONE+ press
@@ -131,6 +134,7 @@ public sealed class BuildMode : Entity
 	/// <summary>Drop the selected ride / shop / staffer (the item window's close button).</summary>
 	public void ClearSelection()
 	{
+		SelectedPeep = null;
 		SelectedRide = null;
 		SelectedShop = null;
 		SelectedStaff = null;
@@ -142,6 +146,7 @@ public sealed class BuildMode : Entity
 		SelectedRide = ride;
 		SelectedShop = null;
 		SelectedStaff = null;
+		SelectedPeep = null;
 	}
 
 	/// <summary>Select <paramref name="staff"/> (opens their window).</summary>
@@ -150,6 +155,14 @@ public sealed class BuildMode : Entity
 		SelectedRide = null;
 		SelectedShop = null;
 		SelectedStaff = staff;
+		SelectedPeep = null;
+	}
+
+	/// <summary>Select <paramref name="peep"/> (opens their window).</summary>
+	public void SelectPeep( Peep peep )
+	{
+		ClearSelection();
+		SelectedPeep = peep;
 	}
 
 	/// <summary>Sell/demolish the selected ride or shop: refunds part of its cost and tears it out of the
@@ -372,12 +385,18 @@ public sealed class BuildMode : Entity
 			// Staff have no footprint, so pick the nearest one to the clicked point (T-049). A ride/shop
 			// under the cursor takes precedence.
 			SelectedStaff = SelectedRide == null && SelectedShop == null ? NearestStaffTo( c ) : null;
+			SelectedPeep = SelectedRide == null && SelectedShop == null && SelectedStaff == null ? NearestPeepTo( c ) : null;
 			Log.Info( SelectedRide != null ? $"[build] selected {SelectedRide.Name} (price {SelectedRide.TicketPrice:0})"
 				: SelectedShop != null ? $"[build] selected {SelectedShop.Name}"
 				: SelectedStaff != null ? $"[build] selected {SelectedStaff.Role}"
 				: $"[build] click tile ({tx},{ty})" );
 		}
 	}
+
+	// Nearest visitor in the park (not riding) to a world point, within the pick radius.
+	private static Peep? NearestPeepTo( Vector3 p )
+		=> Entity.All.OfType<Peep>().Where( v => (v.Position - p).WithZ( 0 ).LengthSquared <= StaffPickRadius * StaffPickRadius )
+			.OrderBy( v => (v.Position - p).WithZ( 0 ).LengthSquared ).FirstOrDefault();
 
 	// Nearest staff member to a world point, within the pick radius (XY) — null if none is close (T-049).
 	private static Staff? NearestStaffTo( Vector3 p )
