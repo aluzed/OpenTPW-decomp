@@ -681,6 +681,7 @@ public class Level
 				Researching = r.IsResearching, ResearchFraction = r.ResearchFraction,
 				ResearchQueuePos = ResearchQueue.Position( r ),
 				Reliability = r.Reliability, Broken = r.IsBroken, Closed = r.IsClosed,
+				PrizeCost = r.IsSideshow ? r.SideshowCostOfGoods : null, ChanceOfLosing = r.IsSideshow ? r.SideshowChanceOfLoosing : null,
 			} );
 		foreach ( var sh in Shop.Stalls )
 			s.Placements.Add( new SaveGame.Placement
@@ -792,6 +793,10 @@ public class Level
 					ride.RestoreProgress( p.UpgradeLevel, p.ResearchedLevel, p.Researching, p.ResearchFraction, p.Reliability, p.Broken );
 					if ( p.Closed )
 						ride.SetClosed( true );
+					if ( p.PrizeCost is { } prize )
+						ride.SideshowCostOfGoods = prize;
+					if ( p.ChanceOfLosing is { } lose )
+						ride.SideshowChanceOfLoosing = lose;
 					if ( ride.IsResearching )
 						researching.Add( (ride, p.ResearchQueuePos) );
 				}
@@ -1192,7 +1197,7 @@ public class Level
 
 	/// <summary>A ride picked up to be moved (the ride window's move button): what it was, to rebuild it as it was.</summary>
 	public sealed record MovedRide( string Archive, int UpgradeLevel, int ResearchedLevel, float Reliability, bool Closed,
-		float TicketPrice, float BuildCost, int FromX, int FromY, int FromRotation );
+		float TicketPrice, float BuildCost, int FromX, int FromY, int FromRotation, int PrizeCost, int ChanceOfLosing );
 
 	/// <summary>Pick <paramref name="ride"/> up to move it: it leaves the park (no refund) and comes back free where it's
 	/// put down. Rides with a laid track can't be moved (the track would be lost).</summary>
@@ -1201,7 +1206,7 @@ public class Level
 		if ( ride.Track != null || ride.TileTrack != null || ride.IsResearching )
 			return null;
 		var moved = new MovedRide( ride.Archive, ride.UpgradeLevel, ride.ResearchedLevel, ride.Reliability, ride.IsClosed,
-			ride.TicketPrice, ride.BuildCost, ride.TileX, ride.TileY, ride.Rotation );
+			ride.TicketPrice, ride.BuildCost, ride.TileX, ride.TileY, ride.Rotation, ride.SideshowCostOfGoods, ride.SideshowChanceOfLoosing );
 		DemolishRide( ride, grid, refundIt: false );
 		return moved;
 	}
@@ -1216,6 +1221,8 @@ public class Level
 			ride.RestoreProgress( moved.UpgradeLevel, moved.ResearchedLevel, false, 0f, moved.Reliability, false );
 			ride.TicketPrice = moved.TicketPrice;
 			ride.BuildCost = moved.BuildCost;
+			ride.SideshowCostOfGoods = moved.PrizeCost;
+			ride.SideshowChanceOfLoosing = moved.ChanceOfLosing;
 			if ( moved.Closed )
 				ride.SetClosed( true );
 		}

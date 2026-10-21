@@ -178,6 +178,17 @@ public class SaveGameTests
 	}
 
 	[TestMethod]
+	public void SideshowSettingsAndGateRoundTrip()
+	{
+		var s = new SaveGame();
+		s.Placements.Add( new SaveGame.Placement { Kind = "ride", Name = "shooting", PrizeCost = 12, ChanceOfLosing = 55, Closed = true } );
+		var back = SaveGame.FromJson( s.ToJson() )!.Placements[0];
+		Assert.AreEqual( 12, back.PrizeCost );
+		Assert.AreEqual( 55, back.ChanceOfLosing );
+		Assert.IsTrue( back.Closed );
+	}
+
+	[TestMethod]
 	public void SummaryFallsBackToPlacementsWithoutMeta()
 	{
 		var s = new SaveGame { Money = 500f };

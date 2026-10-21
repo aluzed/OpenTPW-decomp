@@ -122,8 +122,20 @@ internal sealed class ItemInfoWindow : GameWindow
 		StatRow( Localization.Get( UIStrings.ScrapValue, "Scrap value" ), $"$ {ride.BuildCost * Ride.SellRefundFraction:0}" );
 
 		int maxCapacity = ride.Upgrades.Count > 0 ? ride.Upgrades.Max( u => u.Capacity ) : ride.Capacity;
-		SettingBox( 0, $"Capacity : {ride.Capacity}", maxCapacity > 0 ? (float)ride.Capacity / maxCapacity : 1f );
-		SettingBox( 1, $"Duration : {ride.RideDuration:0} secs", Math.Clamp( ride.RideDuration / 120f, 0f, 1f ) );
+		if ( ride.IsSideshow )
+		{
+			// A game: the prize it costs to give away, and the chance of winning it (the original's sideshow boxes).
+			SettingBox( 0, $"Cost of prize : $ {ride.SideshowCostOfGoods}", Math.Clamp( ride.SideshowCostOfGoods / 20f, 0f, 1f ),
+				() => ride.SideshowCostOfGoods = Math.Max( 0, ride.SideshowCostOfGoods - 1 ), () => ride.SideshowCostOfGoods++ );
+			SettingBox( 1, $"Chance of winning : {100 - ride.SideshowChanceOfLoosing} %", (100 - ride.SideshowChanceOfLoosing) / 100f,
+				() => ride.SideshowChanceOfLoosing = Math.Min( 100, ride.SideshowChanceOfLoosing + 5 ),
+				() => ride.SideshowChanceOfLoosing = Math.Max( 0, ride.SideshowChanceOfLoosing - 5 ) );
+		}
+		else
+		{
+			SettingBox( 0, $"Capacity : {ride.Capacity}", maxCapacity > 0 ? (float)ride.Capacity / maxCapacity : 1f );
+			SettingBox( 1, $"Duration : {ride.RideDuration:0} secs", Math.Clamp( ride.RideDuration / 120f, 0f, 1f ) );
+		}
 		if ( ride.IsSideshow )
 			SettingBox( 2, $"Price : $ {ride.TicketPrice:0}", Math.Clamp( ride.TicketPrice / 20f, 0f, 1f ),
 				() => ride.TicketPrice = Math.Max( 1f, ride.TicketPrice - 1f ), () => ride.TicketPrice += 1f );

@@ -59,6 +59,9 @@ public sealed class SaveGame
 		public int ResearchQueuePos { get; set; } = -1; // park-wide research-queue order (-1 = not queued)
 		public float Reliability { get; set; } = 1f;
 		public bool Broken { get; set; }
+		/// <summary>A sideshow's prize cost and chance of losing, when set (null = the .sam's).</summary>
+		public int? PrizeCost { get; set; }
+		public int? ChanceOfLosing { get; set; }
 		/// <summary>The player closed the ride or shop (its gate).</summary>
 		public bool Closed { get; set; }
 	}

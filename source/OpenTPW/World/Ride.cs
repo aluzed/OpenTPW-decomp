@@ -407,8 +407,8 @@ public class Ride : Entity
 	/// <summary>Authored sideshow economics (T-058), from the stall's <c>UsageInfo</c> fields; only meaningful
 	/// when <see cref="IsSideshow"/>.</summary>
 	public int SideshowPrice { get; private set; }
-	public int SideshowCostOfGoods { get; private set; }
-	public int SideshowChanceOfLoosing { get; private set; }
+	public int SideshowCostOfGoods { get; set; }
+	public int SideshowChanceOfLoosing { get; set; }
 	/// <summary>A firework over the ride (P_EFFECT_FW1explosion) — the park-wide golden-ticket celebration (T-055).</summary>
 	public void Celebrate() => engine.SpawnParticleEffect( 60 );
 
