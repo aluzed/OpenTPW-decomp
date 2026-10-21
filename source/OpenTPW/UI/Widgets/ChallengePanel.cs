@@ -34,6 +34,7 @@ internal sealed class ChallengePanel : GameWindow
 
 	private (Challenge Challenge, bool Won)? shownResult;
 	private float resultUntil;
+	private Challenge? taggedOffer;
 
 	private bool Visible => ChallengeManager.Current is { } cm
 		&& (cm.State != ChallengeManager.Phase.Idle || Time.Now < resultUntil);
@@ -55,6 +56,14 @@ internal sealed class ChallengePanel : GameWindow
 		{
 			shownResult = r;
 			resultUntil = Time.Now + ResultSeconds;
+			MessageTags.Post( MessageTags.Kind.Challenge, Headline( r.Challenge, r.Won ? 2 : 3, r.Won ? "Challenge completed!" : "Challenge failed..." ),
+				ChallengeMetrics.Describe( r.Challenge ) );
+		}
+		if ( cm.State == ChallengeManager.Phase.Offered && cm.Active is { } offer && !ReferenceEquals( offer, taggedOffer ) )
+		{
+			taggedOffer = offer;
+			MessageTags.Post( MessageTags.Kind.Challenge, Headline( offer, 0, "Here's a challenge!" ),
+				$"{ChallengeMetrics.Describe( offer )}\n{PrizeLine( offer, 0, "You could win $" )}" );
 		}
 		IsOpen = Visible;
 	}

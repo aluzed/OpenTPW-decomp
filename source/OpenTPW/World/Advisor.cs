@@ -263,6 +263,10 @@ public sealed class Advisor : Entity
 		lip = lipSync;
 		clipName = clip.Name;
 		activeMessage = messageId;
+		if ( Level.Current?.InPark == true )
+			MessageTags.Post( messageId.StartsWith( "InTheRed" ) || messageId.StartsWith( "Staff" ) && messageId.Contains( "Strik" ) || messageId == "Bankrupted"
+				? MessageTags.Kind.Alert : messageId.StartsWith( "Research" ) ? MessageTags.Kind.News : MessageTags.Kind.Advice,
+				"Advisor", AdvisorTips.TextFor( messageId ) );
 		Audio.PlaySpeech( $"advisor_{clip.Name}", clip.SoundData );
 		startTime = Time.Now;
 		Log.Info( $"[advisor] message '{messageId}' → speaking '{clipName}', {lip.Keyframes.Count} keyframes, {ClipLength:0.0}s" );

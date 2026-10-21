@@ -31,7 +31,11 @@ internal sealed class GoldenTicketPanel : GameWindow
 		{
 			subscribed = GoldenTicketGoals.Current;
 			if ( subscribed != null )
-				subscribed.TicketWon += ( headline, sentence ) => pending.Enqueue( (headline, sentence) );
+				subscribed.TicketWon += ( headline, sentence ) =>
+				{
+					pending.Enqueue( (headline, sentence) );
+					MessageTags.Post( MessageTags.Kind.Ticket, headline, sentence );
+				};
 		}
 		if ( (showing == null || Time.Now >= showUntil) && pending.Count > 0 )
 		{

@@ -1471,6 +1471,7 @@ public class Level
 			Hud.AddChild( new ResearchWindow() ); // the research lab (handheld's bulb button)
 			Hud.AddChild( new StaffWindow() );    // a staffer's window (click one in the park)
 			Hud.AddChild( new VisitorWindow() );  // a visitor's window (click one in the park)
+			Hud.AddChild( new MessageTags() );    // the message tags down the right edge
 			Hud.AddChild( new FinancePanel() );   // F11 income/expense graph (T-049)
 			Hud.AddChild( new MinimapPanel() );   // corner minimap (M toggles, click pans) (T-057)
 			Hud.AddChild( new SavePanel() );      // F8 save/load slot menu with park summaries (T-061)
