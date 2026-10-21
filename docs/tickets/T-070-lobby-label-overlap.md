@@ -2,7 +2,11 @@
 
 - **Priority**: 🟢 Low (visual)
 - **Type**: UI
-- **Status**: ☐ To do
+- **Status**: ✅ Done — `LobbyCameraMode` pulled back (150 → 240, height 95) and aimed right of the cluster
+  (`ScreenShift`), so the islands orbit mostly through the left of the view; `LobbyWorldSelect` gives an island
+  no label and no click while it projects under the button column (x ≥ 730), which also fixes a click on a
+  button entering the world behind it. Verified over a full orbit (7 captures). Islands still pass behind the
+  buttons briefly — an orbit around a spread cluster can't avoid it; the original layout is not yet compared.
 
 ## Observed (2026-10-21, 1280×720 window)
 

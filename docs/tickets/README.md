@@ -109,7 +109,7 @@ All format/VM decoding and the core gameplay loop are done. Open work falls into
 | [T-067](T-067-real-ride-shop-models.md) | 🟠 Medium | ⚠️ Mostly done | Real ride textures (`stexture`/`gtexture` + magenta chroma-key), flat entrance/exit pads, real tour/go-kart vehicles, real food/drink stall buildings fitted to their footprint. Toilets stay billboards |
 | [T-068](T-068-quit-game-button.md) | 🟠 Medium | ✅ Done | **Bug**: lobby "Quit Game" now quits (`PurpleButton.OnClick` → `Renderer.RequestQuit`); quick clicks no longer dropped by `Input` |
 | [T-069](T-069-sigterm-segfault.md) | 🟡 Low | ✅ Done | **Bug**: SIGTERM / SIGINT segfaulted (exit 139); now handled → clean window-close shutdown (exit 0) |
-| [T-070](T-070-lobby-label-overlap.md) | 🟢 Low | ☐ To do | **Bug**: lobby world names / islands slide under the button column |
+| [T-070](T-070-lobby-label-overlap.md) | 🟢 Low | ✅ Done | **Bug**: lobby world names slid under the button column — camera reframed left + no label/click behind the buttons |
 | [T-071](T-071-park-blue-tint.md) | 🟡 Medium | ☐ To do | **Bug?**: park reads uniformly blue (night wash too strong, or a missing terrain texture) |
 
 Priority legend: 🔴 blocking · 🟠 important · 🟡 desirable/feature · ⚪ technical debt/polish.

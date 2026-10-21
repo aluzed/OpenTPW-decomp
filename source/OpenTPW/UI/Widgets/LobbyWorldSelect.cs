@@ -1,4 +1,4 @@
-using SN = System.Numerics;
+﻿using SN = System.Numerics;
 
 namespace OpenTPW;
 
@@ -22,7 +22,12 @@ internal sealed class LobbyWorldSelect : HudPanel
 
 	private const float ClickRadius = 120f; // screen-space (1280×720 base) radius around an island's label
 
-	// Project a world point to the UI base space (1280×720, Y-up). False if behind the camera / far off-screen.
+	// Left edge of the lobby's PurpleButton column (1280 - 550). An island orbiting behind the buttons gets no
+	// label (it would be drawn over them) and no click (the click belongs to the button on top) — T-070.
+	private const float ButtonColumnLeft = 730f;
+
+	// Project a world point to the UI base space (1280×720, Y-up). False if behind the camera, far off-screen, or
+	// under the button column.
 	private static bool Project( Vector3 world, out float sx, out float sy )
 	{
 		sx = sy = 0f;
@@ -34,7 +39,7 @@ internal sealed class LobbyWorldSelect : HudPanel
 			return false;
 		sx = (ndcX * 0.5f + 0.5f) * 1280f;
 		sy = (ndcY * 0.5f + 0.5f) * 720f;
-		return true;
+		return sx < ButtonColumnLeft;
 	}
 
 	// The island's clickable/label anchor: a little above the island base so the name sits on the island.
