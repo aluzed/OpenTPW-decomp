@@ -338,6 +338,19 @@ public sealed class BuildMode : Entity
 		{
 			if ( Hit( Key.B ) ) track.Backtrack();
 		}
+		else if ( Selected < 0 && !CamcorderCameraMode.Active && RideItCameraMode.Target == null )
+		{
+			// The original's window keys (UIHELPTEXT.str): B buy, H hire, F finance, I park information, R research
+			// (R on a selected ride researches its upgrade instead), Space map, G the gates, C the camcorder.
+			if ( Hit( Key.B ) ) BuildPanel.Toggle();
+			if ( Hit( Key.H ) ) BuildPanel.OpenHire();
+			if ( Hit( Key.F ) ) FinancePanel.Current?.Toggle();
+			if ( Hit( Key.I ) ) ParkInfoWindow.Current?.Toggle();
+			if ( Hit( Key.R ) && SelectedRide == null ) ResearchWindow.Current?.Toggle();
+			if ( Hit( Key.Space ) ) MinimapPanel.Current?.Toggle();
+			if ( Hit( Key.G ) ) Level.ToggleGates();
+			if ( Hit( Key.C ) ) CamcorderCameraMode.Start();
+		}
 		if ( track is CoasterTrack coasterTrack )
 		{
 			if ( Hit( Key.PageUp ) ) coasterTrack.StackHead( +1 );   // raise the head segment (build a hill)

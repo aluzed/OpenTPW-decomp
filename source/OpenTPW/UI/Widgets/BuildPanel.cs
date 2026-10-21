@@ -30,6 +30,14 @@ internal sealed class BuildPanel : GameWindow
 	/// <summary>Whether the window is open.</summary>
 	public static bool Open => Current?.IsOpen ?? false;
 
+	/// <summary>Open the window on the hire list (H).</summary>
+	public static void OpenHire()
+	{
+		tab = BuildCategory.Staff;
+		if ( Current is { } w )
+			w.IsOpen = true;
+	}
+
 	/// <summary>Open / close the window (picking an item closes it too).</summary>
 	public static void Toggle()
 	{
