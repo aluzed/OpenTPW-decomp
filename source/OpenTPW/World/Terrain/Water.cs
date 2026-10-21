@@ -47,8 +47,8 @@ public class Water : ModelEntity
 			g_mModel = ModelMatrix,
 			g_mView = Camera.ViewMatrix,
 			g_mProj = Camera.ProjMatrix,
-			g_vLightPos = Level.SunLight.Position,
-			g_vLightColor = Level.SunLight.Color,
+			g_vLightPos = Level.Current.SunLight.Position,
+			g_vLightColor = Level.Current.SunLight.Color,
 			g_vCameraPos = Camera.Position,
 
 			_padding0 = 0,

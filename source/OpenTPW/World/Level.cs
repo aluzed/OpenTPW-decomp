@@ -84,6 +84,9 @@ public class Level
 				}
 				catch ( Exception e ) { Log.Warning( $"[lobby] island {display} failed: {e.Message}" ); }
 			}
+			// The sea the islands float on (the original's lobby water, jri_lak3), out to the horizon.
+			try { _ = new Water { Position = new Vector3( 500, 500, -6 ), Scale = new Vector3( 4000 ) }; }
+			catch ( Exception e ) { Log.Warning( $"[lobby] sea failed: {e.Message}" ); }
 			Camera.SetCameraMode<LobbyCameraMode>();
 			InPark = false;
 			return;
