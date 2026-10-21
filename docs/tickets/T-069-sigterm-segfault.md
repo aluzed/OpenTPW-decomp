@@ -1,0 +1,22 @@
+# T-069 — Segfault when the process is terminated (SIGTERM)
+
+- **Priority**: 🟡 Low/Medium (bug)
+- **Type**: Engine / shutdown
+- **Status**: ☐ To do
+
+## Observed (2026-10-21)
+
+The game runs stably (70 s+ in the lobby, 60 s in a park), and closing the window exits with code 0. But
+`kill -TERM <pid>` makes it crash with **SIGSEGV (exit 139, core dumped)** instead of exiting. Likely the
+native Vulkan / OpenAL / windowing resources are torn down from a signal context or after the runtime has
+started unloading.
+
+## Scope
+
+1. Handle SIGTERM/SIGINT (`PosixSignalRegistration` / `Console.CancelKeyPress`) by requesting the same clean
+   shutdown as a window close, instead of letting the runtime exit under the render loop.
+2. Check the dispose order (GPU device after its resources, audio context last).
+
+## Acceptance criteria
+
+- `kill -TERM` and Ctrl+C on a running game exit with code 0 and no core dump.
