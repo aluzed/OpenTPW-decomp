@@ -781,6 +781,8 @@ public class Level
 		list.Add( Stall( "shop", ShopKind.Food, 500f ) );    // food stall (satisfies hunger)
 		list.Add( Stall( "drink", ShopKind.Drink, 450f ) );  // drink stall (satisfies thirst, T-039)
 		list.Add( Stall( "toilet", ShopKind.Toilet, 400f ) ); // toilet (relieves bladder, free to use, T-039)
+		if ( ShopBuilding.BigToiletArchive( theme ) is { } bigToilet && ShopBuilding.StatsOf( bigToilet ) is { } bt )
+			list.Add( new BuildCatalogItem( "bigtoilet", null, null, 3, 2, bt.BuildCost, Title: ObjectNames.Localize( bt.Name ), ShopPath: bigToilet ) );
 		if ( ShopBuilding.StatsFor( ShopKind.Bin, theme ) is { } bin ) // litter bin: visitors nearby bin their rubbish
 			list.Add( new BuildCatalogItem( "bin", null, null, 1, 1, bin.BuildCost, Title: ObjectNames.Localize( bin.Name ) ) );
 		// The theme's other stalls (fries, ice cream, restaurant, gift / balloon / costume shops), keyed by archive.
@@ -979,6 +981,7 @@ public class Level
 		"drink" => ShopKind.Drink,
 		"toilet" => ShopKind.Toilet,
 		"bin" => ShopKind.Bin,
+		"bigtoilet" => ShopKind.Toilet,
 		_ => ShopKind.Food,
 	};
 

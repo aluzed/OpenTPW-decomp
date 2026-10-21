@@ -89,6 +89,11 @@ internal static class ShopBuilding
 		catch { return Array.Empty<string>(); }
 	}
 
+	/// <summary>The theme's big toilet feature ("Super Toilet": space loo_big, fantasy royaloo, hallow horsuloo — jungle
+	/// has none), or null.</summary>
+	public static string? BigToiletArchive( string theme ) =>
+		new[] { "loo_big", "royaloo", "horsuloo" }.Select( n => $"levels/{theme}/features/{n}" ).FirstOrDefault( a => StatsOf( a ) != null );
+
 	/// <summary>The first stall archive of a kind this theme ships (the generic "shop"/"drink"/"toilet" items), or null.</summary>
 	public static string? DefaultArchive( ShopKind kind, string theme )
 	{

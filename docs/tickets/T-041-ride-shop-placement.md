@@ -11,7 +11,8 @@
   build cost; the catalog rows shrink to fit (~27 items). A purchase applies the stall's `UsageInfo.*Effect`
   values (hunger/thirst relieved in proportion, mood and energy lifted, `LitterEffect`% chance of a dropped
   wrapper); gift/balloon/costume shops are impulse buys a passing visitor makes once per visit. Saves keep the
-  stall's catalog key. Each theme's toilet resolves (`loo`/`horloo`), the dev park no longer sells its only
+  stall's catalog key. Each theme's toilet resolves (`loo`/`horloo`; the "Super Toilet" `loo_big`/`royaloo`/`horsuloo`
+  is buildable too where the theme has one), the dev park no longer sells its only
   food stall in the sell-test, and the generic autoplace places its stalls near the wanted tile.
   **Souvenirs show**: a visitor who buys a costume walks in the theme's costume sprite set
   (`esprites/<Theme>/Costumes` — jungle tiger SPR_TI, hallow SPR_HK, fantasy SPR_BK, space SPR_SK) and one who buys
