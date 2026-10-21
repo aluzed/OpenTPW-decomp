@@ -13,6 +13,15 @@ internal static class Game
 	{
 		Log = new();
 
+		//
+		// SIGTERM / SIGINT (T-069): the runtime's default handling exits the process while the renderer still owns
+		// the Vulkan/SDL/OpenAL resources, which segfaults. Cancel that and shut down through the normal window-close
+		// path instead. Registered first thing — a signal during the (synchronous) level load used to hit the default
+		// handling and crash; now the quit is remembered and the loop closes the window as soon as it runs.
+		//
+		using var sigTerm = PosixSignalRegistration.Create( PosixSignal.SIGTERM, OnQuitSignal );
+		using var sigInt = PosixSignalRegistration.Create( PosixSignal.SIGINT, OnQuitSignal );
+
 		// Resolve the install path once (honors the OPENTPW_GAMEPATH override). See T-006.
 		var gamePath = GameDir.GamePath;
 
@@ -67,6 +76,8 @@ internal static class Game
 		// Init renderer
 		//
 		Render = new();
+		if ( quitSignalled )
+			Render.RequestQuit(); // a signal arrived while starting up
 
 		//
 		// Show a loading screen while the level loads synchronously (otherwise the window is
@@ -151,14 +162,6 @@ internal static class Game
 		// Music + ambience are started by the level (LevelSoundscape): the front-end's here, a park's own on entry.
 
 		//
-		// SIGTERM / SIGINT (T-069): the runtime's default handling exits the process while the render
-		// loop still owns the Vulkan/SDL/OpenAL resources, which segfaults. Cancel that and shut down
-		// through the normal window-close path instead. Keep the registrations alive for the loop.
-		//
-		using var sigTerm = PosixSignalRegistration.Create( PosixSignal.SIGTERM, OnQuitSignal );
-		using var sigInt = PosixSignalRegistration.Create( PosixSignal.SIGINT, OnQuitSignal );
-
-		//
 		// Run game loop
 		//
 		Render.OnUpdate += level.Update;
@@ -167,10 +170,13 @@ internal static class Game
 		Render.Run();
 	}
 
+	private static volatile bool quitSignalled;
+
 	private static void OnQuitSignal( PosixSignalContext context )
 	{
 		context.Cancel = true;
+		quitSignalled = true;
 		Log.Info( $"{context.Signal} received, quitting" );
-		Render.RequestQuit();
+		Render?.RequestQuit(); // null until the renderer exists; it then picks up quitSignalled
 	}
 }

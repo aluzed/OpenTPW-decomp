@@ -22,3 +22,10 @@ started unloading.
 ## Acceptance criteria
 
 - `kill -TERM` and Ctrl+C on a running game exit with code 0 and no core dump.
+
+## Follow-up (2026-10-21)
+
+A SIGTERM **during the level load** still crashed (exit 139, or 143 when the default handler won): the handlers
+were registered only after the synchronous load, just before the render loop. They are now registered first
+thing in `Game.Run`; a signal before the renderer exists is remembered (`quitSignalled`) and the loop closes the
+window as soon as it starts. Verified: SIGTERM at 0.5 / 2 / 4 / 6 / 7 / 12 s after launch → exit 0 every time.
