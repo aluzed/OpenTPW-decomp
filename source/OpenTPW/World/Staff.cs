@@ -91,6 +91,9 @@ public sealed class Staff : ModelEntity
 	/// <summary>The staff member's grade, 0–4 (rolled from the staff pool at hire, raised by training).</summary>
 	public int Grade { get; private set; }
 
+	/// <summary>Their name (the game's own name lists; set when hired from a candidate).</summary>
+	public string PersonalName { get; set; } = "";
+
 	/// <summary>Training towards the next grade, 0–<see cref="StaffGrades.PointsPerGrade"/> percent.</summary>
 	public float TrainingPoints { get; private set; }
 
@@ -279,6 +282,7 @@ public sealed class Staff : ModelEntity
 			guards.Add( this );
 
 		Grade = StaffGrades.Current.RollGrade( role, Random.Shared );
+		PersonalName = StaffCandidates.RandomName( role );
 		Energy = 70f + (float)Random.Shared.NextDouble() * 30f;
 
 		sheet = RoleSprite( role );

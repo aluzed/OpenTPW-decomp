@@ -16,7 +16,9 @@ internal sealed class BuildPanel : GameWindow
 	{
 		Current = this;
 		// Dev aid: open on load (OPENTPW_UI_OPEN=buy), to look at the window without clicking.
-		IsOpen = Environment.GetEnvironmentVariable( "OPENTPW_UI_OPEN" ) == "buy";
+		IsOpen = Environment.GetEnvironmentVariable( "OPENTPW_UI_OPEN" ) is "buy" or "hire";
+		if ( Environment.GetEnvironmentVariable( "OPENTPW_UI_OPEN" ) == "hire" )
+			tab = BuildCategory.Staff;
 	}
 
 	protected override void OnDelete()
@@ -60,16 +62,31 @@ internal sealed class BuildPanel : GameWindow
 
 	private static Rectangle RowRect( int row ) => At( 482f, RowTop + row * RowHeight, 359f, RowHeight );
 
-	private static List<int> Items( BuildMode build )
+	// A list row: a catalog item, or — on the staff tab, as the original's hire window — a role heading followed by the
+	// people applying for that job.
+	private readonly record struct Row( int Catalog, StaffCandidates.Candidate? Candidate = null, bool Heading = false );
+
+	private static List<Row> Items( BuildMode build )
 	{
-		var list = new List<int>();
+		var list = new List<Row>();
 		for ( int i = 0; i < build.Catalog.Count; i++ )
-			if ( build.Catalog[i].Category == tab )
-				list.Add( i );
+		{
+			if ( build.Catalog[i].Category != tab )
+				continue;
+			if ( build.Catalog[i].Staff is { } role )
+			{
+				list.Add( new Row( i, Heading: true ) );
+				foreach ( var c in StaffCandidates.For( role ) )
+					list.Add( new Row( i, c ) );
+			}
+			else
+				list.Add( new Row( i ) );
+		}
 		return list;
 	}
 
-	private int hovered = -1;
+	private Row? hoveredRow;
+	private int hovered => hoveredRow?.Catalog ?? -1;
 
 	protected override void OnUpdate()
 	{
@@ -77,10 +94,10 @@ internal sealed class BuildPanel : GameWindow
 			return;
 		var m = MouseBase();
 		var items = Items( build );
-		hovered = -1;
+		hoveredRow = null;
 		for ( int row = 0; row < VisibleRows && row + scroll < items.Count; row++ )
-			if ( Contains( RowRect( row ), m ) )
-				hovered = items[row + scroll];
+			if ( Contains( RowRect( row ), m ) && !items[row + scroll].Heading )
+				hoveredRow = items[row + scroll];
 
 		// The mouse wheel scrolls a long list.
 		if ( Contains( List, m ) && Input.Mouse.Wheel != 0 )
@@ -103,6 +120,7 @@ internal sealed class BuildPanel : GameWindow
 		// Picking an item arms it for placement and gets the window out of the way, as in the original.
 		if ( hovered >= 0 && build.IsBuildable( hovered ) && (ParkFinances.Current?.CanAfford( build.Catalog[hovered].Cost ) ?? true) )
 		{
+			StaffCandidates.Pending = hoveredRow?.Candidate;
 			if ( build.Selected != hovered )
 				build.SelectIndex( hovered );
 			IsOpen = false;
@@ -116,13 +134,16 @@ internal sealed class BuildPanel : GameWindow
 
 		DrawFrame( "w_big" );
 		int tabIndex = Array.FindIndex( Tabs, t => t.Category == tab );
-		DrawHeading( Localization.Get( Tabs[tabIndex].Title, Tabs[tabIndex].Fallback ), 488f, 828f, 44f );
+		// UITEXT has a title per job ("Hire Cleaners"…); the tab lists them all.
+		DrawHeading( tab == BuildCategory.Staff ? "Hire Staff" : Localization.Get( Tabs[tabIndex].Title, Tabs[tabIndex].Fallback ), 488f, 828f, 44f );
 
 		// The item under the cursor (else the one armed) is described on the left.
 		int shown = hovered >= 0 ? hovered : build.Selected >= 0 && build.Catalog[build.Selected].Category == tab ? build.Selected : -1;
 		DrawInset( Preview );
 		DrawInset( Stats );
-		if ( shown >= 0 )
+		if ( hoveredRow?.Candidate is { } applicant )
+			DrawCandidate( applicant );
+		else if ( shown >= 0 )
 			DrawDetails( build, shown );
 
 		// Tabs over the list.
@@ -133,16 +154,33 @@ internal sealed class BuildPanel : GameWindow
 		Fill( At( 482f, HeaderTop, 196f, HeaderHeight ), Header );
 		Fill( At( 682f, HeaderTop, 98f, HeaderHeight ), Header );
 		Fill( At( 784f, HeaderTop, 57f, HeaderHeight ), Header );
-		Text( Small, Localization.Get( UIStrings.Name, "Name" ), 580f, HeaderTop + 16f, 13f, HeaderInk, TextAlign.Center );
-		Text( Small, Localization.Get( UIStrings.Price, "Price" ), 731f, HeaderTop + 16f, 13f, HeaderInk, TextAlign.Center );
+		bool hiring = tab == BuildCategory.Staff;
+		Text( Small, hiring ? Localization.Get( UIStrings.CandidateName, "Candidate Name" ) : Localization.Get( UIStrings.Name, "Name" ), 580f, HeaderTop + 16f, 13f, HeaderInk, TextAlign.Center );
+		Text( Small, hiring ? "Monthly Wage" : Localization.Get( UIStrings.Price, "Price" ), 731f, HeaderTop + 16f, 13f, HeaderInk, TextAlign.Center );
 
 		var fin = ParkFinances.Current;
 		var items = Items( build );
 		for ( int row = 0; row < VisibleRows && row + scroll < items.Count; row++ )
 		{
-			int i = items[row + scroll];
+			var entry = items[row + scroll];
+			int i = entry.Catalog;
 			var item = build.Catalog[i];
 			float top = RowTop + row * RowHeight;
+			if ( entry.Heading )
+			{
+				// The job: its name and what hiring costs.
+				Text( Small, $"{StaffNames.For( item.Staff!.Value )}  (hire $ {item.Cost:0})", 487f, top + 1f, 11f, TitleInk );
+				continue;
+			}
+			if ( entry.Candidate is { } candidate )
+			{
+				if ( Equals( hoveredRow, entry ) )
+					Fill( RowRect( row ), Selected );
+				var candidateInk = fin?.CanAfford( item.Cost ) == false ? LockedInk : default;
+				Text( Small, $"   {candidate.Name}  (grade {candidate.Grade + 1})", 487f, top + 1f, 11f, candidateInk );
+				Text( Small, $"$ {candidate.MonthlyWage:0}", 776f, top + 1f, 11f, candidateInk, TextAlign.Right );
+				continue;
+			}
 			if ( i == build.Selected || i == hovered )
 				Fill( RowRect( row ), Selected );
 			bool locked = !build.IsBuildable( i );
@@ -160,6 +198,24 @@ internal sealed class BuildPanel : GameWindow
 
 		// The right-hand column: close.
 		RoundButton( CloseButton, "b_exit" );
+	}
+
+	// A candidate: their portrait and name, and the grade and wage they would come at.
+	private static void DrawCandidate( StaffCandidates.Candidate c )
+	{
+		Text( Small, c.Name, 290f, 92f, 13f, default, TextAlign.Center );
+		var portrait = c.Role switch
+		{
+			StaffRole.Handyman => "h_handy", StaffRole.Mechanic => "h_mech", StaffRole.Guard => "h_guard",
+			StaffRole.Researcher => "h_resrcher", _ => "h_enter",
+		};
+		if ( UiTexture( portrait ) is { } face )
+			Fill( At( 230f, 120f, 120f, 120f ), face );
+		Text( Small, StaffNames.For( c.Role ), 133f, 300f, 11f );
+		Text( Small, "Grade", 133f, 324f, 11f );
+		DrawGauge( At( 338f, 325f, 110f, 9f ), (c.Grade + 1f) / (StaffGrades.MaxGrade + 1f) );
+		Text( Small, "Monthly wage", 133f, 348f, 11f );
+		Text( Small, $"$ {c.MonthlyWage:0}", 338f, 348f, 11f );
 	}
 
 	// The left-hand boxes: the item's name in the preview, its figures under it.

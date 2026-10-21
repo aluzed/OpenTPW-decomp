@@ -79,6 +79,7 @@ public sealed class SaveGame
 		public float Training { get; set; }
 		public float Energy { get; set; } = 100f;
 		public float Morale { get; set; } = 60f;
+		public string Name { get; set; } = "";
 	}
 
 	/// <summary>The active/offered challenge's progression (T-059, T-054). The challenge itself is identified by

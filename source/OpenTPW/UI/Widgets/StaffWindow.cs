@@ -46,7 +46,7 @@ internal sealed class StaffWindow : GameWindow
 			return;
 
 		DrawFrame( "w_park" );
-		DrawHeading( StaffNames.For( staff.Role ), 460f, 0f, 44f );
+		DrawHeading( string.IsNullOrEmpty( staff.PersonalName ) ? StaffNames.For( staff.Role ) : $"{StaffNames.For( staff.Role )} - {staff.PersonalName}", 460f, 0f, 44f );
 		DrawInset( Preview );
 		if ( UiTexture( Portrait( staff.Role ) ) is { } face )
 			Fill( At( 201f, 113f, 120f, 120f ), face );

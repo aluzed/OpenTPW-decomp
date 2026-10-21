@@ -678,7 +678,7 @@ public class Level
 		foreach ( var st in Entity.All.OfType<Staff>() )
 		{
 			var ss = new SaveGame.StaffState { Role = st.Role.ToString(), X = st.WanderCenter.X, Y = st.WanderCenter.Y,
-				Grade = st.Grade, Training = st.TrainingPoints, Energy = st.Energy, Morale = st.Morale };
+				Grade = st.Grade, Training = st.TrainingPoints, Energy = st.Energy, Morale = st.Morale, Name = st.PersonalName };
 			if ( st.Zone is { } z )
 			{
 				ss.HasZone = true;
@@ -816,7 +816,10 @@ public class Level
 		{
 			if ( !Enum.TryParse<StaffRole>( ss.Role, out var role ) )
 				continue;
-			var st = new Staff( role, terrain, new System.Numerics.Vector3( ss.X, ss.Y, 0f ), roam: 160f );
+			var st = new Staff( role, terrain, new System.Numerics.Vector3( ss.X, ss.Y, 0f ), roam: 160f )
+			{
+				PersonalName = string.IsNullOrEmpty( ss.Name ) ? StaffCandidates.RandomName( role ) : ss.Name,
+			};
 			if ( ss.HasZone )
 				st.SetPatrolZone( new System.Numerics.Vector3( ss.ZoneX, ss.ZoneY, 0f ), ss.ZoneRadius );
 			if ( ss.Grade is { } grade )
@@ -1088,7 +1091,15 @@ public class Level
 			var c = grid.TileToWorld( tx, ty );
 			// A wide patrol radius so staff actually cover the park — guards reach the queue backs where
 			// unhappy peeps vandalise, handymen reach far litter, entertainers cover more of the crowd (T-039).
-			_ = new Staff( role, terrain, c.WithZ( 0 ), roam: 160f );
+			var hired = new Staff( role, terrain, c.WithZ( 0 ), roam: 160f );
+			// The candidate chosen in the hire window brings their name and grade (else the new staffer's own).
+			if ( StaffCandidates.Pending is { } candidate && candidate.Role == role )
+			{
+				hired.PersonalName = candidate.Name;
+				hired.RestoreCondition( candidate.Grade, 0f, 100f, hired.Morale );
+				StaffCandidates.Hired( candidate );
+				StaffCandidates.Pending = null;
+			}
 			if ( charge ) fin?.PayBuild( item.Cost );
 			return true;
 		}
