@@ -175,3 +175,6 @@ Money and staff-count advice: `WealthHigh` (> 200 000, TAG 121), `WealthHighRepa
 `MaxHandymen/Entertainers/Mechanics/Guards/Researchers` (> 10 of one kind, TAG 129–133).
 `ShopsBuildMoreShops` / `SideshowsBuildMoreSideshows` (fewer than 0.15 shops / 0.2 sideshows per ride while the park
 has over 20 000; TAG 78 / 82).
+`RidesNoUpgrades` (18 months in without a researched upgrade, TAG 68 — `NewResearchGroupRide` now speaks 70, "upgrades
+available that you haven't used", which is what it means), `WagesHigh` (wages over the last 3 months > 2 × income, TAG
+128; the monthly finance history now records wages), and `Bankrupted` (TAG 127) after six months in the red.
