@@ -149,6 +149,9 @@ public class Level
 		GameClock.Current.OnNewMonth += Staff.ConsiderStrikes;
 		// Staff training budgets: spent on training as each month closes, counted with the staff costs.
 		StaffTraining.Current = new StaffTraining();
+		if ( Environment.GetEnvironmentVariable( "OPENTPW_UI_OPEN" ) == "training" ) // dev aid: budgets to spend
+			foreach ( var role in Enum.GetValues<StaffRole>() )
+				StaffTraining.Current.SetBudget( role, 200f );
 		ParkName = "";
 		GameClock.Current.OnNewMonth += () =>
 		{
