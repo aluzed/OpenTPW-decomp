@@ -51,22 +51,10 @@ internal sealed class ManagePanel : HudPanel
 			() => fin.EntryFee = System.Math.Max( 0f, fin.EntryFee - 1f ) ) );
 		list.Add( new Btn( new Rectangle( 84f, EconY, 64f, BtnH ), $"FEE+ {fin.EntryFee:0}", true,
 			() => fin.EntryFee += 1f ) );
-		// One button per loan offer (T-042): take it, or repay it in full once bought — so the player can
-		// pick the Small or the Large loan (and repay each independently), not just the first offer.
-		var loans = fin.Loans;
-		for ( int i = 0; i < loans.Count; i++ )
-		{
-			var loan = loans[i];
-			int idx = i; // capture for the closure
-			var rect = new Rectangle( 152f + i * 136f, EconY, 130f, BtnH );
-			// The principal ($5k vs $15k) distinguishes the Small/Large offer, so the label stays compact.
-			if ( loan.Bought )
-				list.Add( new Btn( rect, $"REPAY ${loan.Outstanding / 1000f:0.0}k",
-					fin.CanAfford( loan.Outstanding ), () => fin.RepayLoan( idx ), Warned: true ) );
-			else
-				list.Add( new Btn( rect, $"LOAN ${loan.Principal / 1000f:0}k", true,
-					() => fin.TakeLoan( idx ) ) );
-		}
+		// The bank (T-042): the level's loan offers live in the LoanPanel list (they don't fit as one button each).
+		list.Add( new Btn( new Rectangle( 152f, EconY, 160f, BtnH ),
+			fin.Debt > 0 ? $"LOANS (owe ${fin.Debt / 1000f:0.0}k)" : "LOANS", true,
+			() => LoanPanel.Current?.Toggle(), Warned: fin.Debt > 0 ) );
 
 		// Selected-ride row (only when a ride is selected via the Default tool).
 		if ( BuildMode.Current?.SelectedRide is { } ride )

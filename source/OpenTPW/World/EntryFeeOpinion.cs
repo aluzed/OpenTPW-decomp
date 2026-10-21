@@ -28,7 +28,7 @@ public readonly record struct EntryFeeSettings(
 
 /// <summary>
 /// How a visitor feels about the admission fee on arrival (T-074 follow-up). The <c>.sam</c> comments define the
-/// price bands: a park's ideal fee is its ride excitement scaled by <c>ExcitementToCostDivisor</c>; below
+/// price bands: a park's ideal fee is its ride excitement scaled by <c>ExcitementToCostDivisor</c>; up to
 /// <c>MinimumEntryFee</c> "everybody always pays up happily"; <c>Cheap × ideal</c> tops "cheap", <c>Average × ideal</c>
 /// tops "OK", <c>Expensive × ideal</c> is the bottom of "very expensive". The four <c>OpinionFor*</c> values (0 / 20 /
 /// 50 / 100) are read as the visitor's <b>starting happiness</b> — "about right" (50) is exactly the arrival mood the
@@ -47,7 +47,7 @@ public static class EntryFeeOpinion
 	/// <paramref name="parkExcitement"/>.</summary>
 	public static float ArrivalHappiness( EntryFeeSettings s, float fee, float parkExcitement )
 	{
-		if ( fee < s.MinimumEntryFee )
+		if ( fee <= s.MinimumEntryFee ) // the opening fee (InitialAdmissionFee 20) sits exactly on the minimum
 			return s.OpinionTooLow;
 		float ideal = IdealFee( s, parkExcitement );
 		if ( fee <= s.CheapMultiplier * ideal )

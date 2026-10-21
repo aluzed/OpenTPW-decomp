@@ -85,15 +85,20 @@ public sealed class ParkFinances
 	}
 
 	// ── Loans (T-042) ───────────────────────────────────────────────────────────────────────────
-	/// <summary>A bank loan offer: principal in, repaid (with APR) over 12 monthly instalments.</summary>
+	/// <summary>A bank loan offer: principal in, repaid with simple APR interest over <see cref="Months"/> monthly
+	/// instalments.</summary>
 	public sealed class Loan
 	{
 		public string Name = "";
 		public float Principal;
 		public float Apr;            // annual percentage rate
+		public int Months = 12;      // repayment period
 		public float Outstanding;    // remaining to repay (principal + interest), 0 when not bought
 		public float Monthly;        // per-month instalment
 		public bool Bought;
+
+		/// <summary>Principal + simple interest over the repayment period.</summary>
+		public float TotalRepayable => Principal * (1f + Apr / 100f * Months / 12f);
 	}
 
 	private readonly List<Loan> loans = new()
@@ -101,6 +106,47 @@ public sealed class ParkFinances
 		new Loan { Name = "Small", Principal = 5000f, Apr = 10f },
 		new Loan { Name = "Large", Principal = 15000f, Apr = 18f },
 	};
+
+	/// <summary>Replace the offers with the level's own (<see cref="LoadLoanOffers"/>); a no-op for an empty list.</summary>
+	public void SetLoanOffers( IReadOnlyList<Loan> offers )
+	{
+		if ( offers.Count == 0 )
+			return;
+		loans.Clear();
+		loans.AddRange( offers );
+	}
+
+	/// <summary>
+	/// The level's loan offers: <c>LoanInfo[i].{LoanAmount, APRInPercent, RepaymentPeriodInMonths, Lendername}</c> from the
+	/// global <c>levels/Standard.sam</c>, each key overridable by the level's own (jungle renames four lenders), with the
+	/// lender's name from <c>LOANNAMES.str</c> (falls back to "Loan n"). Stops at the first offer without an amount. Pure.
+	/// </summary>
+	public static List<Loan> LoadLoanOffers( SettingsFile global, SettingsFile? level, IReadOnlyList<string> lenderNames )
+	{
+		var offers = new List<Loan>();
+		for ( int i = 0; ; i++ )
+		{
+			string? Get( string field )
+			{
+				var key = $"LoanInfo[{i}].{field}";
+				var v = level?[key];
+				return string.IsNullOrEmpty( v ) ? global[key] : v;
+			}
+			if ( !float.TryParse( Get( "LoanAmount" ), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var amount ) )
+				break;
+			float.TryParse( Get( "APRInPercent" ), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var apr );
+			int months = int.TryParse( Get( "RepaymentPeriodInMonths" ), out var m ) && m > 0 ? m : 12;
+			int lender = int.TryParse( Get( "Lendername" ), out var n ) ? n : -1;
+			offers.Add( new Loan
+			{
+				Name = lender >= 0 && lender < lenderNames.Count && !string.IsNullOrWhiteSpace( lenderNames[lender] ) ? lenderNames[lender].Trim() : $"Loan {i + 1}",
+				Principal = amount,
+				Apr = apr,
+				Months = months,
+			} );
+		}
+		return offers;
+	}
 
 	public IReadOnlyList<Loan> Loans => loans;
 	public float Debt => loans.Where( l => l.Bought ).Sum( l => l.Outstanding );
@@ -110,7 +156,7 @@ public sealed class ParkFinances
 
 	private const float BankruptLimit = -5000f;
 
-	/// <summary>Take a loan: principal is credited now, repaid (principal + APR) over 12 months.</summary>
+	/// <summary>Take a loan: principal is credited now, repaid (principal + simple APR interest) over its period.</summary>
 	public void TakeLoan( int index )
 	{
 		if ( index < 0 || index >= loans.Count )
@@ -119,8 +165,8 @@ public sealed class ParkFinances
 		if ( l.Bought )
 			return;
 		l.Bought = true;
-		l.Outstanding = l.Principal * (1f + l.Apr / 100f);
-		l.Monthly = l.Outstanding / 12f;
+		l.Outstanding = l.TotalRepayable;
+		l.Monthly = l.Outstanding / l.Months;
 		Money += l.Principal;
 	}
 

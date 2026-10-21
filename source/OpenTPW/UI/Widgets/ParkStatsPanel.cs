@@ -104,9 +104,9 @@ internal sealed class ParkStatsPanel : HudPanel
 		if ( GoldenTicketGoals.Current is { } gt && gt.Total > 0 )
 			lines.Add( gt.Awarded ? "GOLDEN TICKET WON!" : $"TICKET GOALS {gt.Met}/{gt.Total}" );
 		if ( fin.Debt > 0 )
-			lines.Add( $"DEBT {fin.Debt:0}  (L loan, K repay)" );
+			lines.Add( $"DEBT {fin.Debt:0}  (L loans, K repay)" );
 		else
-			lines.Add( "LOAN: L=take  (no debt)" );
+			lines.Add( "LOANS: L  (no debt)" );
 		if ( fin.Bankrupt )
 			lines.Add( "*** BANKRUPT ***" );
 

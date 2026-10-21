@@ -118,7 +118,17 @@ public class Level
 		catch ( Exception e ) { Log.Warning( $"[ground] {e.Message}" ); }
 
 		// The park starts with a budget; peeps pay a gate fee + ride tickets, rides cost upkeep (see Ride / Peep).
-		ParkFinances.Current = new ParkFinances( starting: 30000f, entryFee: 10f );
+		// Opening budget + admission (BankAccountInfo.*) and the level's loan offers (LoanInfo[*]) from Standard.sam.
+		var globalSam = new SettingsFile( "/levels/Standard.sam" );
+		float Money( string key, float fallback ) =>
+			float.TryParse( globalSam[$"BankAccountInfo.{key}"], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var v ) ? v : fallback;
+		ParkFinances.Current = new ParkFinances( starting: Money( "InitialCash", 50000f ), entryFee: Money( "InitialAdmissionFee", 20f ) );
+		try
+		{
+			var lenders = new StringFile( "Language/English/LOANNAMES.str" ).Entries;
+			ParkFinances.Current.SetLoanOffers( ParkFinances.LoadLoanOffers( globalSam, new SettingsFile( $"/levels/{Current.Name}/Standard.sam" ), lenders ) );
+		}
+		catch ( Exception e ) { Log.Warning( $"[loans] offers unavailable: {e.Message}" ); }
 		ResearchQueue.Reset(); // fresh park-wide research queue for this level (T-044)
 
 		// In-game calendar (T-053): the single time source; finances settle once per in-game month.
@@ -1035,6 +1045,7 @@ public class Level
 			Hud.AddChild( new FinancePanel() );   // F11 income/expense graph (T-049)
 			Hud.AddChild( new MinimapPanel() );   // corner minimap (M toggles, click pans) (T-057)
 			Hud.AddChild( new SavePanel() );      // F8 save/load slot menu with park summaries (T-061)
+			Hud.AddChild( new LoanPanel() );      // L / LOANS: the level's loan offers (T-042)
 			Hud.AddChild( new ThemePanel() );     // F12 theme picker (jungle/hallow/fantasy/space) (T-062)
 		}
 		else

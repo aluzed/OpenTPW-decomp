@@ -63,3 +63,14 @@ config (`InitialCash`/`InitialAdmissionFee`).
 
 `source/OpenTPW/World/ParkFinances.cs`, `source/OpenTPW/World/Rides/Ride.cs`,
 `source/OpenTPW/UI/Widgets/ParkStatsPanel.cs` (+ new finance/loan panels), `Level.cs`.
+
+## 2026-10-21 — the level's own loans + opening budget
+
+The two invented loans (Small $5k @10%, Large $15k @18%, 12 months) are replaced by the level's eight `LoanInfo[*]`
+offers ($10k–$100k, 18–23% APR, 24–48 months) from `levels/Standard.sam`, the level's overrides applied (jungle
+renames four lenders), lender names from `LOANNAMES.str` ("Cash Unlimited", "Inca Finance"…); repaid with simple APR
+interest over the offer's own period. They're listed in a **LoanPanel** (L or the LOANS button) with TAKE / REPAY per
+offer. The park also opens with `BankAccountInfo.InitialCash` (50 000) and `InitialAdmissionFee` (20) instead of the
+hard-coded 30 000 / 10; as that fee equals `PeepInfo.MinimumEntryFee`, the "pays up happily" band is now inclusive.
+Saves made before this name their loans "Small"/"Large", which no longer match an offer (the loan is dropped on load).
+Unit-tested (`LoanOffersTests`); verified in-game.

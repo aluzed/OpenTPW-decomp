@@ -259,9 +259,9 @@ public sealed class BuildMode : Entity
 				if ( Hit( Key.Period ) ) shopSel.Price += 1f;
 				if ( Hit( Key.Delete ) ) SellSelected();
 			}
-			// Loans: take / repay the small loan.
-			if ( Hit( Key.L ) ) fin.TakeLoan( 0 );
-			if ( Hit( Key.K ) ) fin.RepayLoan( 0 );
+			// Loans: L opens the loan offers (LoanPanel); K repays the first loan taken.
+			if ( Hit( Key.L ) ) LoanPanel.Current?.Toggle();
+			if ( Hit( Key.K ) && fin.Loans.ToList().FindIndex( l => l.Bought ) is var k and >= 0 ) fin.RepayLoan( k );
 		}
 
 		// Coaster track tool (T-045): T toggles laying from the selected coaster's connector, B backtracks.
