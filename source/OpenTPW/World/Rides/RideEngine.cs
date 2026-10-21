@@ -445,14 +445,60 @@ public sealed class RideEngine : IRideEngine
 		}
 	}
 
-	// A single live proxy particle: a small emissive cube that drifts under its own velocity + the effect's
-	// acceleration until it expires. Driven by the .PLB fields decoded in T-019.
+	// A single live particle: a soft camera-facing sprite that drifts under its own velocity + the effect's
+	// acceleration and walks the effect's colour ramp until it expires. Driven by the .PLB fields decoded in T-019.
 	private sealed class ParticleProxy
 	{
 		public required ModelEntity Entity;
 		public Vector3 Velocity;
 		public Vector3 Acceleration;
 		public float Expire;
+		public float Born;
+		public required Model[] Ramp; // one billboard model per colour-ramp stop (or a single stop)
+	}
+
+	// Billboard models per effect: a soft round sprite tinted by each of the effect's ramp stops, so a particle can
+	// walk the .PLB colour ramp over its life without a material per particle.
+	private static readonly Dictionary<int, Model[]> rampModels = new();
+
+	private static Model[] RampModels( int effectCode, ParticleEffect? fx, (byte R, byte G, byte B) fallback )
+	{
+		if ( rampModels.TryGetValue( effectCode, out var cached ) )
+			return cached;
+
+		var stops = fx is { ColorRamp.Count: > 0 } && fx.CyclesColorRamp
+			? fx.ColorRamp.ToList()
+			: new List<ParticleColor> { new( fallback.R, fallback.G, fallback.B, 255 ) };
+		var blob = Peep.ShadowBlob( 16 ); // radial alpha falloff (black) — recoloured per stop below
+		var models = stops.Select( stop =>
+		{
+			var rgba = (byte[])blob.Clone();
+			for ( int i = 0; i < rgba.Length; i += 4 )
+			{
+				rgba[i] = stop.R; rgba[i + 1] = stop.G; rgba[i + 2] = stop.B;
+				rgba[i + 3] = (byte)Math.Min( 255f, rgba[i + 3] * 2.3f ); // the blob peaks at ~110: lift it to opaque
+			}
+			var mat = new Material<ObjectUniformBuffer>( "content/shaders/unlit.shader",
+				MaterialFlags.DoubleSided | MaterialFlags.DisableDepthWrite );
+			mat.Set( "Color", new Texture( rgba, 16, 16 ) );
+			return Primitives.Plane.GenerateModel( mat );
+		} ).ToArray();
+		rampModels[effectCode] = models;
+		return models;
+	}
+
+	// The rotation turning a plane (normal +Z) to face the camera.
+	private static System.Numerics.Quaternion FacingCamera( Vector3 position )
+	{
+		var to = (Camera.Position - position).GetSystemVector3();
+		if ( to.LengthSquared() < 1e-6f )
+			return System.Numerics.Quaternion.Identity;
+		to = System.Numerics.Vector3.Normalize( to );
+		var z = System.Numerics.Vector3.UnitZ;
+		float d = System.Numerics.Vector3.Dot( z, to );
+		if ( d < -0.9999f )
+			return System.Numerics.Quaternion.CreateFromAxisAngle( System.Numerics.Vector3.UnitX, MathF.PI );
+		return System.Numerics.Quaternion.Normalize( new System.Numerics.Quaternion( System.Numerics.Vector3.Cross( z, to ), 1f + d ) );
 	}
 
 	private readonly List<ParticleProxy> particleProxies = new();
@@ -507,11 +553,8 @@ public sealed class RideEngine : IRideEngine
 
 	private void SpawnParticleEffectAt( int effectCode, Vector3 position )
 	{
-		// The particle "proxy" is a coloured cube stand-in for real particle rendering — it reads as debris in
-		// the park, so only spawn it while the debug overlay is on (T-066). Real particles are a renderer task.
-		if ( !GameSettings.Current.ShowDebug )
-			return;
-
+		// Particles render as soft camera-facing sprites walking the effect's .PLB colour ramp (they were coloured
+		// debug cubes, hidden behind the debug overlay — T-066).
 		var (name, r, g, b) = ResolveEffectColour( effectCode );
 		if ( name == "?" )
 		{
@@ -539,19 +582,17 @@ public sealed class RideEngine : IRideEngine
 				? new Vector3( fx.Acceleration.X, fx.Acceleration.Y, fx.Acceleration.Z ) * VelScale
 				: Vector3.Zero;
 
-			var mat = new Material<ObjectUniformBuffer>( "content/shaders/unlit.shader",
-				MaterialFlags.DoubleSided | MaterialFlags.DisableDepthWrite );
-			mat.Set( "Color", new Texture( [r, g, b, 255], 1, 1 ) );
-			var model = Primitives.Cube.GenerateModel( mat );
-			float scale = count > 1 ? 1.1f : 2.5f; // a lone proxy stays chunky; a burst uses small motes
+			var ramp = RampModels( effectCode, fx, (r, g, b) );
+			float scale = count > 1 ? 1.2f : 2.5f; // a lone particle stays chunky; a burst uses small motes
 
 			for ( var i = 0; i < count; i++ )
 			{
 				var proxy = new ModelEntity
 				{
-					Model = model,
+					Model = ramp[0],
 					Scale = new Vector3( scale ),
 					Position = position,
+					Rotation = FacingCamera( position ),
 				};
 				particleProxies.Add( new ParticleProxy
 				{
@@ -559,6 +600,8 @@ public sealed class RideEngine : IRideEngine
 					Velocity = baseVel + RandomSpread() * SpreadSpeed,
 					Acceleration = accel,
 					Expire = lastNow + life,
+					Born = lastNow,
+					Ramp = ramp,
 				} );
 			}
 		}
@@ -613,9 +656,13 @@ public sealed class RideEngine : IRideEngine
 				particleProxies.RemoveAt( i );
 				continue;
 			}
-			// Drift the mote under its velocity + the effect's acceleration (gravity/buoyancy).
+			// Drift the mote under its velocity + the effect's acceleration (gravity/buoyancy), keep it facing the
+			// camera, and step through the colour ramp over its life.
 			p.Velocity += p.Acceleration * dt;
 			p.Entity.Position += p.Velocity * dt;
+			p.Entity.Rotation = FacingCamera( p.Entity.Position );
+			float age = (now - p.Born) / MathF.Max( 0.01f, p.Expire - p.Born );
+			p.Entity.Model = p.Ramp[Math.Clamp( (int)(age * p.Ramp.Length), 0, p.Ramp.Length - 1 )];
 		}
 	}
 

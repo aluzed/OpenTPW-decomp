@@ -9,7 +9,12 @@
 
 ## Remaining
 
-- Real ride light and particle rendering (the stand-ins are hidden, not replaced).
+- ~~Real particle rendering~~ — done 2026-10-21: particles are soft camera-facing sprites (a radial-alpha blob,
+  one billboard model per `.PLB` colour-ramp stop, cached per effect) that walk the effect's ramp over their life
+  (when `CyclesColorRamp`), on the existing .PLB-driven motion (burst count, lifetime, velocity, acceleration) — and
+  are shown by default. In an 80 s autoplace run ~85 effects fire (Destroy2/3/4, LaserFWexplode, FirePuff, Create2,
+  Repair, Sparks); seen as soft puffs over the rides (hard to judge finely at screenshot scale).
+- Real ride **light** rendering (the light stand-ins stay hidden).
 
 ## Affected files
 
