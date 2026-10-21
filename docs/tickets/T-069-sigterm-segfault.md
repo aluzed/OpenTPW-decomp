@@ -2,7 +2,9 @@
 
 - **Priority**: 🟡 Low/Medium (bug)
 - **Type**: Engine / shutdown
-- **Status**: ☐ To do
+- **Status**: ✅ Done — `Game.Run` registers SIGTERM/SIGINT via `PosixSignalRegistration`, cancels the
+  runtime's default exit and calls `Renderer.RequestQuit()`, which closes the SDL window on the render thread
+  (the window-close path). `kill -TERM` and SIGINT now exit with code 0, no core dump (verified).
 
 ## Observed (2026-10-21)
 

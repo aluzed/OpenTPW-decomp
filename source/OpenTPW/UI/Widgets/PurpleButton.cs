@@ -19,6 +19,9 @@ internal class PurpleButton : Panel
 
 	public string Text { get; set; }
 
+	/// <summary>Invoked when the button is clicked (after the click sound). Null = sound only.</summary>
+	public Action? OnClick { get; set; }
+
 	// UI click sound (T-031), loaded once from the global UI sound archive.
 	private static byte[]? clickSound;
 	private static bool clickSoundTried;
@@ -56,8 +59,12 @@ internal class PurpleButton : Panel
 	protected override void OnUpdate()
 	{
 		// Play a click when the cursor is over the button and the left button was just pressed.
-		if ( Input.MouseLeftPressed && IsCursorOver() && ClickSound != null )
+		if ( !Input.MouseLeftPressed || !IsCursorOver() )
+			return;
+
+		if ( ClickSound != null )
 			Audio.PlaySfx( "ui_click", ClickSound );
+		OnClick?.Invoke();
 	}
 
 	// True when the mouse is over the visible pill. The mouse is in window pixels (Y-down); convert

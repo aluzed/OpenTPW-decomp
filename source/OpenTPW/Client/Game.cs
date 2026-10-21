@@ -1,4 +1,5 @@
-﻿using Veldrid;
+﻿using System.Runtime.InteropServices;
+using Veldrid;
 
 namespace OpenTPW;
 
@@ -170,11 +171,26 @@ internal static class Game
 		}
 
 		//
+		// SIGTERM / SIGINT (T-069): the runtime's default handling exits the process while the render
+		// loop still owns the Vulkan/SDL/OpenAL resources, which segfaults. Cancel that and shut down
+		// through the normal window-close path instead. Keep the registrations alive for the loop.
+		//
+		using var sigTerm = PosixSignalRegistration.Create( PosixSignal.SIGTERM, OnQuitSignal );
+		using var sigInt = PosixSignalRegistration.Create( PosixSignal.SIGINT, OnQuitSignal );
+
+		//
 		// Run game loop
 		//
 		Render.OnUpdate += level.Update;
 		Render.OnUpdate += Audio.UpdateListener; // keep the 3D-audio listener on the camera (T-047)
 		Render.OnRender += level.Render;
 		Render.Run();
+	}
+
+	private static void OnQuitSignal( PosixSignalContext context )
+	{
+		context.Cancel = true;
+		Log.Info( $"{context.Signal} received, quitting" );
+		Render.RequestQuit();
 	}
 }

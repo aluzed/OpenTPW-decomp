@@ -103,7 +103,10 @@ public static partial class Input
 
 		Mouse = mouseInfo;
 
-		MouseLeftPressed = mouseInfo.Left && !_lastMouseLeft;
+		// Also count a press from the frame's events: a quick click (down + up inside one frame, e.g. a
+		// touchpad tap) leaves the button state "up" at both samples and would otherwise be lost.
+		MouseLeftPressed = (mouseInfo.Left && !_lastMouseLeft)
+			|| inputSnapshot.MouseEvents.Any( e => e.MouseButton == MouseButton.Left && e.Down );
 		_lastMouseLeft = mouseInfo.Left;
 
 		Right = 0;

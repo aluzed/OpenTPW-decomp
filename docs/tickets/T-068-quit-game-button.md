@@ -2,7 +2,9 @@
 
 - **Priority**: 🟠 Medium (bug)
 - **Type**: UI
-- **Status**: ☐ To do
+- **Status**: ✅ Done — `PurpleButton.OnClick` + `Renderer.RequestQuit()`; Quit Game exits with code 0
+  (verified with an automated click). Also fixed: `Input.MouseLeftPressed` now counts a press from the
+  frame's mouse events, so a quick click whose down + up land in one frame (touchpad tap) is no longer lost.
 
 ## Observed (2026-10-21)
 

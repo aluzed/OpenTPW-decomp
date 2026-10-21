@@ -36,6 +36,9 @@ public partial class Renderer
 
 	private bool _presentReady;
 
+	// Set by RequestQuit (possibly from a signal-handler thread); the render thread acts on it.
+	private volatile bool _quitRequested;
+
 	public Renderer()
 	{
 		Window = new( Settings.Default.GameWindowSize.X, Settings.Default.GameWindowSize.Y, "Theme Park World", true );
@@ -148,6 +151,12 @@ public partial class Renderer
 		_presentReady = true;
 	}
 
+	/// <summary>
+	/// Asks the game to exit at the start of the next frame, through the same window-close path as
+	/// the window manager's close button (T-068/T-069). Safe to call from any thread.
+	/// </summary>
+	public void RequestQuit() => _quitRequested = true;
+
 	public void Run()
 	{
 		SetupPresent();
@@ -247,6 +256,11 @@ public partial class Renderer
 		var nowSeconds = _frameClock.Elapsed.TotalSeconds;
 		float deltaTime = (float)(nowSeconds - _lastFrameSeconds);
 		_lastFrameSeconds = nowSeconds;
+
+		// Close on the render thread, before pumping, so the pump below tears the window down exactly
+		// as a user close would — never in the middle of a frame.
+		if ( _quitRequested )
+			Window.SdlWindow.Close();
 
 		InputSnapshot inputSnapshot = Window.SdlWindow.PumpEvents();
 

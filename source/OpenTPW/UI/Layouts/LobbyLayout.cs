@@ -33,6 +33,10 @@ internal sealed class LobbyLayout : Layout
 			Hud.AddChild( new PurpleButton( buttonText ) { position = topRight - offset } );
 		}
 
-		Hud.AddChild( new PurpleButton( "#QuitGame" ) { position = topRight + new Vector2( 200, -425 ) } );
+		Hud.AddChild( new PurpleButton( "#QuitGame" )
+		{
+			position = topRight + new Vector2( 200, -425 ),
+			OnClick = () => Render.RequestQuit()
+		} );
 	}
 }
