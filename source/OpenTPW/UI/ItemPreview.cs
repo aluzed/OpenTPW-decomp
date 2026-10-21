@@ -92,37 +92,19 @@ internal sealed class ItemPreview
 		Graphics.FlushBatch();
 		Render.CommandList.ClearDepthStencil( 1 );
 
-		var fwd = Camera.Rotation.Forward.GetSystemVector3();
-		// Screen → world through the real view-projection: the depth of a point Distance ahead, then each box's
-		// centre and a pixel's size at that depth.
-		var viewProj = Camera.ViewMatrix * Camera.ProjMatrix;
-		if ( !Matrix4x4.Invert( viewProj, out var inverse ) )
-			return;
-		var ahead = System.Numerics.Vector4.Transform( new System.Numerics.Vector4( Camera.Position.GetSystemVector3() + fwd * Distance, 1f ), viewProj );
-		float depth = ahead.Z / ahead.W;
-		SVector3 Unproject( float x, float y )
-		{
-			var p = System.Numerics.Vector4.Transform( new System.Numerics.Vector4( x / 640f - 1f, y / 360f - 1f, depth, 1f ), inverse );
-			return new SVector3( p.X, p.Y, p.Z ) / p.W;
-		}
-
 		// Face the camera: the model's up (Z) is the screen's up, then lean it towards the viewer and turn it.
-		// The screen's axes in the world, straight from the view matrix (its columns): right, up, and back at the viewer.
-		var view = Camera.ViewMatrix;
-		var modelX = SVector3.Normalize( new SVector3( view.M11, view.M21, view.M31 ) );
-		var screenUp = SVector3.Normalize( new SVector3( view.M12, view.M22, view.M32 ) );
-		var toViewer = SVector3.Normalize( new SVector3( view.M13, view.M23, view.M33 ) );
+		var (right, up, back) = ScreenSpace.Axes();
 		var basis = new Matrix4x4(
-			modelX.X, modelX.Y, modelX.Z, 0f,
-			toViewer.X, toViewer.Y, toViewer.Z, 0f,
-			screenUp.X, screenUp.Y, screenUp.Z, 0f,
+			right.X, right.Y, right.Z, 0f,
+			back.X, back.Y, back.Z, 0f,
+			up.X, up.Y, up.Z, 0f,
 			0f, 0f, 0f, 1f );
 		var spin = Matrix4x4.CreateRotationZ( Time.Now * TurnSpeed ) * Matrix4x4.CreateRotationX( Tilt );
 
 		foreach ( var (preview, box) in queued )
 		{
-			var where = Unproject( box.X + box.Width / 2f, box.Y + box.Height / 2f );
-			float pixel = SVector3.Distance( where, Unproject( box.X + box.Width / 2f + 1f, box.Y + box.Height / 2f ) );
+			if ( !ScreenSpace.TryAnchor( box.X + box.Width / 2f, box.Y + box.Height / 2f, Distance, out var where, out float pixel ) )
+				continue;
 			// Fit the model's bounding sphere into the box's smaller side.
 			float fit = MathF.Min( box.Width, box.Height ) * 0.42f * pixel / preview.radius;
 			var world = Matrix4x4.CreateTranslation( -preview.centre ) * spin * Matrix4x4.CreateScale( fit ) * basis * Matrix4x4.CreateTranslation( where );

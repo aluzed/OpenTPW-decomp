@@ -53,10 +53,10 @@ public sealed class Advisor : Entity
 	// On-screen anchoring, measured on the original (docs/10-ui-reference.md): the head's centre sits ~195 px left of
 	// the right edge and 79 % down a 720-px screen, ~20 % of the screen high; he faces the player squarely.
 	private const float Distance = 26f;
-	private const float HeadFromRight = 215f / 720f;  // in screen heights, so it holds on any aspect
-	private const float HeadDown = 355f / 720f;
-	private const float HeadHeight = 0.16f;           // of the screen height (the parts carry their own scale)
-	private const float HeadUnits = 22f;              // the Bug Head mesh's diameter
+	private const float HeadFromRight = 195f;  // base-screen pixels from the right edge to the head's centre
+	private const float HeadUp = 150f;         // base-screen pixels from the bottom
+	private const float HeadPixels = 125f;     // the head's height on screen
+	private const float HeadUnits = 22f;       // the Bug Head mesh's diameter
 	private const float LeanBack = 0.26f;             // radians (15°)
 
 	/// <summary>The viseme currently shown (for the HUD label); Closed when not speaking.</summary>
@@ -441,28 +441,20 @@ public sealed class Advisor : Entity
 				CurrentShape = lip.ShapeAt( TimeSpan.FromSeconds( elapsed ) );
 		}
 
-		// Anchor the assembly at its measured screen spot, a fixed distance in front of the camera, and face the
-		// player squarely: the model faces the camera squarely — not
-		// just turned about world Z, which left him tilted by the park camera's pitch.
-		var cam = Camera.Position;
-		var fwd = Camera.Rotation.Forward.GetSystemVector3();
-		var right = Camera.Rotation.Right.GetSystemVector3();
-		var up = Camera.Rotation.Up.GetSystemVector3();
-		float halfH = Distance * MathF.Tan( Camera.FieldOfView.DegreesToRadians() * 0.5f );
-		float aspect = Screen.Aspect > 0f ? Screen.Aspect : 16f / 9f;
-		float ndcX = 1f - 2f * HeadFromRight / aspect;
-		float ndcY = 1f - 2f * HeadDown;
-		var groupPos = cam + (Vector3)(fwd * Distance + right * (ndcX * halfH * aspect) + up * (ndcY * halfH));
-		float groupScale = HeadHeight * 2f * halfH / HeadUnits;
+		// Anchor the head at its measured screen spot, a fixed distance in front of the camera, and face the player
+		// squarely — not just turned about world Z, which left him tilted by the park camera's pitch.
+		if ( !ScreenSpace.TryAnchor( 1280f - HeadFromRight, HeadUp, Distance, out var anchor, out float pixel ) )
+			return;
+		var groupPos = (Vector3)anchor;
+		float groupScale = HeadPixels * pixel / HeadUnits;
 
 		// After the loader's Y/Z swap the model stands along +Y and looks along +Z (the eyes): map +Y to the
 		// screen's up and +Z back at the camera.
-		var toViewer = -fwd;
-		var modelX = System.Numerics.Vector3.Cross( up, toViewer );
+		var (right, up, back) = ScreenSpace.Axes();
 		var basis = new Matrix4x4(
-			modelX.X, modelX.Y, modelX.Z, 0f,
+			right.X, right.Y, right.Z, 0f,
 			up.X, up.Y, up.Z, 0f,
-			toViewer.X, toViewer.Y, toViewer.Z, 0f,
+			back.X, back.Y, back.Z, 0f,
 			0f, 0f, 0f, 1f );
 		// Leaning back a little, as in the original, so the face shows under the hat's brim.
 		var groupRot = Quaternion.CreateFromRotationMatrix( basis )
