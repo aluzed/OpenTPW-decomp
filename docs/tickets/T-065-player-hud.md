@@ -68,6 +68,17 @@ Rebuilt on captures of the PC version (docs/10-ui-reference.md) and `ui.wad`'s o
 - The original's keys (B H F I R Space G C), Esc closes windows, the game's own UI sounds (`sfUiHD.sdt` / `UIHD.sdt`)
   and its hints for every window button (`UIHELPTEXT.str`).
 
+## 2026-10-22 (night) — the remaining windows and tools
+
+- The park's lists (all items, all staff, all visitors; A / S / V): click an entry to open it and fly to it.
+- Ride window: the ride's duration; sideshow window: prize cost and chance of winning; shop window: quality of goods,
+  the special ingredient (fat / salt / ice / sugar, with its effect on visitors) and "apply to all stalls of this
+  type". UITEXT indices 38–40 and 69 were off by one (37 is a second "Scrap value").
+- Staff training budgets (UITEXT 147–149): a monthly budget per kind of staff, spent on training when the month
+  closes; opened from the staff list.
+- The queue tool (ride window's queue button): lay the queue a piece at a time in any direction from its open end,
+  with the world's straights, bend and open end; saved with the park.
+
 Still to do: the advisor's gesture animations (`Advisor_<theme>m*.MD2` — the ride keyframe container but with extra
-record types, addressed against the global 25-mesh model; see T-046), the queue builder button, and the exact UI
-camera (positions are measured, not read from `tp.exe`).
+record types, addressed against the global 25-mesh model; see T-046) and the exact UI camera (positions are
+measured, not read from `tp.exe`).
