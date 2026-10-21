@@ -1,9 +1,9 @@
 namespace OpenTPW;
 
 /// <summary>
-/// Clickable manage buttons (T-038): a bottom-left bar that exposes the park-economy and selected-ride
-/// actions that were keyboard-only — admission fee ±, take/repay loan, and (when a ride is selected via
-/// the Default tool) its ticket price ± and research/upgrade. Each button calls the same
+/// Clickable manage buttons (T-038): a bottom bar that exposes the park-economy and selected-staff actions that
+/// were keyboard-only — admission fee ±, loans, the gates, and a selected staffer's training / firing / zone. A
+/// selected ride or shop has its own window (<see cref="ItemInfoWindow"/>). Each button calls the same
 /// <see cref="ParkFinances"/> / <see cref="Ride"/> methods the keyboard shortcuts do. Renders nothing
 /// outside a park. Shares mouse/hit-test/button helpers with <see cref="HudPanel"/>.
 /// </summary>
@@ -43,7 +43,16 @@ internal sealed class ManagePanel : HudPanel
 	// original's windows.
 	private const float OffsetX = 228f, OffsetY = 40f;
 
-	private static Rectangle PanelBounds() => new( 12f + OffsetX, 14f + OffsetY, 460f, 76f );
+	// The bar hugs its buttons (a row may be empty).
+	private static Rectangle PanelBounds()
+	{
+		var buttons = Buttons();
+		if ( buttons.Count == 0 )
+			return new Rectangle( 12f + OffsetX, 14f + OffsetY, 0f, 0f );
+		float x0 = buttons.Min( b => b.Rect.X ), y0 = buttons.Min( b => b.Rect.Y );
+		float x1 = buttons.Max( b => b.Rect.X + b.Rect.Width ), y1 = buttons.Max( b => b.Rect.Y + b.Rect.Height );
+		return new Rectangle( x0 - 4f, y0 - 4f, x1 - x0 + 8f, y1 - y0 + 8f );
+	}
 
 	public bool ContainsMouse()
 		=> BuildMode.Current != null && ParkFinances.Current != null && Contains( PanelBounds(), MouseBase() );
@@ -65,38 +74,10 @@ internal sealed class ManagePanel : HudPanel
 			fin.Debt > 0 ? $"{LoansLabel} (${fin.Debt / 1000f:0.0}k)" : LoansLabel, true,
 			() => LoanPanel.Current?.Toggle(), Warned: fin.Debt > 0, Icon: "b_loan" ) );
 
-		// Selected-ride row (only when a ride is selected via the Default tool).
-		if ( BuildMode.Current?.SelectedRide is { } ride )
-		{
-			// Only sideshows charge (the price of a game); rides are free in TPW.
-			if ( ride.IsSideshow )
-			{
-				list.Add( new Btn( new Rectangle( 16f, RideY, 64f, BtnH ), PriceLabel, ride.TicketPrice > 1f,
-					() => ride.TicketPrice = System.Math.Max( 1f, ride.TicketPrice - 1f ), Icon: "b_minus" ) );
-				list.Add( new Btn( new Rectangle( 84f, RideY, 88f, BtnH ), $"{ride.TicketPrice:0}", true,
-					() => ride.TicketPrice += 1f, Icon: "b_plus" ) );
-			}
-			list.Add( ResearchButton( fin, ride ) );
-			list.Add( new Btn( new Rectangle( 350f, RideY, 116f, BtnH ),
-				$"SELL ${ride.BuildCost * Ride.SellRefundFraction:0}", true,
-				() => BuildMode.Current?.SellSelected(), Warned: true, Icon: "b_delete_login" ) );
-		}
-		// Selected-shop row: a food/drink stall's price is adjustable (a toilet is free); plus sell.
-		else if ( BuildMode.Current?.SelectedShop is { } shop )
-		{
-			if ( !shop.IsFree )
-			{
-				list.Add( new Btn( new Rectangle( 16f, RideY, 64f, BtnH ), PriceLabel, shop.Price > 1f,
-					() => shop.Price = System.Math.Max( 1f, shop.Price - 1f ), Icon: "b_minus" ) );
-				list.Add( new Btn( new Rectangle( 84f, RideY, 88f, BtnH ), $"{shop.Price:0}", true,
-					() => shop.Price += 1f, Icon: "b_plus" ) );
-			}
-			list.Add( new Btn( new Rectangle( 192f, RideY, 230f, BtnH ),
-				$"SELL {shop.Name} ${shop.BuildCost * Ride.SellRefundFraction:0}", true,
-				() => BuildMode.Current?.SellSelected(), Warned: true, Icon: "b_delete_login" ) );
-		}
+		// A selected ride or shop is managed in its own window (ItemInfoWindow); the bar keeps the park's controls.
+		bool itemWindow = BuildMode.Current?.SelectedRide != null || BuildMode.Current?.SelectedShop != null;
 		// Selected-staff row (T-049): dismiss the staffer + bound their patrol zone; training sits on the economy row.
-		else if ( BuildMode.Current?.SelectedStaff is { } staff )
+		if ( !itemWindow && BuildMode.Current?.SelectedStaff is { } staff )
 		{
 			float cost = staff.TrainingCost( TrainingStep );
 			list.Add( new Btn( new Rectangle( 316f, EconY, 140f, BtnH ),
@@ -121,29 +102,12 @@ internal sealed class ManagePanel : HudPanel
 				() => BuildMode.Current?.ClearSelectedStaffZone() ) );
 		}
 		// Nothing selected: the park gates (highlighted while closed — visitors only come once they're open).
-		else
+		else if ( !itemWindow )
 		{
 			list.Add( new Btn( new Rectangle( 16f, RideY, 130f, BtnH ), Level.GatesOpen ? "CLOSE PARK" : "OPEN PARK", true,
 				Level.ToggleGates, Warned: !Level.GatesOpen, Icon: "b_open" ) );
 		}
 		return list.Select( b => b with { Rect = new Rectangle( b.Rect.X + OffsetX, b.Rect.Y + OffsetY, b.Rect.Width, b.Rect.Height ) } ).ToList();
-	}
-
-	// The research/upgrade button mirrors the R/U keyboard logic + states.
-	private static Btn ResearchButton( ParkFinances fin, Ride ride )
-	{
-		var rect = new Rectangle( 176f, RideY, 170f, BtnH );
-		if ( ride.IsResearching )
-			return ride.IsResearchActive
-				? new Btn( rect, $"RESEARCHING {ride.ResearchFraction * 100f:0}%", false, () => { }, Progress: ride.ResearchFraction )
-				: new Btn( rect, $"QUEUED #{ride.ResearchQueuePosition}", false, () => { } ); // waiting behind another ride
-		if ( ride.NextResearched )
-			return new Btn( rect, $"UPGRADE ${ride.NextUpgradeCost:0}", fin.CanAfford( ride.NextUpgradeCost ),
-				() => { fin.PayBuild( ride.NextUpgradeCost ); ride.ApplyUpgrade(); }, Warned: true, Icon: "b_upgrade" );
-		if ( ride.HasNextLevel )
-			return new Btn( rect, $"RESEARCH ${ride.NextResearchCost:0}", fin.CanAfford( ride.NextResearchCost ),
-				() => { fin.PayBuild( ride.NextResearchCost ); ride.StartResearch(); }, Icon: "b_resrch" );
-		return new Btn( rect, "MAX LEVEL", false, () => { } );
 	}
 
 	protected override void OnUpdate()

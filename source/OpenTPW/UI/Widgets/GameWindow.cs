@@ -59,12 +59,14 @@ internal abstract class GameWindow : HudPanel
 		Fill( r, Inset );
 	}
 
-	protected static void Fill( Rectangle r, Texture t )
+	protected static void Fill( Rectangle r, Texture t, SVector3 tint = default )
 	{
 		var mat = Material.UI;
 		mat.Set( "Color", t );
-		Graphics.Quad( r, mat );
+		Graphics.Quad( r, new Rectangle( 0f, 0f, 1f, 1f ), mat, tint );
 	}
+
+	private static readonly SVector3 Dimmed = new( 0.45f, 0.45f, 0.5f );
 
 	/// <summary>A red→green gauge filled to <paramref name="fraction"/>.</summary>
 	protected static void DrawGauge( Rectangle r, float fraction )
@@ -92,23 +94,26 @@ internal abstract class GameWindow : HudPanel
 
 	/// <summary>A round ui.wad button (b_*.wct; its "d" look when pressed / selected), slightly larger under the cursor.
 	/// Returns true when clicked.</summary>
-	protected static bool RoundButton( Rectangle r, string texture, bool selected = false )
+	protected static bool RoundButton( Rectangle r, string texture, bool selected = false, bool enabled = true )
 	{
 		bool over = Contains( r, MouseBase() );
 		var name = selected && UiTexture( texture + "d" ) != null ? texture + "d" : texture;
-		if ( UiTexture( name ) is { } t )
-		{
-			var draw = over ? new Rectangle( r.X - 2f, r.Y - 2f, r.Width + 4f, r.Height + 4f ) : r;
-			Fill( draw, t );
-		}
-		return over && Input.MouseLeftPressed;
+		var draw = over && enabled ? new Rectangle( r.X - 2f, r.Y - 2f, r.Width + 4f, r.Height + 4f ) : r;
+		if ( !enabled && UiTexture( texture + "g" ) is { } grey )
+			Fill( draw, grey );
+		else if ( UiTexture( name ) is { } t )
+			Fill( draw, t, enabled ? default : Dimmed );
+		else
+			UiModel.Load( texture )?.Draw( draw, null, enabled ? default : Dimmed ); // a button with no flat texture (b_upgrade)
+		return enabled && over && Input.MouseLeftPressed;
 	}
 
-	/// <summary>The window's title (yellow, centred at the top) and the balance at the top right.</summary>
+	/// <summary>The window's title (yellow, centred at the top) and the balance at the top right (none when
+	/// <paramref name="right"/> is 0).</summary>
 	protected static void DrawHeading( string title, float centreX, float right, float top )
 	{
 		Text( Medium, title, centreX, top, 17f, TitleInk, TextAlign.Center );
-		if ( ParkFinances.Current is { } fin )
+		if ( right > 0f && ParkFinances.Current is { } fin )
 			Text( Medium, $"Cash  $ {fin.Money:0}", right, top, 17f, default, TextAlign.Right );
 	}
 }

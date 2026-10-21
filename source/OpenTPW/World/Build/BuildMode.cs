@@ -125,6 +125,22 @@ public sealed class BuildMode : Entity
 	/// off if already moving.</summary>
 	public void BeginMoveSelectedStaff() => movingStaff = movingStaff == null ? SelectedStaff : null;
 
+	/// <summary>Drop the selected ride / shop / staffer (the item window's close button).</summary>
+	public void ClearSelection()
+	{
+		SelectedRide = null;
+		SelectedShop = null;
+		SelectedStaff = null;
+	}
+
+	/// <summary>Select <paramref name="ride"/> (the item window's previous / next arrows).</summary>
+	public void SelectRide( Ride ride )
+	{
+		SelectedRide = ride;
+		SelectedShop = null;
+		SelectedStaff = null;
+	}
+
 	/// <summary>Sell/demolish the selected ride or shop: refunds part of its cost and tears it out of the
 	/// park (T-041). No-op if nothing is selected. Exposed for the manage UI + the Delete shortcut.</summary>
 	public void SellSelected()
