@@ -73,7 +73,11 @@ public sealed class BuildMode : Entity
 	/// <summary>Select catalog item <paramref name="index"/> (or clear with any out-of-range value, e.g. -1).
 	/// Clicking the already-selected item toggles it off. Used by the clickable build UI (T-038).</summary>
 	public void SelectIndex( int index )
-		=> Selected = (index >= 0 && index < Catalog.Count && index != Selected && IsBuildable( index )) ? index : -1;
+	{
+		if ( movingRide != null )
+			return; // a moved ride must be put down first
+		Selected = (index >= 0 && index < Catalog.Count && index != Selected && IsBuildable( index )) ? index : -1;
+	}
 
 	/// <summary>Whether catalog item <paramref name="index"/> has been researched (or needed no research).</summary>
 	public bool IsBuildable( int index ) => ItemResearch.Current?.IsUnlocked( Catalog[index].Name ) ?? true;
@@ -163,6 +167,30 @@ public sealed class BuildMode : Entity
 	{
 		ClearSelection();
 		SelectedPeep = peep;
+	}
+
+	// A ride being moved (picked up, waiting to be put down).
+	private Level.MovedRide? movingRide;
+
+	/// <summary>Whether a ride is picked up, waiting to be put down.</summary>
+	public bool IsMovingRide => movingRide != null;
+
+	/// <summary>Pick up the selected ride to move it (the ride window's move button); false when it can't be moved.</summary>
+	public bool BeginMoveSelectedRide()
+	{
+		if ( SelectedRide is not { } ride )
+			return false;
+		int index = -1;
+		for ( int i = 0; i < Catalog.Count; i++ )
+			if ( Catalog[i].RidePath != null && Path.GetFileName( Catalog[i].RidePath! ) == Path.GetFileName( ride.Archive ) )
+				index = i;
+		if ( index < 0 || Level.PickUpRide( ride, grid ) is not { } moved )
+			return false;
+		movingRide = moved;
+		Rotation = ride.Rotation;
+		SelectedRide = null;
+		Selected = index;
+		return true;
 	}
 
 	/// <summary>Sell/demolish the selected ride or shop: refunds part of its cost and tears it out of the
@@ -266,13 +294,20 @@ public sealed class BuildMode : Entity
 		bool Hit( Key k ) => down.Contains( k ) && !prevDown.Contains( k );
 
 		for ( int i = 0; i < NumberKeys.Length && i < Catalog.Count; i++ )
-			if ( Hit( NumberKeys[i] ) && IsBuildable( i ) )
+			if ( Hit( NumberKeys[i] ) && IsBuildable( i ) && movingRide == null )
 				Selected = i;
 		// Esc puts down the item being placed, else closes the open windows.
 		if ( Hit( Key.Escape ) && Selected < 0 && !CamcorderCameraMode.Active && RideItCameraMode.Target == null )
 			GameWindow.CloseOpen();
 		if ( Hit( Key.Escape ) || Hit( Key.Number0 ) )
-			Selected = -1;
+		{
+			// A ride being moved goes back where it was.
+			if ( movingRide is { } moved && Selected >= 0
+				&& Level.PutDownRide( moved, Catalog[Selected], grid, terrain, moved.FromX, moved.FromY, moved.FromRotation ) )
+				movingRide = null;
+			if ( movingRide == null )
+				Selected = -1;
+		}
 
 		// R rotates the ride being placed (90° CW per press); only meaningful for a ride placement tool.
 		if ( Hit( Key.R ) && Selected >= 0 && Catalog[Selected].RidePath != null )
@@ -460,6 +495,17 @@ public sealed class BuildMode : Entity
 		var c = grid.TileToWorld( tx, ty, ew, eh );
 		highlight.Position = c.WithZ( terrain.SampleHeight( c.X, c.Y ) + 0.3f );
 
+		if ( movingRide is { } moved )
+		{
+			// Putting a moved ride down: free, wherever it fits.
+			if ( Input.MouseLeftPressed && canPlace && Level.PutDownRide( moved, item, grid, terrain, tx, ty, Rotation ) )
+			{
+				Log.Info( $"[build] moved {item.Name} to ({tx},{ty})" );
+				movingRide = null;
+				Selected = -1;
+			}
+			return;
+		}
 		if ( Input.MouseLeftPressed && ok && commit( item, tx, ty, Rotation ) )
 			Log.Info( $"[build] placed {item.Name} at ({tx},{ty}) rot {Rotation} for ${item.Cost:0}" );
 	}

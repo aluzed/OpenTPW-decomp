@@ -491,6 +491,22 @@ public class Level
 				Log.Info( $"[build] sell-test ride {rideToSell.Name}: rides {ridesBefore}->{ridesAfter}, "
 					+ $"queues {queuesBefore}->{parkQueues.Count}, refund {refund:0}" );
 			}
+			// Exercise moving a ride: pick the first one up and put it down a little way off, as it was.
+			if ( Entity.All.OfType<Ride>().FirstOrDefault( r => r.Track == null && r.TileTrack == null && !r.IsFeature ) is { } toMove
+				&& catalog.FirstOrDefault( c => c.RidePath != null && Path.GetFileName( c.RidePath ) == Path.GetFileName( toMove.Archive ) ) is { RidePath: not null } moveItem )
+			{
+				int fromX = toMove.TileX, fromY = toMove.TileY, level = toMove.UpgradeLevel;
+				if ( PickUpRide( toMove, grid ) is { } moved )
+				{
+					bool down = false;
+					for ( int r = 6; r <= 20 && !down; r += 2 )
+						for ( int d = 0; d < 8 && !down; d++ )
+							down = PutDownRide( moved, moveItem, grid, terrain, fromX + (int)(MathF.Cos( d * MathF.PI / 4f ) * r), fromY + (int)(MathF.Sin( d * MathF.PI / 4f ) * r), moved.FromRotation );
+					var after = Entity.All.OfType<Ride>().LastOrDefault();
+					Log.Info( $"[build] move-test {moved.Archive}: from ({fromX},{fromY}) to ({after?.TileX},{after?.TileY}), put down {down}, level {level}->{after?.UpgradeLevel}" );
+				}
+			}
+
 			// Sell a spare stall built for the purpose — selling the park's first one tore down its only food stall,
 			// leaving every dev-park visitor hungry.
 			if ( CommitPlacementNear( Item( "shop" ), grid, terrain, cx - 12, cy + 8, radius: 6 ) && Shop.Stalls[^1] is { } shopToSell )
@@ -1174,18 +1190,54 @@ public class Level
 		}
 	}
 
+	/// <summary>A ride picked up to be moved (the ride window's move button): what it was, to rebuild it as it was.</summary>
+	public sealed record MovedRide( string Archive, int UpgradeLevel, int ResearchedLevel, float Reliability, bool Closed,
+		float TicketPrice, float BuildCost, int FromX, int FromY, int FromRotation );
+
+	/// <summary>Pick <paramref name="ride"/> up to move it: it leaves the park (no refund) and comes back free where it's
+	/// put down. Rides with a laid track can't be moved (the track would be lost).</summary>
+	public static MovedRide? PickUpRide( Ride ride, PlacementGrid grid )
+	{
+		if ( ride.Track != null || ride.TileTrack != null || ride.IsResearching )
+			return null;
+		var moved = new MovedRide( ride.Archive, ride.UpgradeLevel, ride.ResearchedLevel, ride.Reliability, ride.IsClosed,
+			ride.TicketPrice, ride.BuildCost, ride.TileX, ride.TileY, ride.Rotation );
+		DemolishRide( ride, grid, refundIt: false );
+		return moved;
+	}
+
+	/// <summary>Put a picked-up ride down at (tx, ty) for free, as it was.</summary>
+	public static bool PutDownRide( MovedRide moved, BuildCatalogItem item, PlacementGrid grid, ParkTerrain terrain, int tx, int ty, int rotation )
+	{
+		if ( !CommitPlacement( item, grid, terrain, tx, ty, rotation, charge: false ) )
+			return false;
+		if ( Entity.All.OfType<Ride>().LastOrDefault() is { } ride && ride.Archive == moved.Archive )
+		{
+			ride.RestoreProgress( moved.UpgradeLevel, moved.ResearchedLevel, false, 0f, moved.Reliability, false );
+			ride.TicketPrice = moved.TicketPrice;
+			ride.BuildCost = moved.BuildCost;
+			if ( moved.Closed )
+				ride.SetClosed( true );
+		}
+		UiSounds.Play( UiSounds.LayRide );
+		return true;
+	}
+
 	// Sell/demolish a placed ride (T-041): drop its queue so peeps stop targeting it, free its footprint +
 	// queue-path grid cells, refund part of the build cost, and tear down all its entities. The grid lives
 	// in SetupDevPark, so this is wired as the BuildMode demolish callback.
-	private static void DemolishRide( Ride ride, PlacementGrid grid )
+	private static void DemolishRide( Ride ride, PlacementGrid grid ) => DemolishRide( ride, grid, refundIt: true );
+
+	private static void DemolishRide( Ride ride, PlacementGrid grid, bool refundIt )
 	{
 		parkQueues.RemoveAll( q => q.Ride == ride );
 		grid.Clear( ride.TileX, ride.TileY, ride.TileW, ride.TileH );
 		foreach ( var (cx, cy) in ride.QueuePathCells )
 			grid.Clear( cx, cy, 1, 1 );
 
-		var refund = ride.BuildCost * Ride.SellRefundFraction;
-		ParkFinances.Current?.RefundBuild( refund );
+		var refund = refundIt ? ride.BuildCost * Ride.SellRefundFraction : 0f;
+		if ( refundIt )
+			ParkFinances.Current?.RefundBuild( refund );
 		ParticleEmitter.World.Spawn( ride.IsFeature ? ParticleEmitter.DestroyFeature : ride.IsSideshow ? ParticleEmitter.DestroySideshow : ParticleEmitter.DestroyRide, ride.Position + Vector3.Up * 6f );
 		ride.Despawn();
 		Log.Info( $"[build] sold {ride.Name} for ${refund:0} (built ${ride.BuildCost:0})" );

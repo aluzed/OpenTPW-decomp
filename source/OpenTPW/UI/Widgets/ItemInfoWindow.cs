@@ -133,7 +133,9 @@ internal sealed class ItemInfoWindow : GameWindow
 
 		if ( RoundButton( Action( 143f ), "b_delete_login" ) )
 			build.SellSelected();
-		RoundButton( Action( 217f ), "b_move", enabled: false );
+		// Move: pick the ride up and put it down elsewhere, as it is (not a ride with a laid track).
+		if ( RoundButton( Action( 217f ), "b_move", enabled: ride.Track == null && ride.TileTrack == null && !ride.IsResearching ) )
+			build.BeginMoveSelectedRide();
 		RoundButton( Action( 369f ), "b_queue", enabled: false );
 		if ( RoundButton( Action( 450f ), "b_rideit" ) )
 		{
