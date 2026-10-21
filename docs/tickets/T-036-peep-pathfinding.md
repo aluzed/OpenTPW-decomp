@@ -2,7 +2,7 @@
 
 - **Priority**: 🟡 Feature
 - **Type**: Engine
-- **Status**: ⚠️ Core done — peeps route around ride/shop footprints via A*; water-avoidance + a real gate
+- **Status**: ✅ Done (2026-10-21: both remaining items landed with T-050; water from the `base.lnd` mask since T-072) — was ⚠️ Core done — peeps route around ride/shop footprints via A*; water-avoidance + a real gate
   node wait on the real level terrain/path layout being loaded (terrain is still the hardcoded demo).
 - **Related**: [T-034](T-034-peeps.md) (queue spacing *along* a path — done).
 
