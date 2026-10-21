@@ -19,9 +19,9 @@ namespace OpenTPW;
 /// </summary>
 public static class ChallengeMetrics
 {
-	/// <summary>Whether this challenge Type is tracked (so the manager can offer it). 15 (kart crossroads) and 19
-	/// (coaster loops) need track features OpenTPW doesn't have yet.</summary>
-	public static bool IsSupported( int type ) => type is (>= 1 and <= 13) or 16 or 17 or 18 or 20 or 21 or 24 or 25 or 27
+	/// <summary>Whether this challenge Type is tracked (so the manager can offer it). 15 (kart crossroads) needs a
+	/// track feature OpenTPW doesn't have yet.</summary>
+	public static bool IsSupported( int type ) => type is (>= 1 and <= 13) or 16 or 17 or 18 or 19 or 20 or 21 or 24 or 25 or 27
 		or 28 or 29 or 30 or 31 or 33;
 
 	/// <summary>The objects (rides, sideshows, features) of the active theme by <c>Info.Id</c> → name, so a challenge
@@ -38,7 +38,7 @@ public static class ChallengeMetrics
 
 	/// <summary>True for a type that measures a level the park must reach (a share of visitors, 9/10) rather than a
 	/// count accumulated since the challenge was accepted — its progress is the live value, not a gain.</summary>
-	public static bool IsLevel( int type ) => type is 9 or 10 or 21 or 24 or 25 or 27 or 28 or 29;
+	public static bool IsLevel( int type ) => type is 9 or 10 or 19 or 21 or 24 or 25 or 27 or 28 or 29;
 
 	/// <summary><see cref="IsLevel(int)"/> for a challenge (an upgrade goal is a level: the ride's upgrade).</summary>
 	public static bool IsLevel( Challenge c ) => IsLevel( c.Type ) || IsUpgrade( c );
@@ -82,6 +82,7 @@ public static class ChallengeMetrics
 			// "Get N peeps onto [the Jaw Dropper]": that ride's riders (any ride's when the file names none).
 			17 or 20 => c.TargetObj != 0 ? RidesOf( c ).Sum( r => r.TimesRidden ) : fin.RidesRidden,
 			21 => RidesOf( c ).Select( r => (float)(r.Track?.SegmentCount ?? 0) ).DefaultIfEmpty( 0f ).Max(), // "with N sections"
+			19 => RidesOf( c ).Select( r => (float)(r.Track?.LoopCount ?? 0) ).DefaultIfEmpty( 0f ).Max(),    // "build that triple loop"
 			25 => LowestMorale( null ),                // "Keep all staff over N happiness"
 			27 => LowestMorale( StaffRole.Handyman ),  // "Keep your Handymen above N happiness"
 			28 => RidesOf( c ).Select( r => (float)r.UpgradeLevel ).DefaultIfEmpty( 0f ).Max(), // "Upgrade X to level N+1"
@@ -146,6 +147,7 @@ public static class ChallengeMetrics
 				? $"Get {c.TargetVal} peeps onto the {ObjectName( c, "ride" )} in {c.TargetTime} days"
 				: $"Get {c.TargetVal} peeps to ride in {c.TargetTime} days",
 			21 => $"Build the {ObjectName( c, "track" )} with {c.TargetVal} sections in {c.TargetTime} days",
+			19 => $"Give the {ObjectName( c, "coaster" )} {c.TargetVal} loops in {c.TargetTime} days",
 			25 => $"Keep all staff over {c.TargetVal} happiness for {c.TargetTime} days",
 			27 => $"Keep your handymen over {c.TargetVal} happiness for {c.TargetTime} days",
 			28 => $"Upgrade the {ObjectName( c, "ride" )} to level {c.TargetVal + 1} in {c.TargetTime} days",

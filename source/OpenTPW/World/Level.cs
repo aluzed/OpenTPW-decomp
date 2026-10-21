@@ -427,8 +427,12 @@ public class Level
 					if ( !t.Extend( lx, ly ) )
 						break;
 					if ( ++laid == 3 ) { t.StackHead( +1 ); t.StackHead( +1 ); } // raise a mid-track hill (T-045 3b)
+					if ( ly == top && lx == left + 1 && t.CanLoopAtHead() )
+						t.AddLoopAtHead(); // a vertical loop on the top straight
 				}
-				Log.Info( $"[build] autotrack segments={t.SegmentCount} closed={t.IsClosed}" );
+				Log.Info( $"[build] autotrack segments={t.SegmentCount} closed={t.IsClosed} loops={t.LoopCount}" );
+				if ( Environment.GetEnvironmentVariable( "OPENTPW_COASTER_DEMO" ) == "1" )
+					BuildCameraMode.Focus = coaster.Position; // look at the coaster and its loop
 			}
 
 			// Exercise the research → upgrade pipeline (T-044) on the first placed ride.
@@ -636,7 +640,7 @@ public class Level
 		{
 			if ( r.Track is not { } tr )
 				continue;
-			var ts = new SaveGame.TrackState { CoasterTileX = r.TileX, CoasterTileY = r.TileY, Closed = tr.IsClosed };
+			var ts = new SaveGame.TrackState { CoasterTileX = r.TileX, CoasterTileY = r.TileY, Closed = tr.IsClosed, Loops = tr.Loops.ToList() };
 			for ( int i = 0; i < tr.Tiles.Count; i++ )
 				ts.Tiles.Add( new SaveGame.TrackTile { X = tr.Tiles[i].X, Y = tr.Tiles[i].Y, Rise = i < tr.Rises.Count ? tr.Rises[i] : 0f } );
 			s.Tracks.Add( ts );
@@ -737,7 +741,7 @@ public class Level
 				continue;
 			var savedTiles = ts.Tiles.Select( t => (t.X, t.Y) ).ToList();
 			var savedRises = ts.Tiles.Select( t => t.Rise ).ToList();
-			new CoasterTrack( coaster, grid, terrain ).Restore( savedTiles, savedRises, ts.Closed );
+			new CoasterTrack( coaster, grid, terrain ).Restore( savedTiles, savedRises, ts.Closed, ts.Loops );
 		}
 
 		// Respawn staff at their saved wander centres, re-applying any patrol zone (T-059 v2).

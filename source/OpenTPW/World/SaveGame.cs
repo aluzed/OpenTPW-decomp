@@ -97,6 +97,8 @@ public sealed class SaveGame
 		public int CoasterTileY { get; set; }
 		public bool Closed { get; set; }
 		public List<TrackTile> Tiles { get; set; } = new();
+		/// <summary>The tiles carrying a vertical loop (indices into <see cref="Tiles"/>).</summary>
+		public List<int> Loops { get; set; } = new();
 	}
 
 	/// <summary>One laid track tile: grid position + its height offset above the base track height.</summary>

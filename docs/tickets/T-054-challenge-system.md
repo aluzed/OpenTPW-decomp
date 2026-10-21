@@ -81,5 +81,5 @@ hooks in `ParkFinances`/`Shop`/`Ride`/`Level`, `source/OpenTPW.Tests/ChallengeTe
   Build / upgrade goals with `TargetVal 0` need at least one (`ChallengeMetrics.Target`).
 - **Offer pacing from `Standard.sam`** (`DaysUntilFirstChallenge` 540, `DaysAfterCompleted/DeclinedChallenge`
   270) now that the calendar is the original's (T-076; was 3 / 5 / 8 days); offers and results are logged.
-- Still skipped: 15 (kart crossroads) and 19 (coaster loops) — OpenTPW tracks have neither. Unit-tested
+- Still skipped: 15 (kart crossroads). 19 (coaster loops) is tracked since loops can be built (T-045). Unit-tested
   (`ChallengeTypesTests`).

@@ -294,6 +294,12 @@ public sealed class BuildMode : Entity
 			if ( Hit( Key.B ) ) track.Backtrack();
 			if ( Hit( Key.PageUp ) ) track.StackHead( +1 );   // raise the head segment (build a hill)
 			if ( Hit( Key.PageDown ) ) track.StackHead( -1 ); // lower it (build a dip)
+			// O: a vertical loop on the straight just laid (three level tiles in a row), paid like a build.
+			if ( Hit( Key.O ) && track.CanLoopAtHead() && ParkFinances.Current is { } loopFin && loopFin.CanAfford( CoasterTrack.LoopCost ) )
+			{
+				loopFin.PayBuild( CoasterTrack.LoopCost );
+				track.AddLoopAtHead();
+			}
 		}
 
 		prevDown.Clear();

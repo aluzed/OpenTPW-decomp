@@ -166,3 +166,14 @@ placement (T-041) works.
 
 new `source/OpenTPW/World/Rides/Coaster*`, `source/OpenTPW/World/Rides/RideShape.cs`,
 `RideEngine.cs`, `source/OpenTPW/World/Build/*`, UI.
+
+## Vertical loops (2026-10-21)
+
+With the track tool active, **O** builds a vertical loop on the straight just laid — three level tiles in a row,
+the loop standing on the middle one — for `CoasterTrack.LoopCost` (600; the minecart's `LoopPylon` costs 60 a unit
+against 40 for a standard pylon). The loop is spliced into the ridden spline as a circle in the plane of travel
+(radius 0.9 tile) that drifts sideways towards its top so the exit clears the entry. The swept profile and the
+cars keep their side axis through the loop (over the top the travel runs backwards and its horizontal
+perpendicular would flip), so the track and the train turn over; banking is off on steep stretches. Loops are
+saved with the track, counted for challenge type 19 ("build that triple loop", T-054), and the dev park's
+autotrack puts one on its top straight (`OPENTPW_COASTER_DEMO=1` points the camera at it).

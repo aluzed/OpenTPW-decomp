@@ -21,6 +21,7 @@ public sealed class CoasterTrain : Entity
 	private readonly float tileSize;
 	private readonly float spacing;     // arc-length gap between cars
 	private readonly ModelEntity[] cars;
+	private readonly Vector3[] carRight; // each car's side axis, carried through a loop
 	private readonly List<Peep> riders = new(); // boarded peeps, seat order (front car first)
 	private readonly Model[] frames;      // CrocCar animation frames (base + CrocCarM1..3)
 	private float dist;                 // lead car's distance travelled along the shuttle cycle
@@ -39,6 +40,7 @@ public sealed class CoasterTrain : Entity
 		frames = loaded;
 
 		cars = new ModelEntity[CarCount];
+		carRight = new Vector3[CarCount];
 		for ( int i = 0; i < CarCount; i++ )
 			cars[i] = new ModelEntity { Model = frames[0], Scale = scale, Position = Offscreen };
 	}
@@ -111,10 +113,18 @@ public sealed class CoasterTrain : Entity
 			if ( returning ) tan = -tan;
 
 			cars[i].Position = pos;
-			// The car body is long along its local +Y, so align +Y (not +X) with the travel tangent.
-			float yaw = MathF.Atan2( tan.Y, tan.X ) - MathF.PI / 2f;
-			var rot = System.Numerics.Quaternion.CreateFromAxisAngle( System.Numerics.Vector3.UnitZ, yaw );
-			cars[i].Rotation = rot;
+			// The car body is long along its local +Y (forward), +X to its right, +Z up. Its right stays horizontal,
+			// except through a loop, where the travel is vertical or runs backwards over the top: there it keeps
+			// the side it had, so the car turns over with the track (T-045 loops).
+			var right = new Vector3( tan.Y, -tan.X, 0f );
+			if ( right.Length > 0.35f && tan.Z * tan.Z < 0.5f && (carRight[i].Length < 0.5f || Vector3.Dot( right.Normal, carRight[i] ) > -0.2f) )
+				carRight[i] = right.Normal;
+			var carSide = carRight[i].Length < 0.5f ? new Vector3( 1f, 0f, 0f ) : carRight[i];
+			var f = tan.Normal;
+			var carUp = Vector3.Cross( carSide, f ).Normal;
+			carSide = Vector3.Cross( f, carUp ).Normal; // re-orthogonalise
+			cars[i].Rotation = System.Numerics.Quaternion.Normalize( System.Numerics.Quaternion.CreateFromRotationMatrix( new System.Numerics.Matrix4x4(
+				carSide.X, carSide.Y, carSide.Z, 0f, f.X, f.Y, f.Z, 0f, carUp.X, carUp.Y, carUp.Z, 0f, 0f, 0f, 0f, 1f ) ) );
 
 			// Seat the real boarded peeps this car carries, side by side across its width (perp to travel);
 			// each rider sits on the car and keeps facing the camera (the peep itself idles while aboard).

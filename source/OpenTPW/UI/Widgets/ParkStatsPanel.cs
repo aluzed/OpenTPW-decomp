@@ -129,7 +129,7 @@ internal sealed class ParkStatsPanel : HudPanel
 			if ( build.LayingTrack )
 				lines.Add( build.TrackClosed
 					? $"TRACK: {build.TrackSegments} segs - LOOP CLOSED (B back, T done)"
-					: $"TRACK: {build.TrackSegments} segs (click lay, B back, T done)" );
+					: $"TRACK: {build.TrackSegments} segs (click lay, B back, O loop ${CoasterTrack.LoopCost:0}, T done)" );
 			else if ( build.SelectedRide is { Shape.HasTrack: true } )
 				lines.Add( "T: lay coaster track" );
 

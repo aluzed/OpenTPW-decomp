@@ -23,6 +23,22 @@ public sealed class CoasterTrack
 	private readonly (int X, int Y)? trackInTile; // the station's '<' entry connector, where the loop closes
 	private readonly List<(float X, float Y, float U)> crossSection; // authored track profile (coaster.sam)
 	private ModelEntity? ribbon;                  // the smooth track surface (regenerated on every change)
+	private readonly SortedSet<int> loops = new();  // tiles (indices into `tiles`) carrying a vertical loop
+
+	private const int SplineSub = 8;        // spline points per laid segment
+	private const int LoopPoints = 32;      // points around one vertical loop
+	private const float LoopRadius = 0.9f;  // ×TileSize
+	private const float LoopTwist = 0.35f;  // ×TileSize: the loop's sideways drift at its top, so it clears its own entry
+
+	/// <summary>What a loop costs (the minecart's <c>LoopPylon</c>: <c>fCostPerUnit</c> 60 a unit vs 40 for a
+	/// standard pylon — about ten units of track).</summary>
+	public const float LoopCost = 600f;
+
+	/// <summary>How many vertical loops the track has (challenge "build that triple loop" — type 19).</summary>
+	public int LoopCount => loops.Count;
+
+	/// <summary>The tiles carrying a loop (indices into <see cref="Tiles"/>) — captured by save/load.</summary>
+	public IReadOnlyCollection<int> Loops => loops;
 
 	public (int X, int Y) Head => tiles[^1];
 	public int SegmentCount => tiles.Count - 1; // the first tile is the station connector anchor
@@ -92,10 +108,59 @@ public sealed class CoasterTrack
 		var ctrl = WorldPath();
 		if ( ctrl.Count < 2 )
 			return ctrl;
-		var path = Smooth( ctrl, IsClosed, 8 );
+		var path = Smooth( ctrl, IsClosed, SplineSub );
 		if ( IsClosed )
 			path.Add( path[0] ); // close the ring so the last edge wraps back to the start
+		if ( ctrl.Count >= 3 )
+			foreach ( var tile in loops.Reverse() ) // back to front, so earlier indices stay valid
+				InsertLoop( path, tile * SplineSub );
 		return path;
+	}
+
+	// Splice a vertical loop into the ridden line at spline point `at`: a circle standing on the track in the plane
+	// of travel, drifting sideways towards its top (and back) so the exit clears the entry.
+	private void InsertLoop( List<Vector3> path, int at )
+	{
+		if ( at <= 0 || at >= path.Count - 1 )
+			return;
+		var p = path[at];
+		var d = path[at + 1] - path[at - 1];
+		var dir = new Vector3( d.X, d.Y, 0f ).Normal;
+		var right = new Vector3( -dir.Y, dir.X, 0f );
+		float r = grid.TileSize * LoopRadius, twist = grid.TileSize * LoopTwist;
+		var circle = new List<Vector3>( LoopPoints );
+		for ( int k = 1; k < LoopPoints; k++ )
+		{
+			float a = MathF.Tau * k / LoopPoints;
+			circle.Add( p + dir * (r * MathF.Sin( a )) + Vector3.Up * (r * (1f - MathF.Cos( a ))) + right * (twist * MathF.Sin( a / 2f )) );
+		}
+		circle.Add( p );
+		path.InsertRange( at + 1, circle );
+	}
+
+	/// <summary>Whether the head can take a loop: the last three tiles run straight and level (a loop stands on
+	/// the middle one), and no loop is already there or next door.</summary>
+	public bool CanLoopAtHead()
+	{
+		int n = tiles.Count;
+		if ( n < 3 || IsClosed )
+			return false;
+		var (ax, ay) = tiles[n - 3];
+		var (bx, by) = tiles[n - 2];
+		var (cx, cy) = tiles[n - 1];
+		bool straight = bx - ax == cx - bx && by - ay == cy - by;
+		bool level = MathF.Abs( rise[n - 1] - rise[n - 2] ) < 1e-3f && MathF.Abs( rise[n - 2] - rise[n - 3] ) < 1e-3f;
+		return straight && level && !loops.Contains( n - 2 ) && !loops.Contains( n - 3 ) && !loops.Contains( n - 1 );
+	}
+
+	/// <summary>Build a vertical loop on the straight just laid (the caller pays <see cref="LoopCost"/>).</summary>
+	public bool AddLoopAtHead()
+	{
+		if ( !CanLoopAtHead() )
+			return false;
+		loops.Add( tiles.Count - 2 );
+		RebuildRibbon();
+		return true;
 	}
 
 	/// <summary>Can the track be extended onto tile (tx,ty)? (on-grid, 4-adjacent to the head, no overlap,
@@ -151,6 +216,7 @@ public sealed class CoasterTrack
 		IsClosed = false; // removing the head reopens a closed circuit (the head was the closing tile)
 		tiles.RemoveAt( tiles.Count - 1 );
 		rise.RemoveAt( rise.Count - 1 );
+		loops.RemoveWhere( i => i >= tiles.Count - 1 ); // a loop needs track on both sides
 		if ( pylons.Count > 0 )
 		{
 			Entity.All.Remove( pylons[^1] );
@@ -169,8 +235,12 @@ public sealed class CoasterTrack
 	/// constructor already placed), then apply the saved per-tile heights (Extend continues at the head height, so
 	/// the STACKUP/DOWN rises are restored here) and the closed-circuit flag. Tiles that no longer extend cleanly
 	/// (a corrupt/edited save) are skipped, so a bad save can't throw.</summary>
-	public void Restore( IReadOnlyList<(int X, int Y)> savedTiles, IReadOnlyList<float> savedRises, bool closed )
+	public void Restore( IReadOnlyList<(int X, int Y)> savedTiles, IReadOnlyList<float> savedRises, bool closed, IEnumerable<int>? savedLoops = null )
 	{
+		if ( savedLoops != null )
+			foreach ( var i in savedLoops )
+				if ( i >= 1 && i < savedTiles.Count - 1 )
+					loops.Add( i );
 		for ( int i = 1; i < savedTiles.Count; i++ )
 			Extend( savedTiles[i].X, savedTiles[i].Y );
 
@@ -326,17 +396,29 @@ public sealed class CoasterTrack
 		float ts = grid.TileSize;
 		float gauge = ts * RailGauge, railHalf = ts * RailHalfWidth, rise = ts * RailRise, tieLen = ts * TieHalfLength;
 
-		// A horizontal frame (position + perpendicular-to-travel) at each centre-line point.
+		// A horizontal frame (position + perpendicular-to-travel) at each centre-line point. Going up or down a loop
+		// the travel is vertical and has no horizontal perpendicular: the side axis then carries over from the
+		// point before (the loop's plane), so the profile turns over with the track.
 		var pos = new Vector3[pts.Count];
 		var perp = new Vector3[pts.Count];
 		var tan = new Vector3[pts.Count];
+		var lastSide = new Vector3( 1f, 0f, 0f );
+		bool haveSide = false;
 		for ( int i = 0; i < pts.Count; i++ )
 		{
 			var prev = pts[Math.Max( i - 1, 0 )];
 			var next = pts[Math.Min( i + 1, pts.Count - 1 )];
 			var dir = (next - prev).Normal;
 			pos[i] = pts[i];
-			perp[i] = new Vector3( -dir.Y, dir.X, 0f ).Normal;
+			// (Over the top of a loop the travel runs backwards: its horizontal perpendicular flips at once — keep the
+			// loop's side axis then; an ordinary turn only ever swings it a little between two points.)
+			var side = new Vector3( -dir.Y, dir.X, 0f );
+			if ( side.Length > 0.35f && dir.Z * dir.Z < 0.5f && (!haveSide || Vector3.Dot( side.Normal, lastSide ) > -0.2f) )
+			{
+				lastSide = side.Normal;
+				haveSide = true;
+			}
+			perp[i] = lastSide;
 			tan[i] = dir;
 		}
 
@@ -460,6 +542,9 @@ public sealed class CoasterTrack
 	/// for left vs right turns so the track tilts into the curve. Pure (unit-tested, T-052).</summary>
 	internal static float BankAngle( Vector3 tin, Vector3 tout, float gain, float maxBank )
 	{
+		// No banking through the steep part of a loop (or a vertical stretch): the heading isn't a turn there.
+		if ( MathF.Abs( tin.Z ) > 0.3f || MathF.Abs( tout.Z ) > 0.3f )
+			return 0f;
 		// Signed turn about the vertical axis, from the horizontal components of the two tangents.
 		float cross = tin.X * tout.Y - tin.Y * tout.X; // + = left turn, - = right turn
 		float dot = tin.X * tout.X + tin.Y * tout.Y;
