@@ -14,7 +14,7 @@ internal abstract class HudPanel : Panel
 	protected const float LabelScale = 1.3f;
 
 	private static Font? font;
-	protected static Font Font => font ??= new Font( "Language/English/GAME12.bf4" );
+	protected static Font Font => font ??= new Font( GameLanguage.File( "GAME12.bf4" ) );
 
 	/// <summary>True when the cursor is over any interactive HUD panel (so world tools ignore the click).</summary>
 	public static bool PointerOverUi()

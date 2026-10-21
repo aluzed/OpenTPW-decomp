@@ -26,6 +26,25 @@ internal static class Game
 
 		// Register game data directory
 		FileSystem = new BaseFileSystem( Path.Join( gamePath, "data" ) );
+
+		// Language: English ships in data/ itself; another language is the disc's <Language>/data folder, extracted
+		// next to it and read as an overlay (strings, fonts, advisor voice). Missing → stay in English.
+		var language = Environment.GetEnvironmentVariable( "OPENTPW_LANGUAGE" ) is { Length: > 0 } envLanguage
+			? envLanguage
+			: GameSettings.Current.Language;
+		if ( !language.Equals( "English", StringComparison.OrdinalIgnoreCase ) )
+		{
+			var overlay = GameDir.LanguageDataPath( language );
+			if ( overlay != null )
+			{
+				FileSystem.Overlay = new BaseFileSystem( overlay );
+				GameLanguage.Name = Path.GetFileName( Path.GetDirectoryName( overlay ) )!; // the folder's own spelling
+				Log.Info( $"[lang] {GameLanguage.Name} ({overlay})" );
+			}
+			else
+				Log.Warning( $"[lang] no '{language}/data' next to data/ — extract it from the disc (docs/03); using English" );
+		}
+
 		FileSystem.RegisterArchiveHandler<WadArchive>( ".wad" );
 		FileSystem.RegisterArchiveHandler<SdtArchive>( ".sdt" );
 
@@ -55,7 +74,7 @@ internal static class Game
 		// sky-blue clear; if the font can't be loaded we still show the colour, never black.
 		//
 		Font? loadingFont = null;
-		try { loadingFont = new Font( "Language/English/GAME12.bf4" ); }
+		try { loadingFont = new Font( GameLanguage.File( "GAME12.bf4" ) ); }
 		catch ( Exception e ) { Log.Warning( $"Loading-screen font unavailable: {e.Message}" ); }
 
 		// 1x1 textures for the progress bar (the UI shader only samples a texture, no tint — T-030).

@@ -26,6 +26,31 @@ public class BaseFileSystem
 	public void RegisterArchiveHandler<T>( string extension ) where T : IArchive
 	{
 		archiveHandlers[extension] = typeof( T );
+		Overlay?.RegisterArchiveHandler<T>( extension );
+	}
+
+	/// <summary>
+	/// A language overlay (the disc's <c>French/data</c>, <c>German/data</c>…, which the original installer copied over
+	/// <c>data/</c>): a file it holds is read from it instead of from this file system. Set before registering the
+	/// archive handlers, or register them on it too.
+	/// </summary>
+	public BaseFileSystem? Overlay { get; set; }
+
+	/// <summary>Open <paramref name="relativePath"/> if this file system has it (archives included), else null.</summary>
+	public Stream? TryOpenRead( string relativePath )
+	{
+		try
+		{
+			var absolutePath = GetAbsolutePath( relativePath );
+			var (archivePath, internalPath) = FindArchivePath( absolutePath );
+			if ( !string.IsNullOrEmpty( archivePath ) )
+				return GetArchive( archivePath )?.OpenFile( internalPath );
+			return File.Exists( absolutePath ) ? File.Open( absolutePath, FileMode.Open, FileAccess.Read, FileShare.Read ) : null;
+		}
+		catch ( Exception )
+		{
+			return null;
+		}
 	}
 
 	public string ReadAllText( string relativePath )
@@ -46,7 +71,7 @@ public class BaseFileSystem
 	public bool FileExists( string relativePath )
 	{
 		var absolutePath = GetAbsolutePath( relativePath );
-		return File.Exists( absolutePath );
+		return File.Exists( absolutePath ) || (Overlay?.FileExists( relativePath ) ?? false);
 	}
 
 	public bool DirectoryExists( string relativePath )
@@ -74,6 +99,9 @@ public class BaseFileSystem
 
 	public Stream OpenRead( string relativePath )
 	{
+		if ( Overlay?.TryOpenRead( relativePath ) is { } overlaid )
+			return overlaid;
+
 		var absolutePath = GetAbsolutePath( relativePath );
 		var (archivePath, internalPath) = FindArchivePath( absolutePath );
 

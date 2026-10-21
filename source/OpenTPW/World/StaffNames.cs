@@ -41,7 +41,7 @@ public static class StaffNames
 
 	private static IReadOnlyList<string> Load()
 	{
-		try { return new StringFile( "Language/English/STAFF_TYPES.str" ).Entries; }
+		try { return new StringFile( GameLanguage.File( "STAFF_TYPES.str" ) ).Entries; }
 		catch ( System.Exception e ) { Log.Warning( $"[staff] type names unavailable: {e.Message}" ); return System.Array.Empty<string>(); }
 	}
 }

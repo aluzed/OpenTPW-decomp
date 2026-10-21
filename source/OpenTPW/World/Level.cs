@@ -125,7 +125,7 @@ public class Level
 		ParkFinances.Current = new ParkFinances( starting: Money( "InitialCash", 50000f ), entryFee: Money( "InitialAdmissionFee", 20f ) );
 		try
 		{
-			var lenders = new StringFile( "Language/English/LOANNAMES.str" ).Entries;
+			var lenders = new StringFile( GameLanguage.File( "LOANNAMES.str" ) ).Entries;
 			ParkFinances.Current.SetLoanOffers( ParkFinances.LoadLoanOffers( globalSam, new SettingsFile( $"/levels/{Current.Name}/Standard.sam" ), lenders ) );
 		}
 		catch ( Exception e ) { Log.Warning( $"[loans] offers unavailable: {e.Message}" ); }
@@ -1217,7 +1217,7 @@ public class Level
 
 	private static void DrawReloadOverlay( string theme )
 	{
-		overlayFont ??= new Font( "Language/English/GAME12.bf4" );
+		overlayFont ??= new Font( GameLanguage.File( "GAME12.bf4" ) );
 		overlayBg ??= new Texture( new byte[] { 10, 12, 20, 240 }, 1, 1 );
 
 		var mat = Material.UI;

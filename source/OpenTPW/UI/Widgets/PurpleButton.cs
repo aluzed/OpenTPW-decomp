@@ -9,7 +9,7 @@ internal class PurpleButton : Panel
 	// button face — an antialiased (compressed-4bpp) font now decoded (T-025), blitted through FontAtlas
 	// as coverage→alpha so the labels render smooth rather than as the 1bpp GAME12 stand-in.
 	private static Font? labelFont;
-	private static Font LabelFont => labelFont ??= new Font( "Language/English/MENUMED.bf4" );
+	private static Font LabelFont => labelFont ??= new Font( GameLanguage.File( "MENUMED.bf4" ) );
 
 	// How big the label is drawn relative to its native glyph size (MENUMED is ~29px native).
 	private const float LabelScale = 1f;

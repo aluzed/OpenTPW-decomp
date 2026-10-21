@@ -145,7 +145,7 @@ public partial class Renderer
 		OnWindowResized( Window.Size );
 
 		// Small bitmap font for the FPS overlay, loaded here (before any command list is open).
-		try { _debugFont = new Font( "Language/English/GAME12.bf4" ); }
+		try { _debugFont = new Font( GameLanguage.File( "GAME12.bf4" ) ); }
 		catch ( Exception e ) { Log.Warning( $"FPS overlay font unavailable: {e.Message}" ); }
 
 		_presentReady = true;

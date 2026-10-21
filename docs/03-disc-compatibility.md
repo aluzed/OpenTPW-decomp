@@ -68,6 +68,15 @@ compressed installer). Two paths:
      disc has `Data` — add `ln -s Data install/data` (the runtime VFS is already
      case-insensitive). Mind the hardcoded `\` separators too — see [04](04-linux-compatibility.md).
    - Default (Windows): `C:\Program Files (x86)\Bullfrog\Theme Park World` (`Settings.Designer.cs`).
+4. **Language (optional)** — the disc carries one folder per language at its root (`French/`, `German/`, `Danish/`,
+   `Swedish/`, `Dutch/`…), each mirroring `data/` with that language's strings, fonts and advisor voice. Extract
+   the one you want next to `Data` and select it:
+   ```bash
+   7z x iso/tpw.iso French/data -oinstall      # → install/French/data (26 MB)
+   export OPENTPW_LANGUAGE=French              # or "Language": "French" in .opentpw/settings.json
+   ```
+   OpenTPW reads it as an overlay over `data/` (`BaseFileSystem.Overlay`, `GameLanguage`): menus, theme/staff/loan
+   names, visitor thoughts and the advisor's voice switch language; OpenTPW's own HUD labels stay English.
 
 ### Path B — Classic install (Windows or Wine)
 Run `SETUP.EXE` (via Wine on Linux). The installer copies `DATA/` and creates the

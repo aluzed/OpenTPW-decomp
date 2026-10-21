@@ -22,6 +22,9 @@ internal sealed class GameSettings
 	/// the HUD reads as a real interface; toggled in-game with the backtick key (T-065). Persisted.</summary>
 	public bool ShowDebug { get; set; } = false;
 
+	/// <summary>Text + voice language (a disc language folder: English, French, German…); OPENTPW_LANGUAGE overrides it.</summary>
+	public string Language { get; set; } = "English";
+
 	/// <summary>
 	/// Where the settings JSON lives. Defaults to the local <c>./.opentpw</c> cache dir (the same place
 	/// <see cref="Game"/> keeps its cache). Settable so tests can point it at a temp file.

@@ -63,7 +63,7 @@ public static class LevelTheme
 
 	private static IReadOnlyList<string> LoadDisplayNames()
 	{
-		try { return new StringFile( "Language/English/THEMENAMES.str" ).Entries; }
+		try { return new StringFile( GameLanguage.File( "THEMENAMES.str" ) ).Entries; }
 		catch ( System.Exception e ) { Log.Warning( $"[theme] display names unavailable: {e.Message}" ); return System.Array.Empty<string>(); }
 	}
 

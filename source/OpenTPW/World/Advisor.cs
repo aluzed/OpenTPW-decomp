@@ -169,8 +169,9 @@ public sealed class Advisor : Entity
 		try
 		{
 			var theme = Level.Current?.Name ?? "jungle"; // advisor speech is per-theme (T-062)
-			var speechDir = Path.Join( GameDir.GamePath, "data", "levels", theme, "Speech" );
-			var sdtPath = Path.Join( speechDir, "speechHD.SDT" );
+			// The level's speech (the language overlay's voice when there is one — GameDir.DataFile).
+			var sdtPath = GameDir.DataFile( "levels", theme, "Speech", "speechHD.SDT" );
+			var speechDir = Path.GetDirectoryName( sdtPath )!;
 			if ( !File.Exists( sdtPath ) )
 				return false;
 

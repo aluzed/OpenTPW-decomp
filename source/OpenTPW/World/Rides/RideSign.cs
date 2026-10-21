@@ -24,7 +24,7 @@ public static class RideSign
 	{
 		try
 		{
-			atlas ??= new FontAtlas( new BF4File( FileSystem.OpenRead( "Language/English/MENUMED.bf4" ) ) );
+			atlas ??= new FontAtlas( new BF4File( FileSystem.OpenRead( GameLanguage.File( "MENUMED.bf4" ) ) ) );
 		}
 		catch ( Exception e )
 		{

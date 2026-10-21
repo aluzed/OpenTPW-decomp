@@ -43,7 +43,7 @@ public static class CrowdThoughts
 	{
 		if ( texts == null )
 		{
-			try { texts = new StringFile( "Language/English/THOUGHTS.str" ).Entries; }
+			try { texts = new StringFile( GameLanguage.File( "THOUGHTS.str" ) ).Entries; }
 			catch { texts = Array.Empty<string>(); }
 		}
 		if ( thought >= 0 && thought < texts.Length && !string.IsNullOrWhiteSpace( texts[thought] ) )
