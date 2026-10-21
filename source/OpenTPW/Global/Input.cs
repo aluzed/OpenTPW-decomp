@@ -87,6 +87,43 @@ public static partial class Input
 		}
 	}
 
+	// Keys tapped (down + up) inside the previous frame: shown down for that one frame, released now.
+	private static HashSet<Key> tappedLastFrame = new();
+
+	/// <summary>
+	/// The held keys after this frame's events, in order. A key pressed and released within the same frame (a quick
+	/// tap, or a slow frame) still counts as down for this frame and is released on the next one — it used to be
+	/// added and dropped in the same update, so the press was never seen.
+	/// </summary>
+	internal static List<Key> NextKeysDown( IEnumerable<Key> held, IEnumerable<KeyEvent> events )
+	{
+		var down = new HashSet<Key>( held );
+		down.ExceptWith( tappedLastFrame );
+
+		var pressed = new HashSet<Key>();
+		var tapped = new HashSet<Key>();
+		foreach ( var e in events )
+		{
+			if ( e.Down )
+			{
+				down.Add( e.Key );
+				pressed.Add( e.Key );
+				tapped.Remove( e.Key );
+			}
+			else if ( pressed.Contains( e.Key ) )
+			{
+				tapped.Add( e.Key ); // released in the frame it was pressed: keep it down until next frame
+			}
+			else
+			{
+				down.Remove( e.Key );
+			}
+		}
+
+		tappedLastFrame = tapped;
+		return down.ToList();
+	}
+
 	public static void UpdateFrom( InputSnapshot inputSnapshot )
 	{
 		IsSystemCursorVisible = true;
@@ -112,15 +149,7 @@ public static partial class Input
 		Right = 0;
 		Forward = 0;
 
-		var newKeysDown = inputSnapshot.KeyEvents.Where( x => x.Down ).Select( x => x.Key );
-		var newKeysUp = inputSnapshot.KeyEvents.Where( x => !x.Down ).Select( x => x.Key );
-
-		Keyboard = new KeyboardInfo(
-			Keyboard.KeysDown.Concat( newKeysDown )
-				.Distinct()
-				.Where( x => !newKeysUp.Contains( x ) )
-				.ToList()
-		);
+		Keyboard = new KeyboardInfo( NextKeysDown( Keyboard.KeysDown, inputSnapshot.KeyEvents ) );
 
 		bool IsKeyPressed( Key k ) => Keyboard.KeysDown.Contains( k );
 
