@@ -28,6 +28,21 @@ internal static class ScreenSpace
 		return true;
 	}
 
+	/// <summary>Where a world point shows on the 1280×720 base screen (Y up); false when it is behind the camera.</summary>
+	public static bool TryProject( SVector3 world, out float x, out float y )
+	{
+		var proj = Camera.ProjMatrix;
+		var (right, up, back) = Axes();
+		var rel = world - Camera.Position.GetSystemVector3();
+		float depth = -SVector3.Dot( rel, back );
+		x = y = 0f;
+		if ( depth <= 0.01f || proj.M11 <= 0f || proj.M22 <= 0f )
+			return false;
+		x = (SVector3.Dot( rel, right ) * proj.M11 / depth + 1f) * 640f;
+		y = (SVector3.Dot( rel, up ) * proj.M22 / depth + 1f) * 360f;
+		return true;
+	}
+
 	/// <summary>The screen's right, up and back-at-the-viewer directions in the world (the view matrix's columns).</summary>
 	public static (SVector3 Right, SVector3 Up, SVector3 Back) Axes()
 	{

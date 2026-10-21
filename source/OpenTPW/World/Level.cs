@@ -1467,6 +1467,7 @@ public class Level
 			Hud.AddChild( new WeatherOverlay() );  // rain/snow tint + precipitation under the rest of the HUD (T-056)
 			Hud.AddChild( new ParkHud() );        // the original's HUD: cash, tickets, handheld, hint strip
 			Hud.AddChild( new ParkStatsPanel() ); // the debug readout (backtick)
+			Hud.AddChild( new LocateMarkers() );  // arrows over the visitors / staff (Ctrl-V / Ctrl-S), under the windows
 			Hud.AddChild( new BuildPanel() );     // the buy window (handheld's buy button)
 			Hud.AddChild( new ItemInfoWindow() ); // the ride / shop window (click one in the park)
 			Hud.AddChild( new ParkInfoWindow() ); // park information (handheld's info button)

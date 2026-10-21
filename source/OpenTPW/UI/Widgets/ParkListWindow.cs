@@ -50,6 +50,7 @@ internal sealed class ParkListWindow : GameWindow
 	private static readonly Rectangle List = At( 140f, 128f, 620f, 290f );
 	private static readonly Rectangle Ok = At( 788f, 384f, 42f, 42f );
 	private static readonly Rectangle Training = At( 788f, 128f, 42f, 42f ); // staff tab: the training budgets
+	private static readonly Rectangle Locate = At( 788f, 180f, 42f, 42f );   // staff / visitors: show where they are
 	private const float RowTop = 172f, RowHeight = 16f;
 	private const int VisibleRows = 15;
 	private static readonly (Tab Tab, string Icon, string Title, int Hint)[] Tabs =
@@ -224,6 +225,10 @@ internal sealed class ParkListWindow : GameWindow
 			Text( Small, e.Value, 740f, top + 2f, 11f, default, TextAlign.Right );
 		}
 		Text( Small, $"{entries.Count} in the park", 740f, 422f, 11f, default, TextAlign.Right );
+		if ( tab == Tab.Staff && RoundButton( Locate, "b_locate", LocateMarkers.Showing == LocateMarkers.Target.Staff, hint: 128 ) )
+			LocateMarkers.Toggle( LocateMarkers.Target.Staff );
+		if ( tab == Tab.Visitors && RoundButton( Locate, "b_peeploc", LocateMarkers.Showing == LocateMarkers.Target.Visitors, hint: 139 ) )
+			LocateMarkers.Toggle( LocateMarkers.Target.Visitors );
 		if ( tab == Tab.Staff && RoundButton( Training, "b_staffcost" ) )
 		{
 			IsOpen = false;

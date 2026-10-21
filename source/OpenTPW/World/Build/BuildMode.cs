@@ -441,8 +441,17 @@ public sealed class BuildMode : Entity
 			if ( Hit( Key.Space ) ) MinimapPanel.Current?.Toggle();
 			if ( Hit( Key.G ) ) Level.ToggleGates();
 			if ( Hit( Key.C ) ) CamcorderCameraMode.Start();
-			// V lists the visitors (the original's A / S lists are the camera's keys here: they open from park information).
-			if ( Hit( Key.V ) ) ParkListWindow.Current?.Toggle( ParkListWindow.Tab.Visitors );
+			// V lists the visitors (the original's A / S lists are the camera's keys here: they open from park information);
+			// Ctrl-V / Ctrl-S locate the visitors / the staff.
+			bool ctrl = down.Contains( Key.ControlLeft ) || down.Contains( Key.ControlRight );
+			if ( Hit( Key.V ) )
+			{
+				if ( ctrl )
+					LocateMarkers.Toggle( LocateMarkers.Target.Visitors );
+				else
+					ParkListWindow.Current?.Toggle( ParkListWindow.Tab.Visitors );
+			}
+			if ( Hit( Key.S ) && ctrl ) LocateMarkers.Toggle( LocateMarkers.Target.Staff );
 		}
 		if ( track is CoasterTrack coasterTrack )
 		{
