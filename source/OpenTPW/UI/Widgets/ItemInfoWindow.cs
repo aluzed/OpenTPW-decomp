@@ -206,14 +206,14 @@ internal sealed class ItemInfoWindow : GameWindow
 
 		if ( !shop.IsFree )
 		{
-			SettingBox( 0, $"Quality of goods : {shop.Quality:0} %", shop.Quality / 100f,
+			SettingBox( 0, $"{Localization.Get( UIStrings.QualityOfGoods, "Quality of goods" )} : {shop.Quality:0} %", shop.Quality / 100f,
 				() => shop.Quality = Math.Max( 0f, shop.Quality - 10f ), () => shop.Quality = Math.Min( 100f, shop.Quality + 10f ) );
 			if ( shop.Stats is { Ingredient: > 0 } st )
 				SettingBox( 1, $"Amount of {ShopBuilding.IngredientName( st.Ingredient )} : {shop.IngredientAmount:0} %", shop.IngredientAmount / 100f,
 					() => shop.IngredientAmount = Math.Max( 0f, shop.IngredientAmount - 10f ), () => shop.IngredientAmount = Math.Min( 100f, shop.IngredientAmount + 10f ) );
 		}
 		if ( !shop.IsFree )
-			SettingBox( 2, $"{"Sale price"} : $ {shop.Price:0}", Math.Clamp( shop.Price / 10f, 0f, 1f ),
+			SettingBox( 2, $"{Localization.Get( UIStrings.SalePrice, "Sale price" )} : $ {shop.Price:0}", Math.Clamp( shop.Price / 10f, 0f, 1f ),
 				() => shop.Price = Math.Max( 1f, shop.Price - 1f ), () => shop.Price += 1f );
 
 		if ( RoundButton( Action( 143f ), "b_delete_login", hint: 33 ) )
