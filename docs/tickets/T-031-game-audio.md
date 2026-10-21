@@ -2,7 +2,8 @@
 
 - **Priority**: 🟡 Feature
 - **Type**: Engine wiring / audio
-- **Status**: ⚠️ Partial — looping background music wired; SFX + mixing/volume UI remain.
+- **Status**: ⚠️ Mostly done — music per world, ambience, SFX, volume UI and one shared decoder; only the CI-built
+  Windows/macOS `libtpwmp3` binaries remain.
 - **Related**: [T-003](T-003-naudio-not-portable.md) (portable audio stack), [01-project-status](../01-project-status.md).
 
 ## Problem
@@ -47,10 +48,10 @@ strings were unwired labels.
    (T-051). More UI/event sounds beyond the click remain.
 2. ✅ **Volume settings UI** — `MusicVolume`/`SfxVolume`/`SpeechVolume` persist to `GameSettings` and are
    exposed as draggable sliders in the F10 `OptionsPanel` (T-051); per-category mixing done (3 buses).
-3. ☐ Point the ModKit `AudioPlayer` at the same minimp3 decoder (it still uses NLayer → same
-   MPEG-2 Layer II bug when previewing 22 kHz sounds), and share one decode path.
-4. ☐ **Track selection** — pick music by context/level instead of hardcoding `level4c`
-   (`MusicHD.sdt` ships `level4c`/`level4w` = calm/wild). The frontend may want a dedicated theme.
+3. ✅ The ModKit `AudioPlayer` decodes with the same minimp3 path — one shared decoder,
+   `OpenTPW.Common.MpegDecoder` (2026-10-21); NLayer stays only as its fallback where the native lib isn't built.
+4. ✅ **Track selection** — each park world plays its own `Music/MusicHD.sdt` (`LevelSoundscape`); the lobby keeps
+   the global `level4c`.
 5. ☐ Commit the CI-built Windows/macOS `libtpwmp3` binaries so those platforms ship audio.
 
 ## Affected files

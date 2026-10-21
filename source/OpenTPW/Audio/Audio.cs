@@ -1,4 +1,3 @@
-using System.Runtime.InteropServices;
 using Silk.NET.OpenAL;
 
 namespace OpenTPW;
@@ -12,14 +11,6 @@ namespace OpenTPW;
 /// </summary>
 internal static unsafe class Audio
 {
-	// Bundled minimp3 wrapper (Audio/native/tpwmp3.c). Decodes a whole MPEG buffer to interleaved
-	// int16 PCM (malloc'd; freed with tpw_mp3_free).
-	[DllImport( "tpwmp3", CallingConvention = CallingConvention.Cdecl )]
-	private static extern int tpw_mp3_decode( byte[] data, int size, out nint outPcm, out int samples, out int channels, out int hz );
-
-	[DllImport( "tpwmp3", CallingConvention = CallingConvention.Cdecl )]
-	private static extern void tpw_mp3_free( nint p );
-
 	private static AL al = null!;
 	private static ALContext alc = null!;
 	private static Device* device;
@@ -365,24 +356,8 @@ internal static unsafe class Audio
 
 		try
 		{
-			// minimp3 decodes MPEG-1/2 Layer I/II/III directly to interleaved int16 PCM.
-			if ( tpw_mp3_decode( mpegData, mpegData.Length, out var ptr, out var samples, out var ch, out var hz ) != 0
-				|| ptr == 0 || samples <= 0 )
-				return false;
-
-			try
-			{
-				pcm = new short[samples];
-				Marshal.Copy( ptr, pcm, 0, samples );
-			}
-			finally
-			{
-				tpw_mp3_free( ptr );
-			}
-
-			sampleRate = hz;
-			channels = ch;
-			return true;
+			// minimp3 (shared with the ModKit previewer) decodes MPEG-1/2 Layer I/II/III to interleaved int16 PCM.
+			return OpenTPW.Common.MpegDecoder.TryDecode( mpegData, out pcm, out sampleRate, out channels );
 		}
 		catch ( Exception e )
 		{

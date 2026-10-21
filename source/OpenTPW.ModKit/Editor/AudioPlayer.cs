@@ -1,3 +1,4 @@
+using OpenTPW.Common;
 using NLayer;
 using Silk.NET.OpenAL;
 
@@ -5,8 +6,9 @@ namespace OpenTPW.ModKit;
 
 /// <summary>
 /// Cross-platform audio playback (Windows / Linux / macOS) for the asset previewer.
-/// MPEG audio (.mp2) is decoded to PCM with NLayer and played through OpenAL, replacing
-/// the previous Windows-only NAudio / Media Foundation path. See docs/tickets/T-003.
+/// MPEG audio (.mp2) is decoded to PCM with the game's minimp3 decoder (<see cref="MpegDecoder"/> — NLayer, kept as
+/// the fallback where the native decoder isn't built, drops ~12% of the game's MPEG-2 Layer II frames) and played
+/// through OpenAL, replacing the previous Windows-only NAudio / Media Foundation path. See docs/tickets/T-003, T-031.
 /// </summary>
 internal static unsafe class AudioPlayer
 {
@@ -60,6 +62,16 @@ internal static unsafe class AudioPlayer
 		pcm = Array.Empty<short>();
 		sampleRate = 0;
 		channels = 0;
+
+		try
+		{
+			if ( MpegDecoder.TryDecode( mpegData, out pcm, out sampleRate, out channels ) )
+				return true;
+		}
+		catch ( DllNotFoundException )
+		{
+			// No native decoder on this platform: fall back to NLayer below.
+		}
 
 		try
 		{
