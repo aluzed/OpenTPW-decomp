@@ -721,7 +721,8 @@ public class Level
 				try
 				{
 					var shape = RideShape.Load( path, name );
-					list.Add( new BuildCatalogItem( name, path, null, shape.Width, shape.Height, ReadRideCost( path, name ) ) );
+					var (cost, title) = ReadRideInfo( path, name );
+					list.Add( new BuildCatalogItem( name, path, null, shape.Width, shape.Height, cost, Title: title ) );
 				}
 				catch ( Exception e )
 				{
@@ -736,10 +737,13 @@ public class Level
 		AddFrom( "sideshow", LevelTheme.SideshowNames( theme ) );
 
 		// Stalls cost what their .sam says (Upgrades[0].CostOfUpgrade — jungle burger 800); these are the fallbacks.
-		float StallCost( ShopKind kind, float fallback ) => ShopBuilding.StatsFor( kind, Current.Name )?.BuildCost ?? fallback;
-		list.Add( new BuildCatalogItem( "shop", null, null, 2, 2, StallCost( ShopKind.Food, 500f ) ) );    // food stall (satisfies hunger)
-		list.Add( new BuildCatalogItem( "drink", null, null, 2, 2, StallCost( ShopKind.Drink, 450f ) ) );  // drink stall (satisfies thirst, T-039)
-		list.Add( new BuildCatalogItem( "toilet", null, null, 2, 2, StallCost( ShopKind.Toilet, 400f ) ) ); // toilet (relieves bladder, free to use, T-039)
+		BuildCatalogItem Stall( string key, ShopKind kind, float fallbackCost ) =>
+			ShopBuilding.StatsFor( kind, Current.Name ) is { } st
+				? new BuildCatalogItem( key, null, null, 2, 2, st.BuildCost, Title: ObjectNames.Localize( st.Name ) )
+				: new BuildCatalogItem( key, null, null, 2, 2, fallbackCost );
+		list.Add( Stall( "shop", ShopKind.Food, 500f ) );    // food stall (satisfies hunger)
+		list.Add( Stall( "drink", ShopKind.Drink, 450f ) );  // drink stall (satisfies thirst, T-039)
+		list.Add( Stall( "toilet", ShopKind.Toilet, 400f ) ); // toilet (relieves bladder, free to use, T-039)
 		list.Add( new BuildCatalogItem( "entertainer", null, StaffRole.Entertainer, 1, 1, 800f ) );
 		list.Add( new BuildCatalogItem( "handyman", null, StaffRole.Handyman, 1, 1, 600f ) );
 		list.Add( new BuildCatalogItem( "guard", null, StaffRole.Guard, 1, 1, 1000f ) );
@@ -770,14 +774,17 @@ public class Level
 	private static bool TryFloat( SettingsFile s, string key, out float value ) =>
 		float.TryParse( s[key], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out value );
 
-	private static float ReadRideCost( string path, string name )
+	// A ride's build cost (Upgrades[0].CostOfUpgrade) and its display name (Info.Name, localized) from its .sam.
+	private static (float Cost, string? Title) ReadRideInfo( string path, string name )
 	{
 		try
 		{
 			var s = new SettingsFile( FileSystem.OpenRead( $"{path}/{name}.sam" ) );
-			return int.TryParse( s["Upgrades[0].CostOfUpgrade"], out var v ) ? v : 2000f;
+			float cost = int.TryParse( s["Upgrades[0].CostOfUpgrade"], out var v ) ? v : 2000f;
+			var title = s["Info.Name"];
+			return (cost, string.IsNullOrWhiteSpace( title ) ? null : ObjectNames.Localize( title ));
 		}
-		catch { return 2000f; }
+		catch { return (2000f, null); }
 	}
 
 	// Commit a placement at tile (tx,ty) with an orientation (rotation in 90° CW steps): validate +

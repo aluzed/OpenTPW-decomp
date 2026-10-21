@@ -157,7 +157,7 @@ internal sealed class ParkStatsPanel : HudPanel
 			if ( build.Selected >= 0 && build.Selected < build.Catalog.Count )
 			{
 				var placing = build.Catalog[build.Selected];
-				lines.Add( $"PLACING: {placing.Name} (click a tile, Esc cancel)" );
+				lines.Add( $"PLACING: {(placing.Staff is { } r ? StaffNames.For( r ) : placing.Label)} (click a tile, Esc cancel)" );
 				if ( placing.RidePath != null )
 					lines.Add( $"  ROTATE (R): {build.Rotation * 90} deg" );
 			}

@@ -6,7 +6,11 @@ namespace OpenTPW;
 /// hire (Staff set). Staff occupy no grid cell; rides/shops reserve their footprint. <paramref name="HmpPath"/>
 /// optionally points at an <c>.hmp</c> footprint template, so the piece reserves only its solid tiles
 /// (queue paths / fences leave their passable cells walkable) instead of the Width×Height rectangle (T-052).</summary>
-public readonly record struct BuildCatalogItem( string Name, string? RidePath, StaffRole? Staff, int Width, int Height, float Cost, string? HmpPath = null );
+public readonly record struct BuildCatalogItem( string Name, string? RidePath, StaffRole? Staff, int Width, int Height, float Cost, string? HmpPath = null, string? Title = null )
+{
+	/// <summary>What the catalog shows: the item's real (localized) name when known, else its key.</summary>
+	public string Label => Title ?? Name;
+}
 
 /// <summary>
 /// Build/manage mode (T-040 foundation + T-041 placement). Each frame it projects the cursor to the
