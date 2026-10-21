@@ -111,7 +111,10 @@ internal sealed class UiModel
 
 	/// <summary>Draw mesh <paramref name="part"/> (the first one when null) stretched into <paramref name="rect"/>
 	/// (base 1280×720 space, Y up).</summary>
-	public void Draw( Rectangle rect, string? part = null )
+	public void Draw( Rectangle rect, string? part = null ) => Draw( rect, part, default );
+
+	/// <summary>As <see cref="Draw(Rectangle, string?)"/>, tinted (RGB 0–1; zero = untinted).</summary>
+	public void Draw( Rectangle rect, string? part, System.Numerics.Vector3 tint )
 	{
 		var p = part == null ? parts.Values.FirstOrDefault() : parts.GetValueOrDefault( part );
 		if ( p == null )
@@ -123,7 +126,7 @@ internal sealed class UiModel
 		foreach ( var (texture, indices) in p.Batches )
 		{
 			mat.Set( "Color", texture );
-			Graphics.Triangles( screen, p.Uvs, indices, mat );
+			Graphics.Triangles( screen, p.Uvs, indices, mat, tint );
 		}
 	}
 }

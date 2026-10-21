@@ -52,14 +52,17 @@ internal static partial class Graphics
 	private static readonly Vertex[] _quadVertices = new Vertex[4];
 	private static readonly uint[] _quadIndices = { 3, 2, 1, 0, 1, 2 };
 
-	public static void Quad( Rectangle rectangle, Rectangle uvs, Material material )
+	public static void Quad( Rectangle rectangle, Rectangle uvs, Material material ) => Quad( rectangle, uvs, material, default );
+
+	/// <summary>A quad tinted by <paramref name="tint"/> (RGB 0–1; zero = untinted) — see ui.shader.</summary>
+	public static void Quad( Rectangle rectangle, Rectangle uvs, Material material, System.Numerics.Vector3 tint )
 	{
 		var screenMatrix = CreateScreenMatrix( BaseScreenSize );
 
-		_quadVertices[0] = new( new Vector3( rectangle.TopLeft ) * screenMatrix, uvs.TopLeft );
-		_quadVertices[1] = new( new Vector3( rectangle.TopRight ) * screenMatrix, uvs.TopRight );
-		_quadVertices[2] = new( new Vector3( rectangle.BottomLeft ) * screenMatrix, uvs.BottomLeft );
-		_quadVertices[3] = new( new Vector3( rectangle.BottomRight ) * screenMatrix, uvs.BottomRight );
+		_quadVertices[0] = new( new Vector3( rectangle.TopLeft ) * screenMatrix, tint, uvs.TopLeft );
+		_quadVertices[1] = new( new Vector3( rectangle.TopRight ) * screenMatrix, tint, uvs.TopRight );
+		_quadVertices[2] = new( new Vector3( rectangle.BottomLeft ) * screenMatrix, tint, uvs.BottomLeft );
+		_quadVertices[3] = new( new Vector3( rectangle.BottomRight ) * screenMatrix, tint, uvs.BottomRight );
 
 		AppendGeometry( material, _quadVertices, _quadIndices );
 	}
@@ -69,12 +72,12 @@ internal static partial class Graphics
 {
 	/// <summary>Draw textured triangles given in the 1280×720 base space (Y-up) — a ui.wad widget mesh laid flat
 	/// on the screen (<see cref="UiModel"/>).</summary>
-	public static void Triangles( ReadOnlySpan<System.Numerics.Vector2> positions, ReadOnlySpan<System.Numerics.Vector2> uvs, ReadOnlySpan<uint> indices, Material material )
+	public static void Triangles( ReadOnlySpan<System.Numerics.Vector2> positions, ReadOnlySpan<System.Numerics.Vector2> uvs, ReadOnlySpan<uint> indices, Material material, System.Numerics.Vector3 tint = default )
 	{
 		var screenMatrix = CreateScreenMatrix( BaseScreenSize );
 		var verts = new Vertex[positions.Length];
 		for ( int i = 0; i < positions.Length; i++ )
-			verts[i] = new( new Vector3( positions[i].X, positions[i].Y, 0f ) * screenMatrix, new Vector2( uvs[i].X, uvs[i].Y ) );
+			verts[i] = new( new Vector3( positions[i].X, positions[i].Y, 0f ) * screenMatrix, tint, new Vector2( uvs[i].X, uvs[i].Y ) );
 		AppendGeometry( material, verts, indices );
 	}
 }
