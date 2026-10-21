@@ -41,7 +41,20 @@ public class SAMParser : BaseParser
 	{
 		var key = ConsumeWhile( c => !char.IsWhiteSpace( c ) );
 		ConsumeWhitespace();
-		var value = ConsumeWhile( c => !char.IsWhiteSpace( c ) && c != '#' );
+		// A quoted value ("Crazy Monkey", "Gutter.tga") runs to the closing quote, spaces included, and loses its
+		// quotes — read up to the first space it came out as `"Crazy` (ride names in the HUD).
+		string value;
+		if ( !EndOfFile() && NextChar() == '"' )
+		{
+			Position++;
+			value = ConsumeWhile( c => c != '"' && c != '\r' && c != '\n' );
+			if ( !EndOfFile() && NextChar() == '"' )
+				Position++;
+		}
+		else
+		{
+			value = ConsumeWhile( c => !char.IsWhiteSpace( c ) && c != '#' );
+		}
 		ConsumeWhile( c => c != '\r' && c != '\n' );
 
 		return new SettingsPair { Key = key.Trim(), Value = value.Trim() };
