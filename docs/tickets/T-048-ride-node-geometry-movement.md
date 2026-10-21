@@ -2,7 +2,7 @@
 
 - **Priority**: 🟡 Feature
 - **Type**: Engine / reverse engineering
-- **Status**: ⚠️ Partial — the **node graph is decoded structurally** (type + id per node, exposed in
+- **Status**: ✅ Done (tour cars now fly the original's FLY sim; see the end) — was ⚠️ Partial — the **node graph is decoded structurally** (type + id per node, exposed in
   `ModelFile.Nodes`, unit-tested + confirmed on real ride models). Node **world positions** bind to bone
   transforms at runtime (not stored in the node entry), so they're **simulation output, not a decode**.
   A **runtime node→world-position resolver** (`RideNodePositions`) now supplies them — car/seat nodes from
@@ -287,3 +287,22 @@ peep-sprite markers), `source/OpenTPW/World/Peep.cs` (`KidSpriteDir`/`KidSpriteN
 `IRideEngine.cs`, `source/OpenTPW/World/Ride.cs`, `source/OpenTPW/World/Level.cs`,
 `source/OpenTPW/VM/RideVM.Walk.cs`/`RideVM.Heads.cs` (head-capacity setter), `source/OpenTPW/VM/Handlers/Particles.cs`,
 `source/OpenTPW.Files/Formats/Model/ModelFile.cs` (node-graph access).
+
+## Tour rides fly the original's FLY sim (2026-10-21)
+
+The tour ride (jungle Jurassic Tours' bird, the Halloween balloon) has no track (`Bumper.WhichTrackType 0`): its cars
+are flown by `FUN_0055abf0` ("FLY: …" diagnostics), ticked every second 31 ms step (~16/s) from the main loop
+`FUN_0054e360`; cars are made by `FUN_0055a620`/`FUN_0055a720` (internal units = world × 300, a tile = 3000). States:
+boarding at the station → take-off to a point 20000 ahead, climbing to ≥ 14000 → **tour**: a random walk over a
+20000-unit grid (`FUN_0055c350`: straight 3 times in 4 unless the ground ahead is higher than the car + 5000, else
+side / other side / straight / back with an ever higher limit; cell centres; flown 5000 over the ground, ≥ 12000) for
+300 ticks → holding pattern on the four corners ±25000 around the station (`FUN_0055c270`) until it's free →
+approach a point 5000 short → land on a 1:1 glide slope. Steering: turn rate = (bearing error + turn rate) / 2, a
+tenth of it per tick; speed = speed × 0.879 + 0.15 × cruise (cruise 300–399 a tick); climb a damped clamped step;
+bank ¾ of the turn rate. `TOUR 5` sets ceil(capacity / 9) cars.
+
+`TourFlight` re-implements it (unit-tested, `TourFlightTests`), and `RideVehicle` flies the bird/balloon with it —
+one per 9 seats, posed on heading, climb and bank — instead of the footprint loop. Verified in game (car demo): the
+bird cycles tour → approach → land → board → take off at ~23 units/s, 40 units up. Not reproduced: the bird's
+flap/glide animations (`FUN_0055aa80` anim ids 3–6, 9), car-to-car avoidance, and the station perch point (the ride
+centre, 0.6 tile up, stands in for it).

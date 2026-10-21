@@ -41,7 +41,8 @@ public sealed class RideVehicle : Entity
 	private readonly ModelEntity[] seats;
 
 	/// <summary>Where the lead car (or, for dodgems, the first car) is — null while none is out.</summary>
-	public Vector3? LeadPosition => car.Position.Z > -1000f ? car.Position
+	public Vector3? LeadPosition => flyers.Count > 0 ? flyers[0].Position
+		: car.Position.Z > -1000f ? car.Position
 		: seats.Length > 0 && seats[0] != null && seats[0].Position.Z > -1000f ? seats[0].Position : null;
 	private readonly IReadOnlyList<int> seatNodeIds; // car/seat node ids this vehicle drives (T-048)
 	private float dist;
@@ -50,6 +51,12 @@ public sealed class RideVehicle : Entity
 	// branch of the original car engine). Tour/kart/water rides keep the loop (`carSim` stays null).
 	private readonly CarSim? carSim;
 	private readonly ParkTerrain terrain;
+	// A tour ride (the jungle bird, the Halloween balloon — no track) flies the original's FLY sim instead.
+	private TourFlight? flight;
+	private readonly List<ModelEntity> flyers = new();
+	private (Model Model, Vector3 Scale) flyerMesh;
+	private const int RidersPerFlyer = 9; // TourRide.RSE: TOUR 5, ceil(capacity / 9) cars
+
 	private readonly Model[]? carFrames; // the bumper's real b_car.MD2 mesh (+ b_carm wobble frame), if loaded
 	private float carAnimT;
 	private const float CarAnimFps = 6f;
@@ -96,9 +103,18 @@ public sealed class RideVehicle : Entity
 		// script also raises the BUMP opcode (they have a track, not a dodgem arena). Only a ride with no such
 		// mesh but the BUMP opcode is a true dodgem (the bumper's b_car.MD2, driven by the arena collision sim);
 		// anything else keeps the small rider-marker cubes.
-		var vehicles = LoadCircuitCars( ride.Archive, Path.GetFileNameWithoutExtension( ride.Archive ), tileSize );
+		var vehicles = LoadCircuitCars( ride.Archive, Path.GetFileNameWithoutExtension( ride.Archive ), tileSize, out bool flies );
 
-		if ( vehicles.Count > 0 )
+		if ( flies )
+		{
+			flyerMesh = vehicles[0];
+			var station = ride.Position.WithZ( terrain.SampleHeight( ride.Position.X, ride.Position.Y ) + tileSize * 0.6f );
+			flight = new TourFlight( station, ride.Rotation * MathF.PI / 2f, FlyerCount, terrain.SampleHeight );
+			car.Position = Offscreen;
+			for ( int i = 0; i < seatCount; i++ )
+				seats[i] = new ModelEntity { Position = Offscreen }; // the riders sit on the flying cars
+		}
+		else if ( vehicles.Count > 0 )
 		{
 			// Circuit ride with real vehicles: go-karts cycle their four colours across the seats; a tour ride
 			// uses its single vehicle for every seat + the lead car.
@@ -138,9 +154,10 @@ public sealed class RideVehicle : Entity
 	// the tile. Go-karts return their four coloured karts (cycled across the seats); a tour ride returns its
 	// single theme vehicle (jungle Bird / hallow Balloon). We enumerate the WAD root rather than hard-coding a
 	// theme's name, so it adapts per level. Empty when none resolve → the caller keeps the marker cubes.
-	private static List<(Model Model, Vector3 Scale)> LoadCircuitCars( string archive, string rideName, float tileSize )
+	private static List<(Model Model, Vector3 Scale)> LoadCircuitCars( string archive, string rideName, float tileSize, out bool flies )
 	{
 		var found = new List<(Model, Vector3)>();
+		flies = false;
 
 		string[] files;
 		try { files = FileSystem.GetFiles( archive ); }
@@ -161,6 +178,7 @@ public sealed class RideVehicle : Entity
 			fit = 0.85f;
 			foreach ( var c in new[] { "Bird", "Balloon" } )
 				if ( Find( c ) is { } f ) { candidates.Add( f ); break; }
+			flies = candidates.Count > 0;
 		}
 
 		foreach ( var name in candidates )
@@ -173,6 +191,7 @@ public sealed class RideVehicle : Entity
 			found.Add( (built.Value.Model, built.Value.DecompScale * s) );
 		}
 
+		flies &= found.Count > 0;
 		if ( found.Count > 0 )
 			Log.Info( $"[ride] {rideName}: loaded {found.Count} vehicle mesh(es) [{string.Join( ",", candidates )}]" );
 		return found;
@@ -222,6 +241,8 @@ public sealed class RideVehicle : Entity
 
 	public void Despawn()
 	{
+		foreach ( var f in flyers )
+			Entity.All.Remove( f );
 		Entity.All.Remove( car );
 		foreach ( var s in seats )
 			Entity.All.Remove( s );
@@ -233,6 +254,11 @@ public sealed class RideVehicle : Entity
 		if ( carSim != null )
 		{
 			UpdateArena();
+			return;
+		}
+		if ( flight != null )
+		{
+			UpdateFlight();
 			return;
 		}
 
@@ -277,6 +303,42 @@ public sealed class RideVehicle : Entity
 			{
 				seats[i].Position = Offscreen;
 			}
+		}
+	}
+
+	private int FlyerCount => Math.Max( 1, (ride.Capacity + RidersPerFlyer - 1) / RidersPerFlyer );
+
+	// Tour ride: fly the cars (TourFlight) — they take off with riders while the ride runs — and pose each one
+	// on its heading, pitched by its climb and banked into its turn. Each car's riders are its seat nodes.
+	private void UpdateFlight()
+	{
+		var sim = flight!;
+		sim.SetCarCount( FlyerCount );
+		sim.Step( Time.Delta, DemoAllCars || (ride.Riders > 0 && !ride.IsBroken) );
+
+		while ( flyers.Count < sim.Cars.Count )
+			flyers.Add( new ModelEntity { Model = flyerMesh.Model, Scale = flyerMesh.Scale } );
+		while ( flyers.Count > sim.Cars.Count )
+		{
+			Entity.All.Remove( flyers[^1] );
+			flyers.RemoveAt( flyers.Count - 1 );
+		}
+
+		for ( int i = 0; i < sim.Cars.Count; i++ )
+		{
+			var c = sim.Cars[i];
+			// The vehicle meshes run along local +Y: yaw it onto the heading, then pitch (about X) and bank (about Y).
+			var q = System.Numerics.Quaternion.CreateFromAxisAngle( System.Numerics.Vector3.UnitZ, c.Heading - MathF.PI / 2f )
+				* System.Numerics.Quaternion.CreateFromAxisAngle( System.Numerics.Vector3.UnitX, c.Pitch )
+				* System.Numerics.Quaternion.CreateFromAxisAngle( System.Numerics.Vector3.UnitY, c.Bank );
+			flyers[i].Position = c.Position;
+			flyers[i].Rotation = q;
+		}
+
+		for ( int i = 0; i < seatNodeIds.Count; i++ )
+		{
+			var c = sim.Cars[Math.Min( i / RidersPerFlyer, sim.Cars.Count - 1 )];
+			ride.NodeField.PublishMoving( seatNodeIds[i], c.Position, new Vector3( MathF.Cos( c.Heading ), MathF.Sin( c.Heading ), 0f ) );
 		}
 	}
 
