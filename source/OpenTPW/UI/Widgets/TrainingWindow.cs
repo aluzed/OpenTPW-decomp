@@ -57,14 +57,17 @@ internal sealed class TrainingWindow : GameWindow
 			Text( Small, $"{count} employed", 206f, top + 26f, 11f, count == 0 ? new( 0.6f, 0.6f, 0.6f ) : default );
 
 			float skill = StaffTraining.AverageSkill( staff, role );
-			DrawGauge( At( 400f, top + 14f, 140f, 12f ), skill / StaffGrades.MaxGrade );
+			var gauge = At( 400f, top + 14f, 140f, 12f );
+			DrawGauge( gauge, skill / StaffGrades.MaxGrade );
+			if ( Contains( gauge, MouseBase() ) )
+				Hint( 169 + i ); // "Average skill level of your cleaners" …
 			Text( Small, count == 0 ? "-" : $"{skill + 1f:0.0}", 470f, top + 30f, 11f, default, TextAlign.Center );
 
 			float budget = training.BudgetOf( role );
-			if ( RoundButton( At( 596f, top + 8f, 28f, 28f ), "b_minus", enabled: budget > 0f ) )
+			if ( RoundButton( At( 596f, top + 8f, 28f, 28f ), "b_minus", enabled: budget > 0f, hint: 164 + i ) )
 				training.SetBudget( role, budget - StaffTraining.Step );
 			Text( Small, $"$ {budget:0}", 668f, top + 14f, 13f, default, TextAlign.Center );
-			if ( RoundButton( At( 712f, top + 8f, 28f, 28f ), "b_plus", enabled: budget < StaffTraining.MaxBudget ) )
+			if ( RoundButton( At( 712f, top + 8f, 28f, 28f ), "b_plus", enabled: budget < StaffTraining.MaxBudget, hint: 164 + i ) )
 				training.SetBudget( role, budget + StaffTraining.Step );
 		}
 

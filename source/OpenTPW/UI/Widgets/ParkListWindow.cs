@@ -59,18 +59,50 @@ internal sealed class ParkListWindow : GameWindow
 	private static Rectangle TabRect( int i ) => At( 150f + i * 56f, 74f, 48f, 48f );
 	private static Rectangle RowRect( int row ) => At( 146f, RowTop + row * RowHeight, 608f, RowHeight );
 
-	private readonly record struct Entry( Entity Entity, string Name, string State, string Value );
+	// A row: what it shows, and the value column as a number to sort by.
+	private readonly record struct Entry( Entity Entity, string Name, string State, string Value, double Amount );
 
-	private List<Entry> Entries() => tab switch
+	// Sorting: a click on a column's heading sorts by it; a second click turns the order round.
+	private int sortColumn = -1;
+	private bool descending;
+	private static Rectangle ColumnRect( int c ) => c switch
 	{
-		Tab.Items => Entity.All.OfType<Ride>().Select( r => new Entry( r, r.Name,
-				r.IsBroken ? "Broken down" : r.IsClosed ? "Closed" : $"{r.Riders} riding", $"$ {r.BuildCost * Ride.SellRefundFraction:0}" ) )
-			.Concat( Shop.Stalls.Select( s => new Entry( s, s.Name, s.IsClosed ? "Closed" : s.IsFree ? "Free" : $"$ {s.Price:0}",
-				$"$ {s.BuildCost * Ride.SellRefundFraction:0}" ) ) ).ToList(),
-		Tab.Staff => Entity.All.OfType<Staff>().Select( s => new Entry( s, $"{s.PersonalName} ({StaffNames.For( s.Role )})",
-			$"grade {s.Grade + 1}, {(s.HasPatrolZone ? "zone" : "free roam")}", $"$ {Staff.MonthlyWage( s.Role, s.Grade ):0}" ) ).ToList(),
-		_ => Entity.All.OfType<Peep>().Select( p => new Entry( p, p.PersonalName, CrowdThoughts.Text( p.Thought ), $"{p.Happiness:0} %" ) ).ToList(),
+		0 => At( 146f, 134f, 268f, 30f ), 1 => At( 414f, 134f, 186f, 30f ), _ => At( 600f, 134f, 154f, 30f ),
 	};
+	// The game's hints for the headings (UIHELPTEXT "Left-click to sort the list by …"), per tab and column.
+	private int SortHint( int c ) => tab switch
+	{
+		Tab.Items => c == 0 ? 105 : c == 1 ? 108 : -1,
+		Tab.Staff => c == 0 ? 119 : c == 1 ? 122 : 121,
+		_ => c == 0 ? 129 : c == 1 ? 133 : 134,
+	};
+
+	private List<Entry> Entries()
+	{
+		var entries = tab switch
+		{
+			Tab.Items => Entity.All.OfType<Ride>().Select( r => new Entry( r, r.Name,
+					r.IsBroken ? "Broken down" : r.IsClosed ? "Closed" : $"{r.Riders} riding", $"$ {r.BuildCost * Ride.SellRefundFraction:0}",
+					r.BuildCost * Ride.SellRefundFraction ) )
+				.Concat( Shop.Stalls.Select( s => new Entry( s, s.Name, s.IsClosed ? "Closed" : s.IsFree ? "Free" : $"$ {s.Price:0}",
+					$"$ {s.BuildCost * Ride.SellRefundFraction:0}", s.BuildCost * Ride.SellRefundFraction ) ) ).ToList(),
+			Tab.Staff => Entity.All.OfType<Staff>().Select( s => new Entry( s, $"{s.PersonalName} ({StaffNames.For( s.Role )})",
+				$"grade {s.Grade + 1}, {(s.HasPatrolZone ? "zone" : "free roam")}", $"$ {Staff.MonthlyWage( s.Role, s.Grade ):0}",
+				Staff.MonthlyWage( s.Role, s.Grade ) ) ).ToList(),
+			_ => Entity.All.OfType<Peep>().Select( p => new Entry( p, p.PersonalName, CrowdThoughts.Text( p.Thought ), $"{p.Happiness:0} %",
+				p.Happiness ) ).ToList(),
+		};
+		IEnumerable<Entry> sorted = sortColumn switch
+		{
+			0 => entries.OrderBy( e => e.Name, StringComparer.CurrentCultureIgnoreCase ),
+			1 => entries.OrderBy( e => e.State, StringComparer.CurrentCultureIgnoreCase ),
+			2 => entries.OrderBy( e => e.Amount ),
+			_ => entries,
+		};
+		if ( sortColumn >= 0 && descending )
+			sorted = sorted.Reverse();
+		return sorted.ToList();
+	}
 
 	protected override void OnUpdate()
 	{
@@ -87,6 +119,16 @@ internal sealed class ParkListWindow : GameWindow
 			{
 				tab = Tabs[t].Tab;
 				scroll = 0;
+				sortColumn = -1;
+				return;
+			}
+		for ( int c = 0; c < 3; c++ )
+			if ( Contains( ColumnRect( c ), m ) )
+			{
+				descending = sortColumn == c ? !descending : c == 2; // amounts: the largest first
+				sortColumn = c;
+				scroll = 0;
+				UiSounds.Play( UiSounds.Button );
 				return;
 			}
 		for ( int row = 0; row < VisibleRows && row + scroll < entries.Count; row++ )
@@ -126,9 +168,13 @@ internal sealed class ParkListWindow : GameWindow
 			Tab.Staff => ("Name", "Grade", "Monthly wage"),
 			_ => ("Name", "Thinking", "Happiness"),
 		};
-		Text( Small, n, 156f, 142f, 11f, HeaderInk );
-		Text( Small, st, 420f, 142f, 11f, HeaderInk );
-		Text( Small, v, 740f, 142f, 11f, HeaderInk, TextAlign.Right );
+		string Arrow( int c ) => sortColumn == c ? (descending ? " v" : " ^") : "";
+		Text( Small, n + Arrow( 0 ), 156f, 142f, 11f, HeaderInk );
+		Text( Small, st + Arrow( 1 ), 420f, 142f, 11f, HeaderInk );
+		Text( Small, v + Arrow( 2 ), 740f, 142f, 11f, HeaderInk, TextAlign.Right );
+		for ( int c = 0; c < 3; c++ )
+			if ( Contains( ColumnRect( c ), MouseBase() ) && SortHint( c ) >= 0 )
+				Hint( SortHint( c ) );
 
 		var entries = Entries();
 		var m = MouseBase();
