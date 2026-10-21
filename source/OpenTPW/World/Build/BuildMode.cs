@@ -5,8 +5,10 @@ namespace OpenTPW;
 /// <summary>One placeable catalog entry: a ride (RidePath set), a shop (all null), or a staff member to
 /// hire (Staff set). Staff occupy no grid cell; rides/shops reserve their footprint. <paramref name="HmpPath"/>
 /// optionally points at an <c>.hmp</c> footprint template, so the piece reserves only its solid tiles
-/// (queue paths / fences leave their passable cells walkable) instead of the Width×Height rectangle (T-052).</summary>
-public readonly record struct BuildCatalogItem( string Name, string? RidePath, StaffRole? Staff, int Width, int Height, float Cost, string? HmpPath = null, string? Title = null )
+/// (queue paths / fences leave their passable cells walkable) instead of the Width×Height rectangle (T-052).
+/// <paramref name="ShopPath"/> names a specific stall archive (gift shop, ice-cream stand…); a shop without one is the
+/// theme's default stall of its kind.</summary>
+public readonly record struct BuildCatalogItem( string Name, string? RidePath, StaffRole? Staff, int Width, int Height, float Cost, string? HmpPath = null, string? Title = null, string? ShopPath = null )
 {
 	/// <summary>What the catalog shows: the item's real (localized) name when known, else its key.</summary>
 	public string Label => Title ?? Name;

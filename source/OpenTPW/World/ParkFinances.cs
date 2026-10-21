@@ -260,13 +260,22 @@ public sealed class ParkFinances
 
 	/// <summary>A visitor buys from a concession (<paramref name="drink"/> distinguishes a drink stall from a
 	/// food stall, for the challenge counters).</summary>
-	public void TakeFoodSale( float price, bool drink = false, float costOfGoods = 0f )
+	public void TakeFoodSale( float price, bool drink = false, float costOfGoods = 0f, SaleCategory? category = null )
 	{
 		Money += price - costOfGoods;
 		FoodRevenue += price;
 		GoodsSpent += costOfGoods;
-		if ( drink ) DrinkSold++; else FoodSold++;
+		var c = category ?? (drink ? SaleCategory.Drink : SaleCategory.Snack);
+		sold[(int)c]++;
+		if ( c is SaleCategory.Gift or SaleCategory.Costume or SaleCategory.Balloon )
+			return; // impulse items: neither food nor drink
+		if ( drink || c == SaleCategory.Drink ) DrinkSold++; else FoodSold++;
 	}
+
+	private readonly int[] sold = new int[Enum.GetValues<SaleCategory>().Length];
+
+	/// <summary>How many of a product the park's stalls have sold (fries, gifts, balloons… — the challenge counters).</summary>
+	public int Sold( SaleCategory category ) => sold[(int)category];
 
 	/// <summary>Award a cash prize (a completed challenge, T-054).</summary>
 	public void AwardPrize( float amount ) => Money += amount;

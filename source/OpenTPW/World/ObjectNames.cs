@@ -41,9 +41,11 @@ public static class ObjectNames
 				var result = Normalize( string.Join( " ", Enumerable.Range( i, span ).Select( k => to[k] ) ) );
 				return result.Length > 0 ? result : name;
 			}
-		return name;
+		return wanted.Length > 0 ? wanted : name;
 	}
 
+	// Single-spaced, without the <TAG> markers some entries carry (hallow's "<JUMPER> Insecticide").
 	private static string Normalize( string s ) =>
-		string.Join( " ", (s ?? "").Split( (char[]?)null, StringSplitOptions.RemoveEmptyEntries ) );
+		string.Join( " ", System.Text.RegularExpressions.Regex.Replace( s ?? "", "<[^>]*>", " " )
+			.Split( (char[]?)null, StringSplitOptions.RemoveEmptyEntries ) );
 }

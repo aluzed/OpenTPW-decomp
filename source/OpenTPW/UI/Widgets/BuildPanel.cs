@@ -36,11 +36,17 @@ internal sealed class BuildPanel : HudPanel
 			Current = null;
 	}
 
+	// Rows shrink to keep a long catalog (a theme's rides + sideshows + every stall + staff) on screen.
+	private const float BottomMargin = 8f;
+	private static float RowStep => RowCount <= 0 ? RowH + RowGap : MathF.Min( RowH + RowGap, (FirstRowTop - BottomMargin) / RowCount );
+	private static float RowHeight => RowStep - RowGap;
+	private static float RowLabelScale => LabelScale * MathF.Min( 1f, RowHeight / RowH );
+
 	// The button rect (base space) for catalog row i: X,Y = bottom-left.
 	private static Rectangle Row( int i )
 	{
-		var top = FirstRowTop - i * (RowH + RowGap);
-		return new Rectangle( Left, top - RowH, PanelW, RowH );
+		var top = FirstRowTop - i * RowStep;
+		return new Rectangle( Left, top - RowHeight, PanelW, RowHeight );
 	}
 
 	private static int RowCount => BuildMode.Current?.Catalog.Count ?? 0;
@@ -92,7 +98,7 @@ internal sealed class BuildPanel : HudPanel
 			// Staff show their authentic TPW role name (Cleaner/Scientist/…); the catalog key (item.Name) is
 			// unchanged (T-062).
 			var label = item.Staff is { } role ? StaffNames.For( role ) : item.Label;
-			DrawButton( Row( i ), $"{label}  ${item.Cost:0}", fill );
+			DrawButton( Row( i ), $"{label}  ${item.Cost:0}", fill, RowLabelScale );
 		}
 	}
 }

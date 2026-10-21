@@ -5,7 +5,14 @@
 - **Status**: ✅ Done — clickable catalog + footprint preview (green/red) + place-on-click with cost
   charging + queue registration, a clickable manage UI, **sell/demolish** (rides + shops, with refund),
   and **rotation** (R, 90° steps). `SetupDevPark` is an empty park the player fills. Only nice-to-haves
-  remain (drag-rotate handle, shop price controls).
+  remain (drag-rotate handle, shop price controls). **2026-10-21: every stall the theme ships is buildable**
+  — the catalog lists the theme's `shops/` archives (fries, ice cream, restaurant, gift / balloon / costume
+  shops…) beside the default food/drink/toilet stalls, each with its authored name, price, cost of goods and
+  build cost; the catalog rows shrink to fit (~27 items). A purchase applies the stall's `UsageInfo.*Effect`
+  values (hunger/thirst relieved in proportion, mood and energy lifted, `LitterEffect`% chance of a dropped
+  wrapper); gift/balloon/costume shops are impulse buys a passing visitor makes once per visit. Saves keep the
+  stall's catalog key. Each theme's toilet resolves (`loo`/`horloo`), the dev park no longer sells its only
+  food stall in the sell-test, and the generic autoplace places its stalls near the wanted tile.
 - **Parent**: [T-038](T-038-park-management-ui.md). **Needs**: [T-040](T-040-build-mode-foundation.md).
   **Couples with**: [T-036](T-036-peep-pathfinding.md) (paths/queues).
 

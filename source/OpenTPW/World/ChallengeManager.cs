@@ -80,7 +80,7 @@ public sealed class ChallengeManager
 			return;
 		State = Phase.Active;
 		DaysLeft = c.TargetTime;
-		baseline = metric( c );
+		baseline = ChallengeMetrics.IsLevel( c.Type ) ? 0f : metric( c );
 		Progress = 0f;
 	}
 
@@ -119,7 +119,7 @@ public sealed class ChallengeManager
 		{
 			DaysLeft = daysLeft;
 			Progress = progress;
-			baseline = metric( active ) - progress; // re-anchor so future OnNewDay gains stay consistent
+			baseline = ChallengeMetrics.IsLevel( active.Type ) ? 0f : metric( active ) - progress; // re-anchor so future OnNewDay gains stay consistent
 		}
 	}
 

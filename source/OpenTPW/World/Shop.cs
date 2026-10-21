@@ -9,6 +9,14 @@ public enum ShopKind
 	Drink,
 	/// <summary>A toilet: relieves the bladder (a free facility — no income).</summary>
 	Toilet,
+	/// <summary>A gift / balloon / costume shop: an impulse buy that lifts the mood (no need satisfied).</summary>
+	Item,
+}
+
+/// <summary>What a sale was, for the per-product challenge counters (see <see cref="ShopBuilding.CategoryOf"/>).</summary>
+public enum SaleCategory
+{
+	Snack, Fries, Burger, IceCream, Drink, Restaurant, Gift, Costume, Balloon,
 }
 
 /// <summary>
@@ -30,7 +38,7 @@ public sealed class Shop : ModelEntity
 	public ShopKind Kind { get; }
 
 	/// <summary>Display name (for the manage UI): the stall's own <c>Info.Name</c> when its data loaded.</summary>
-	public string Name => title ?? Kind switch { ShopKind.Drink => "Drink Stall", ShopKind.Toilet => "Toilet", _ => "Food Stall" };
+	public string Name => title ?? Kind switch { ShopKind.Drink => "Drink Stall", ShopKind.Toilet => "Toilet", ShopKind.Item => "Gift Shop", _ => "Food Stall" };
 	private readonly string? title;
 
 	/// <summary>What one sale costs the park in goods (<c>UsageInfo.InitCostOfGoods</c>); the profit is the price minus this.</summary>
@@ -66,15 +74,29 @@ public sealed class Shop : ModelEntity
 	private readonly List<ModelEntity> buildingParts = new();
 	private readonly bool isBuilding;
 
-	public Shop( ParkTerrain terrain, Vector3 position, ShopKind kind = ShopKind.Food, float footprintSize = 20f, float price = 8f )
+	/// <summary>The stall's archive (e.g. <c>levels/jungle/shops/fries</c>), or null for a generic stall of its kind.</summary>
+	public string? Archive { get; }
+
+	/// <summary>The stall's authored stats (type, effects…), when its data loaded.</summary>
+	internal ShopBuilding.Stats? Stats { get; }
+
+	/// <summary>What a sale here counts as (drink/snack by kind when the stall has no data).</summary>
+	public SaleCategory Category => Stats is { } s ? ShopBuilding.CategoryOf( s ) : Kind == ShopKind.Drink ? SaleCategory.Drink : SaleCategory.Snack;
+
+	/// <summary>The catalog key this stall was built from (saved, so a load rebuilds the same stall).</summary>
+	public string CatalogKey { get; set; } = "shop";
+
+	public Shop( ParkTerrain terrain, Vector3 position, ShopKind kind = ShopKind.Food, float footprintSize = 20f, float price = 8f, string? archive = null )
 	{
 		Price = price;
-		Kind = kind;
-		// The stall's own price / cost of goods / name from its .sam (a toilet stays free).
-		if ( ShopBuilding.StatsFor( kind, Level.Current.Name ) is { } stats )
+		Archive = archive ?? ShopBuilding.DefaultArchive( kind, Level.Current.Name );
+		// The stall's own price / cost of goods / name / type from its .sam (a toilet stays free).
+		Stats = Archive != null ? ShopBuilding.StatsOf( Archive ) : null;
+		Kind = Stats is { } typed && kind != ShopKind.Toilet ? ShopBuilding.KindOf( typed.ShopType ) : kind;
+		if ( Stats is { } stats )
 		{
 			title = ObjectNames.Localize( stats.Name );
-			if ( kind != ShopKind.Toilet )
+			if ( Kind != ShopKind.Toilet )
 			{
 				Price = stats.Price;
 				CostOfGoods = stats.CostOfGoods;
@@ -83,15 +105,15 @@ public sealed class Shop : ModelEntity
 		Position = position.WithZ( terrain.SampleHeight( position.X, position.Y ) );
 
 		// Prefer the theme's real stall/toilet building; keep the coloured billboard only as a fallback.
-		if ( ShopBuilding.TryLoad( kind, Position, footprintSize, buildingParts ) )
+		if ( Archive != null && ShopBuilding.TryLoadArchive( Archive, Position, footprintSize, buildingParts ) )
 		{
 			isBuilding = true;
-			Model = ModelFor( kind );  // retained for the click/selection bounds, but rendered invisibly
+			Model = ModelFor( Kind );  // retained for the click/selection bounds, but rendered invisibly
 			Scale = Vector3.Zero;      // the real building renders through buildingParts
 		}
 		else
 		{
-			Model = ModelFor( kind );
+			Model = ModelFor( Kind );
 			Scale = new Vector3( 9f, 1f, 12f ); // bigger than a peep so a stall reads as a building
 		}
 
@@ -126,6 +148,7 @@ public sealed class Shop : ModelEntity
 		{
 			ShopKind.Drink => Billboard.Make( 50, 130, 220 ),   // blue
 			ShopKind.Toilet => Billboard.Make( 210, 210, 220 ), // pale grey/white
+			ShopKind.Item => Billboard.Make( 220, 120, 200 ),   // pink gifts
 			_ => Billboard.Make( 40, 170, 70 ),                 // green food
 		};
 		sharedModels[kind] = model;

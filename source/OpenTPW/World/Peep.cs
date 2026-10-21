@@ -78,6 +78,9 @@ public sealed class Peep : ModelEntity
 	private const float DrinkBladderBump = 35f;        // a drink fills the bladder noticeably (T-039)
 	private const float BurstPenaltyPerSec = 3f;       // happiness lost while desperate with no toilet reachable
 	private const float IndoorShelterBias = 1.5f;      // ride-choice bonus for an indoor attraction in bad weather (T-056)
+	private const float ImpulseRadius = 40f;           // a gift/balloon/costume shop this close can tempt a passer-by
+	private const float ImpulseCheckSeconds = 2f;      // how often a wandering peep considers an impulse buy
+	private const float ImpulseChance = 0.25f;         // per check, scaled by mood (a happy peep splurges more)
 	private const float VandalHappiness = 28f;        // a peep this unhappy may vandalise (well above LeaveHappiness, so there's a window to act before giving up)
 	private const float VandalChancePerSec = 0.14f;   // ~1 act every ~7 s while unhappy and unwatched
 	private const float WalkFps = 8f;                // walk-cycle frames per second
@@ -241,6 +244,16 @@ public sealed class Peep : ModelEntity
 	private float thirst;
 	private float bladder;
 
+	// Impulse items bought this visit (one of each: a visitor with a balloon doesn't buy another).
+	private readonly HashSet<SaleCategory> bought = new();
+	private float impulseTimer = ImpulseCheckSeconds * (float)Random.Shared.NextDouble();
+	// A snack's wrapper/cup, dropped a little after eating (the stall's LitterEffect is the chance), seconds left.
+	private float wrapperTimer = -1f;
+
+	/// <summary>True when the visitor bought a balloon / costume this visit (challenge types 9 and 10).</summary>
+	public bool HasBalloon => bought.Contains( SaleCategory.Balloon );
+	public bool HasCostume => bought.Contains( SaleCategory.Costume );
+
 	// Sprite animation state (real sprite path only).
 	private readonly float spriteHeight;
 	private int facing;          // 0..7 camera-relative direction sector → directional walk cycle
@@ -355,29 +368,27 @@ public sealed class Peep : ModelEntity
 		{
 			if ( MoveTo( shopTarget.Position ) )
 			{
-				// No money for it: the need stays unmet — head home.
+				// No money for it: an unmet need sends the visitor home; a souvenir they can't afford is just skipped.
 				if ( shopTarget.Kind != ShopKind.Toilet && !TrySpend( shopTarget.Price ) )
 				{
+					bool need = shopTarget.Kind != ShopKind.Item;
 					shopTarget = null;
-					BeginLeaving();
+					if ( need )
+					{
+						BeginLeaving();
+						return;
+					}
+					ResetPath();
+					PickRoute();
 					return;
 				}
-				switch ( shopTarget.Kind )
+				if ( shopTarget.Kind == ShopKind.Toilet )
 				{
-					case ShopKind.Drink:
-						ParkFinances.Current?.TakeFoodSale( shopTarget.Price, drink: true, shopTarget.CostOfGoods );
-						thirst = 0f;
-						bladder = MathF.Min( 100f, bladder + DrinkBladderBump );
-						break;
-					case ShopKind.Toilet:
-						bladder = 0f; // toilets are free facilities — no income
-						ToiletVisits++;
-						break;
-					default:
-						ParkFinances.Current?.TakeFoodSale( shopTarget.Price, costOfGoods: shopTarget.CostOfGoods );
-						hunger = 0f;
-						break;
+					bladder = 0f; // toilets are free facilities — no income
+					ToiletVisits++;
 				}
+				else
+					Buy( shopTarget );
 				shopTarget = null;
 				ResetPath();
 				PickRoute();
@@ -399,6 +410,8 @@ public sealed class Peep : ModelEntity
 		// Visitors occasionally drop litter, and standing among litter sours the mood (until a handyman
 		// clears it). Both raise the chance the peep heads home unhappy. A nearby guard deters littering.
 		if ( Random.Shared.NextDouble() < LitterChancePerSec * Time.Delta && !Staff.GuardNear( Position ) )
+			Litter.TryDrop( Position );
+		if ( wrapperTimer >= 0f && (wrapperTimer -= Time.Delta) < 0f )
 			Litter.TryDrop( Position );
 		int nearbyLitter = CountNearbyLitter();
 		amidLitter = nearbyLitter >= 2;
@@ -440,7 +453,7 @@ public sealed class Peep : ModelEntity
 		if ( bladder > 100f )
 			bladder = 100f;
 
-		if ( NeedDetour() is { } target )
+		if ( (NeedDetour() ?? ImpulseDetour()) is { } target )
 		{
 			route?.Dequeue( this );
 			route = null;
@@ -576,6 +589,8 @@ public sealed class Peep : ModelEntity
 		hunger = 0f;
 		thirst = 0f;
 		bladder = 0f;
+		bought.Clear();
+		wrapperTimer = -1f;
 		lastRoute = null;
 		ParkFinances.Current?.TakeEntryFee(); // a fresh visitor pays the gate
 		ArriveWithCash();
@@ -712,6 +727,55 @@ public sealed class Peep : ModelEntity
 	{
 		Position = seat;
 		FaceCamera();
+	}
+
+	// Pay for and consume what a stall sells: the park takes the sale (by product, for the challenges), the
+	// stall's authored effects apply (needs relieved, mood/energy lifted), a drink fills the bladder, a snack
+	// may leave a wrapper, and a souvenir is kept for the rest of the visit.
+	private void Buy( Shop shop )
+	{
+		var category = shop.Category;
+		ParkFinances.Current?.TakeFoodSale( shop.Price, shop.Kind == ShopKind.Drink, shop.CostOfGoods, category );
+		if ( shop.Stats is { } stats )
+		{
+			(hunger, thirst, happiness, energy) = ShopBuilding.ApplyEffects( stats, hunger, thirst, happiness, energy,
+				HungerThreshold, ThirstThreshold, MaxEnergy );
+			if ( stats.LitterEffect > 0f && Random.Shared.NextDouble() * 100f < stats.LitterEffect )
+				wrapperTimer = 4f + 8f * (float)Random.Shared.NextDouble();
+		}
+		else if ( shop.Kind == ShopKind.Drink )
+			thirst = 0f;
+		else if ( shop.Kind == ShopKind.Food )
+			hunger = 0f;
+		if ( shop.Kind == ShopKind.Drink )
+			bladder = MathF.Min( 100f, bladder + DrinkBladderBump );
+		if ( shop.Kind == ShopKind.Item )
+			bought.Add( category );
+	}
+
+	// Now and then a wandering visitor passing a gift / balloon / costume shop goes in — if it hasn't bought
+	// that item yet and can afford it; a happier visitor is likelier to splurge. Null when nothing tempts it.
+	private Shop? ImpulseDetour()
+	{
+		if ( (impulseTimer -= Time.Delta) > 0f )
+			return null;
+		impulseTimer = ImpulseCheckSeconds;
+		Shop? best = null;
+		float bestD2 = ImpulseRadius * ImpulseRadius;
+		foreach ( var s in Shop.Stalls )
+		{
+			if ( s.Kind != ShopKind.Item || bought.Contains( s.Category ) || Cash < s.Price )
+				continue;
+			float d2 = (s.Position - Position).LengthSquared;
+			if ( d2 < bestD2 )
+			{
+				bestD2 = d2;
+				best = s;
+			}
+		}
+		if ( best == null || Random.Shared.NextDouble() >= ImpulseChance * (happiness / 100f) * 2f )
+			return null;
+		return best;
 	}
 
 	// Pick the stall to detour to for the most urgent over-threshold need that actually has a stall — by

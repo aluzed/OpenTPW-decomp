@@ -278,17 +278,16 @@ public class Level
 				return;
 			}
 
-			// Shop demo: place the three stalls (food / drink / toilet) in a row at the park centre and frame them,
-			// to preview the real shop building models (OPENTPW_SHOP_DEMO=1).
+			// Shop demo: place every stall the theme ships (food / drink / toilet + the other shops) in rows at the
+			// park centre and frame them, to preview the real shop building models (OPENTPW_SHOP_DEMO=1).
 			if ( Environment.GetEnvironmentVariable( "OPENTPW_SHOP_DEMO" ) == "1" )
 			{
 				int placed = 0;
-				foreach ( var (name, dx, dy) in new[] { ("shop", -4, 0), ("drink", 0, 0), ("toilet", 4, 0) } )
-					if ( catalog.FirstOrDefault( c => c.Name == name ) is { } it
-						&& CommitPlacement( it, grid, terrain, cx + dx, cy + dy ) )
+				var stalls = catalog.Where( c => c.RidePath == null && c.Staff == null ).ToList();
+				for ( int i = 0; i < stalls.Count; i++ )
+					if ( CommitPlacementNear( stalls[i], grid, terrain, cx - 8 + (i % 4) * 4, cy - 2 + (i / 4) * 4, radius: 4 ) )
 					{
-						if ( Shop.Stalls.Count > 0 )
-							BuildCameraMode.Focus = Shop.Stalls[^1].Position;
+						BuildCameraMode.Focus = Shop.Stalls[^1].Position;
 						placed++;
 					}
 				Log.Info( $"[build] shop-demo (theme {Current.Name}): placed {placed}" );
@@ -331,6 +330,10 @@ public class Level
 				+ $"rsch={CommitPlacement( Item( "researcher" ), grid, terrain, cx + 4, cy + 2 )} "
 				+ $"mech={CommitPlacement( Item( "mechanic" ), grid, terrain, cx + 4, cy )} "
 				+ $"guard={CommitPlacement( Item( "guard" ), grid, terrain, cx, cy )}" ); // guard patrols the centre (T-039 vandalism deterrence)
+			// Souvenir stalls by the paths, so visitors make impulse buys (balloons, gifts).
+			foreach ( var (name, dx, dy) in new[] { ("balloon", 10, 1), ("giftshop", 10, 4) } )
+				if ( catalog.FirstOrDefault( c => c.Name == name ) is { Name: not null } souvenir )
+					CommitPlacementNear( souvenir, grid, terrain, cx + dx, cy + dy, radius: 4 );
 
 			// Rotation (T-041): place a totem rotated 90° and confirm its footprint dims swapped (3x4 -> 4x3).
 			if ( CommitPlacement( Item( "totem" ), grid, terrain, cx - 12, cy - 6, rotation: 1 ) )
@@ -425,7 +428,9 @@ public class Level
 				Log.Info( $"[build] sell-test ride {rideToSell.Name}: rides {ridesBefore}->{ridesAfter}, "
 					+ $"queues {queuesBefore}->{parkQueues.Count}, refund {refund:0}" );
 			}
-			if ( Shop.Stalls.FirstOrDefault() is { } shopToSell )
+			// Sell a spare stall built for the purpose — selling the park's first one tore down its only food stall,
+			// leaving every dev-park visitor hungry.
+			if ( CommitPlacementNear( Item( "shop" ), grid, terrain, cx - 12, cy + 8, radius: 6 ) && Shop.Stalls[^1] is { } shopToSell )
 			{
 				int shopsBefore = Shop.Stalls.Count;
 				float moneyBefore = ParkFinances.Current?.Money ?? 0f;
@@ -530,7 +535,7 @@ public class Level
 		foreach ( var sh in Shop.Stalls )
 			s.Placements.Add( new SaveGame.Placement
 			{
-				Kind = "shop", Name = ShopCatalogName( sh.Kind ), TileX = sh.TileX, TileY = sh.TileY,
+				Kind = "shop", Name = sh.CatalogKey, TileX = sh.TileX, TileY = sh.TileY,
 				TicketPrice = sh.Price, // reuse the generic price field for the stall's sale price (T-041)
 			} );
 
@@ -675,14 +680,6 @@ public class Level
 		Log.Info( $"[save] restored {s.Placements.Count} placement(s) + {s.Staff.Count} staff" );
 	}
 
-	// The build-catalog item name for a shop kind (the inverse of ShopKindOf).
-	private static string ShopCatalogName( ShopKind kind ) => kind switch
-	{
-		ShopKind.Drink => "drink",
-		ShopKind.Toilet => "toilet",
-		_ => "shop",
-	};
-
 	// Build catalog: jungle rides (footprint from RideShape, cost from the .sam) + a food shop + hireable
 	// staff (no footprint — placed on a tile and charged a hire cost, T-043).
 	// Generic autoplace for a non-jungle theme (T-062): drop the first few enumerated rides + the shared shops
@@ -700,7 +697,7 @@ public class Level
 		// Shared shops + one of each staff role (these catalog names exist for every theme).
 		foreach ( var (name, dx, dy) in new[] { ("shop", 6, 4), ("drink", 6, 1), ("toilet", 8, 4) } )
 			if ( catalog.FirstOrDefault( c => c.Name == name ) is { Name: not null } shop )
-				CommitPlacement( shop, grid, terrain, cx + dx, cy + dy );
+				CommitPlacementNear( shop, grid, terrain, cx + dx, cy + dy, radius: 6 );
 		foreach ( var (name, dx, dy) in new[] { ("entertainer", 0, 2), ("handyman", 2, 2), ("guard", 0, 0), ("mechanic", 4, 0), ("researcher", 4, 2) } )
 			if ( catalog.FirstOrDefault( c => c.Name == name ) is { Name: not null } st )
 				CommitPlacement( st, grid, terrain, cx + dx, cy + dy );
@@ -747,6 +744,17 @@ public class Level
 		list.Add( Stall( "shop", ShopKind.Food, 500f ) );    // food stall (satisfies hunger)
 		list.Add( Stall( "drink", ShopKind.Drink, 450f ) );  // drink stall (satisfies thirst, T-039)
 		list.Add( Stall( "toilet", ShopKind.Toilet, 400f ) ); // toilet (relieves bladder, free to use, T-039)
+		// The theme's other stalls (fries, ice cream, restaurant, gift / balloon / costume shops), keyed by archive.
+		var defaults = new[] { ShopKind.Food, ShopKind.Drink }.Select( k => ShopBuilding.DefaultArchive( k, theme ) ).ToHashSet( StringComparer.OrdinalIgnoreCase );
+		foreach ( var archive in ShopBuilding.ShopArchives( theme ) )
+		{
+			if ( defaults.Contains( archive ) || ShopBuilding.StatsOf( archive ) is not { } st )
+				continue;
+			var key = Path.GetFileName( archive );
+			if ( list.Any( c => c.Name == key ) )
+				key = $"shop_{key}";
+			list.Add( new BuildCatalogItem( key, null, null, 2, 2, st.BuildCost, Title: ObjectNames.Localize( st.Name ), ShopPath: archive ) );
+		}
 		list.Add( new BuildCatalogItem( "entertainer", null, StaffRole.Entertainer, 1, 1, 800f ) );
 		list.Add( new BuildCatalogItem( "handyman", null, StaffRole.Handyman, 1, 1, 600f ) );
 		list.Add( new BuildCatalogItem( "guard", null, StaffRole.Guard, 1, 1, 1000f ) );
@@ -931,9 +939,9 @@ public class Level
 	private static bool SpawnShopAt( ParkTerrain terrain, PlacementGrid grid, int tx, int ty, ShopKind kind, BuildCatalogItem item )
 	{
 		var c = grid.TileToWorld( tx, ty, item.Width, item.Height );
-		_ = new Shop( terrain, c, kind, grid.TileSize * item.Width )
+		_ = new Shop( terrain, c, kind, grid.TileSize * item.Width, archive: item.ShopPath )
 		{
-			TileX = tx, TileY = ty, TileW = item.Width, TileH = item.Height, BuildCost = item.Cost,
+			TileX = tx, TileY = ty, TileW = item.Width, TileH = item.Height, BuildCost = item.Cost, CatalogKey = item.Name,
 		};
 		return true;
 	}
@@ -1201,7 +1209,8 @@ public class Level
 			nextEconLog = Time.Now + 5f;
 			Log.Info( $"[econ] money={f.Money:0}  ride+={f.RideRevenue:0}  entry+={f.EntryRevenue:0}  shop+={f.FoodRevenue:0}  upkeep-={f.UpkeepPaid:0}  wages-={f.WagesPaid:0}"
 				+ $"  vandalism={Peep.VandalismActs} deterred={Peep.VandalismDeterred} toilet={Peep.ToiletVisits}"
-				+ $"  breakdowns={Ride.Breakdowns} repairs={Ride.Repairs}" );
+				+ $"  breakdowns={Ride.Breakdowns} repairs={Ride.Repairs}"
+				+ $"  sold: {string.Join( ' ', Enum.GetValues<SaleCategory>().Where( c => f.Sold( c ) > 0 ).Select( c => $"{c}={f.Sold( c )}" ) )}" );
 		}
 	}
 

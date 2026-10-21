@@ -39,12 +39,12 @@ internal abstract class HudPanel : Panel
 	protected static Texture Solid( byte r, byte g, byte b, byte a ) => new( [r, g, b, a], 1, 1 );
 
 	// Draw a labelled button (filled rect + left-aligned label).
-	protected static void DrawButton( Rectangle rect, string label, Texture fill )
+	protected static void DrawButton( Rectangle rect, string label, Texture fill, float scale = LabelScale )
 	{
 		var mat = Material.UI;
 		mat.Set( "Color", fill );
 		Graphics.Quad( rect, mat );
-		Graphics.DrawText( Font, label, rect.X + 8f, rect.Y + rect.Height - 7f, TextAlign.Left, LabelScale );
+		Graphics.DrawText( Font, label, rect.X + 8f, rect.Y + rect.Height - 7f * scale / LabelScale, TextAlign.Left, scale );
 	}
 
 	// Draw a horizontal progress/gauge bar: background track + a fill clamped to [0,1] of the width.

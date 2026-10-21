@@ -11,10 +11,10 @@ public class ChallengeMetricsTests
 	[TestMethod]
 	public void SupportsTheDecodedTypes()
 	{
-		foreach ( var t in new[] { 1, 2, 3, 11, 12, 13, 16, 18, 20 } )
+		foreach ( var t in new[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 16, 18, 20 } )
 			Assert.IsTrue( ChallengeMetrics.IsSupported( t ), $"type {t} is decoded + tracked" );
 		// Still-opaque types stay unsupported (skipped by the manager).
-		foreach ( var t in new[] { 6, 19, 24, 25 } )
+		foreach ( var t in new[] { 19, 24, 25 } )
 			Assert.IsFalse( ChallengeMetrics.IsSupported( t ), $"type {t} has no counter yet" );
 	}
 
@@ -41,7 +41,7 @@ public class ChallengeMetricsTests
 			var fin = new ParkFinances( 10000f, 5f );
 			ParkFinances.Current = fin;
 
-			fin.TakeFoodSale( 3f );                 // food (fries/burgers counter)
+			fin.TakeFoodSale( 3f, category: SaleCategory.Fries ); // a portion of fries
 			fin.TakeFoodSale( 3f, drink: true );    // drink
 			fin.TakeEntryFee();                     // a visitor
 			fin.TakeRideTicket( 4f );               // a ride ridden
@@ -50,8 +50,8 @@ public class ChallengeMetricsTests
 			fin.NoteResearchCompleted();            // a ride research done
 			fin.NoteResearchCompleted();
 
-			Assert.AreEqual( 1f, ChallengeMetrics.Current( OfType( 1 ) ), "type 1 → FoodSold" );
-			Assert.AreEqual( 1f, ChallengeMetrics.Current( OfType( 2 ) ), "type 2 → FoodSold" );
+			Assert.AreEqual( 1f, ChallengeMetrics.Current( OfType( 1 ) ), "type 1 → fries sold" );
+			Assert.AreEqual( 0f, ChallengeMetrics.Current( OfType( 2 ) ), "type 2 → burgers sold (none)" );
 			Assert.AreEqual( 1f, ChallengeMetrics.Current( OfType( 3 ) ), "type 3 → DrinkSold" );
 			Assert.AreEqual( 1f, ChallengeMetrics.Current( OfType( 11 ) ), "type 11 → VisitorsTotal" );
 			Assert.AreEqual( 25f, ChallengeMetrics.Current( OfType( 13 ) ), "type 13 → SideshowRevenue" );
@@ -62,5 +62,38 @@ public class ChallengeMetricsTests
 			Assert.AreEqual( 0f, ChallengeMetrics.Current( OfType( 99 ) ), "an unmapped type reads 0" );
 		}
 		finally { ParkFinances.Current = saved; }
+	}
+
+	[TestMethod]
+	public void ProductChallengesCountTheirOwnSales()
+	{
+		var saved = ParkFinances.Current;
+		try
+		{
+			var fin = new ParkFinances( 10000f, 5f );
+			ParkFinances.Current = fin;
+			foreach ( var c in new[] { SaleCategory.IceCream, SaleCategory.Gift, SaleCategory.Gift, SaleCategory.Balloon,
+				SaleCategory.Costume, SaleCategory.Restaurant, SaleCategory.Burger } )
+				fin.TakeFoodSale( 10f, category: c );
+
+			Assert.AreEqual( 1f, ChallengeMetrics.Current( OfType( 4 ) ), "type 4 → ice creams" );
+			Assert.AreEqual( 2f, ChallengeMetrics.Current( OfType( 5 ) ), "type 5 → gifts" );
+			Assert.AreEqual( 1f, ChallengeMetrics.Current( OfType( 6 ) ), "type 6 → balloons" );
+			Assert.AreEqual( 1f, ChallengeMetrics.Current( OfType( 7 ) ), "type 7 → costumes" );
+			Assert.AreEqual( 1f, ChallengeMetrics.Current( OfType( 8 ) ), "type 8 → restaurant meals" );
+			Assert.AreEqual( 1f, ChallengeMetrics.Current( OfType( 2 ) ), "type 2 → burgers" );
+			// Souvenirs are neither food nor drink, but still shop takings.
+			Assert.AreEqual( 3, fin.FoodSold, "ice cream + restaurant + burger" );
+			Assert.AreEqual( 70f, fin.FoodRevenue, 1e-3f );
+		}
+		finally { ParkFinances.Current = saved; }
+	}
+
+	[TestMethod]
+	public void ShareOfVisitorsTypesAreLevelsNotGains()
+	{
+		Assert.IsTrue( ChallengeMetrics.IsLevel( 9 ) && ChallengeMetrics.IsLevel( 10 ) );
+		Assert.IsFalse( ChallengeMetrics.IsLevel( 6 ) );
+		StringAssert.Contains( ChallengeMetrics.Describe( OfType( 9, 15 ) ), "15%" );
 	}
 }

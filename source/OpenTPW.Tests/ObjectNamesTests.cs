@@ -14,6 +14,8 @@ public class ObjectNamesTests
 		Assert.AreEqual( "Singe Ouf", ObjectNames.Localize( "Crazy Ape", En, Fr ) );
 		Assert.AreEqual( "Totem Inca", ObjectNames.Localize( "Inca  Totem", En, Fr ), "whitespace-insensitive" );
 		Assert.AreEqual( "Tunnel des dino-karts", ObjectNames.Localize( "Dino Karts Tunnel", En, Fr ), "a single entry" );
+		Assert.AreEqual( "Totem Inca", ObjectNames.Localize( "<JUMPER> Inca Totem", En, Fr ), "a <TAG> marker is ignored" );
+		Assert.AreEqual( "Insecticide", ObjectNames.Localize( "<JUMPER> Insecticide", En, Fr ), "and dropped from an unknown name" );
 	}
 
 	[TestMethod]
