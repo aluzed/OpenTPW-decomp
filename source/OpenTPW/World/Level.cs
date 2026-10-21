@@ -1308,11 +1308,41 @@ public class Level
 	}
 
 	// Sell/demolish a placed stall (T-041): free its footprint cells, refund part of the cost, remove it.
-	private static void DemolishShop( Shop shop, PlacementGrid grid )
+	/// <summary>A stall picked up to be moved: what it was, to rebuild it as it was.</summary>
+	public sealed record MovedShop( float Price, float Filth, bool Closed, float BuildCost, int FromX, int FromY );
+
+	/// <summary>Pick <paramref name="shop"/> up to move it (no refund).</summary>
+	public static MovedShop PickUpShop( Shop shop, PlacementGrid grid )
+	{
+		var moved = new MovedShop( shop.Price, shop.Filth, shop.IsClosed, shop.BuildCost, shop.TileX, shop.TileY );
+		DemolishShop( shop, grid, refundIt: false );
+		return moved;
+	}
+
+	/// <summary>Put a picked-up stall down at (tx, ty) for free, as it was.</summary>
+	public static bool PutDownShop( MovedShop moved, BuildCatalogItem item, PlacementGrid grid, ParkTerrain terrain, int tx, int ty )
+	{
+		if ( !CommitPlacement( item, grid, terrain, tx, ty, charge: false ) )
+			return false;
+		if ( Shop.Stalls.LastOrDefault() is { } shop )
+		{
+			shop.Price = moved.Price;
+			shop.Filth = moved.Filth;
+			shop.IsClosed = moved.Closed;
+			shop.BuildCost = moved.BuildCost;
+		}
+		UiSounds.Play( UiSounds.LaySmall );
+		return true;
+	}
+
+	private static void DemolishShop( Shop shop, PlacementGrid grid ) => DemolishShop( shop, grid, refundIt: true );
+
+	private static void DemolishShop( Shop shop, PlacementGrid grid, bool refundIt )
 	{
 		grid.Clear( shop.TileX, shop.TileY, shop.TileW, shop.TileH );
-		var refund = shop.BuildCost * Ride.SellRefundFraction;
-		ParkFinances.Current?.RefundBuild( refund );
+		var refund = refundIt ? shop.BuildCost * Ride.SellRefundFraction : 0f;
+		if ( refundIt )
+			ParkFinances.Current?.RefundBuild( refund );
 		ParticleEmitter.World.Spawn( shop.IsFree ? ParticleEmitter.DestroyFeature : ParticleEmitter.DestroyShop, shop.Position + Vector3.Up * 4f );
 		shop.Despawn();
 		Log.Info( $"[build] sold {shop.Name} for ${refund:0} (built ${shop.BuildCost:0})" );

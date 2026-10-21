@@ -135,7 +135,7 @@ internal sealed class ItemInfoWindow : GameWindow
 			build.SellSelected();
 		// Move: pick the ride up and put it down elsewhere, as it is (not a ride with a laid track).
 		if ( RoundButton( Action( 217f ), "b_move", enabled: ride.Track == null && ride.TileTrack == null && !ride.IsResearching ) )
-			build.BeginMoveSelectedRide();
+			build.BeginMoveSelected();
 		RoundButton( Action( 369f ), "b_queue", enabled: false );
 		if ( RoundButton( Action( 450f ), "b_rideit" ) )
 		{
@@ -193,7 +193,8 @@ internal sealed class ItemInfoWindow : GameWindow
 
 		if ( RoundButton( Action( 143f ), "b_delete_login" ) )
 			build.SellSelected();
-		RoundButton( Action( 217f ), "b_move", enabled: false );
+		if ( RoundButton( Action( 217f ), "b_move" ) )
+			build.BeginMoveSelected();
 		if ( RoundButton( Action( 672f, 93f ), shop.IsClosed ? "b_doorc" : "b_dooro" ) )
 			shop.IsClosed = !shop.IsClosed;
 	}

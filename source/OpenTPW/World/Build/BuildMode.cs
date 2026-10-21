@@ -74,7 +74,7 @@ public sealed class BuildMode : Entity
 	/// Clicking the already-selected item toggles it off. Used by the clickable build UI (T-038).</summary>
 	public void SelectIndex( int index )
 	{
-		if ( movingRide != null )
+		if ( putDown != null )
 			return; // a moved ride must be put down first
 		Selected = (index >= 0 && index < Catalog.Count && index != Selected && IsBuildable( index )) ? index : -1;
 	}
@@ -169,27 +169,39 @@ public sealed class BuildMode : Entity
 		SelectedPeep = peep;
 	}
 
-	// A ride being moved (picked up, waiting to be put down).
-	private Level.MovedRide? movingRide;
+	// An item being moved (picked up, waiting to be put down): how to put it down at a tile, and back where it was.
+	private Func<int, int, int, bool>? putDown;
+	private Action? putBack;
 
-	/// <summary>Whether a ride is picked up, waiting to be put down.</summary>
-	public bool IsMovingRide => movingRide != null;
+	/// <summary>Whether a ride or shop is picked up, waiting to be put down.</summary>
+	public bool IsMovingItem => putDown != null;
 
-	/// <summary>Pick up the selected ride to move it (the ride window's move button); false when it can't be moved.</summary>
-	public bool BeginMoveSelectedRide()
+	/// <summary>Pick up the selected ride or shop to move it (its window's move button); false when it can't be moved.</summary>
+	public bool BeginMoveSelected()
 	{
-		if ( SelectedRide is not { } ride )
+		if ( SelectedRide is { } ride )
+		{
+			int index = Catalog.ToList().FindIndex( c => c.RidePath != null && Path.GetFileName( c.RidePath ) == Path.GetFileName( ride.Archive ) );
+			if ( index < 0 || Level.PickUpRide( ride, grid ) is not { } moved )
+				return false;
+			putDown = ( tx, ty, rot ) => Level.PutDownRide( moved, Catalog[index], grid, terrain, tx, ty, rot );
+			putBack = () => Level.PutDownRide( moved, Catalog[index], grid, terrain, moved.FromX, moved.FromY, moved.FromRotation );
+			Rotation = ride.Rotation;
+			Selected = index;
+		}
+		else if ( SelectedShop is { } shop )
+		{
+			int index = Catalog.ToList().FindIndex( c => c.Name == shop.CatalogKey );
+			if ( index < 0 || Level.PickUpShop( shop, grid ) is not { } moved )
+				return false;
+			putDown = ( tx, ty, _ ) => Level.PutDownShop( moved, Catalog[index], grid, terrain, tx, ty );
+			putBack = () => Level.PutDownShop( moved, Catalog[index], grid, terrain, moved.FromX, moved.FromY );
+			Selected = index;
+		}
+		else
 			return false;
-		int index = -1;
-		for ( int i = 0; i < Catalog.Count; i++ )
-			if ( Catalog[i].RidePath != null && Path.GetFileName( Catalog[i].RidePath! ) == Path.GetFileName( ride.Archive ) )
-				index = i;
-		if ( index < 0 || Level.PickUpRide( ride, grid ) is not { } moved )
-			return false;
-		movingRide = moved;
-		Rotation = ride.Rotation;
 		SelectedRide = null;
-		Selected = index;
+		SelectedShop = null;
 		return true;
 	}
 
@@ -294,7 +306,7 @@ public sealed class BuildMode : Entity
 		bool Hit( Key k ) => down.Contains( k ) && !prevDown.Contains( k );
 
 		for ( int i = 0; i < NumberKeys.Length && i < Catalog.Count; i++ )
-			if ( Hit( NumberKeys[i] ) && IsBuildable( i ) && movingRide == null )
+			if ( Hit( NumberKeys[i] ) && IsBuildable( i ) && putDown == null )
 				Selected = i;
 		// Esc puts down the item being placed, else closes the open windows.
 		if ( Hit( Key.Escape ) && Selected < 0 && !CamcorderCameraMode.Active && RideItCameraMode.Target == null )
@@ -302,11 +314,13 @@ public sealed class BuildMode : Entity
 		if ( Hit( Key.Escape ) || Hit( Key.Number0 ) )
 		{
 			// A ride being moved goes back where it was.
-			if ( movingRide is { } moved && Selected >= 0
-				&& Level.PutDownRide( moved, Catalog[Selected], grid, terrain, moved.FromX, moved.FromY, moved.FromRotation ) )
-				movingRide = null;
-			if ( movingRide == null )
-				Selected = -1;
+			if ( putBack != null )
+			{
+				putBack();
+				putDown = null;
+				putBack = null;
+			}
+			Selected = -1;
 		}
 
 		// R rotates the ride being placed (90° CW per press); only meaningful for a ride placement tool.
@@ -495,13 +509,14 @@ public sealed class BuildMode : Entity
 		var c = grid.TileToWorld( tx, ty, ew, eh );
 		highlight.Position = c.WithZ( terrain.SampleHeight( c.X, c.Y ) + 0.3f );
 
-		if ( movingRide is { } moved )
+		if ( putDown != null )
 		{
-			// Putting a moved ride down: free, wherever it fits.
-			if ( Input.MouseLeftPressed && canPlace && Level.PutDownRide( moved, item, grid, terrain, tx, ty, Rotation ) )
+			// Putting a moved item down: free, wherever it fits.
+			if ( Input.MouseLeftPressed && canPlace && putDown( tx, ty, Rotation ) )
 			{
 				Log.Info( $"[build] moved {item.Name} to ({tx},{ty})" );
-				movingRide = null;
+				putDown = null;
+				putBack = null;
 				Selected = -1;
 			}
 			return;
