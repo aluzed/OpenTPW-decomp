@@ -37,4 +37,6 @@ pressed look, `l` lit, `g` greyed — `HudPanel.Icon`/`DrawIconButton`): the bui
 category icons (`b_srides`, `b_sshows`, `b_sshops`, `b_sfeature`, `b_shandy`; the selected one in its `d` look),
 and the manage bar's buttons carry theirs (`b_minus`/`b_plus` for prices and the fee, `b_loan`, `b_open` for the
 gates, `b_fire`, `b_move`, `b_resrch`, `b_upgrade`, `b_delete_login` — the bomb — for selling, `b_staffcost` for
-training). The 3D widget panels themselves (and their UI camera) remain to do.
+training). The park readout (top left) puts the matching icons before its lines: `b_money`, `b_svisit`, `b_entry`,
+`b_loan`, `b_speeps` (thoughts), `b_ssatis` (rating). The 3D widget panels themselves (and their UI camera) remain
+to do.

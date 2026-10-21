@@ -49,7 +49,9 @@ internal sealed class ParkStatsPanel : HudPanel
 		int staff = Entity.All.Count( e => e is Staff );
 		bool dbg = GameSettings.Current.ShowDebug;
 
-		// The player HUD (always shown): the essentials — money, visitors, admission control.
+		// The player HUD (always shown): the essentials — money, visitors, admission control. Lines may carry one of the
+		// original's ui.wad icons (b_money, b_svisit…), drawn before the text.
+		var icons = new Dictionary<int, string>();
 		var lines = new List<string>
 		{
 			// The labels are the game's own UITEXT.str entries, so they follow the language (GameLanguage).
@@ -59,6 +61,7 @@ internal sealed class ParkStatsPanel : HudPanel
 				: $"{Localization.Get( UIStrings.PeopleInPark, "People in park" )} {visitors}  -  {Localization.Get( UIStrings.ParkClosed, "PARK CLOSED" )}",
 			$"{Localization.Get( UIStrings.PriceOfEntry, "Price of entry" )} {fin.EntryFee:0}  ([ ])",
 		};
+		icons[0] = "b_money"; icons[1] = "b_svisit"; icons[2] = "b_entry";
 
 		// The debug overlay (backtick toggle): the income breakdown, counts and crowd-mood diagnostics that
 		// used to clutter the HUD by default (T-065).
@@ -76,8 +79,23 @@ internal sealed class ParkStatsPanel : HudPanel
 				lines.Add( "THOUGHTS " + string.Join( " · ", parts ) );
 			}
 		}
+		void InsertLine( int at, string text )
+		{
+			lines.Insert( at, text );
+			var shifted = icons.ToDictionary( kv => kv.Key >= at ? kv.Key + 1 : kv.Key, kv => kv.Value );
+			icons.Clear();
+			foreach ( var kv in shifted )
+				icons[kv.Key] = kv.Value;
+		}
+		void AddLine( string text, string? icon = null )
+		{
+			if ( icon != null )
+				icons[lines.Count] = icon;
+			lines.Add( text );
+		}
+
 		if ( GameClock.Current is { } clock )
-			lines.Insert( 0, $"YEAR {clock.Year}  MTH {clock.Month}  DAY {clock.Day}  {DayNightTint.Phase( DayNightCycle.Phase01 )}" ); // in-game date + visual day phase (T-053/T-056)
+			InsertLine( 0, $"YEAR {clock.Year}  MTH {clock.Month}  DAY {clock.Day}  {DayNightTint.Phase( DayNightCycle.Phase01 )}" ); // in-game date + visual day phase (T-053/T-056)
 
 			// Weather + season (T-056): current sky state derived from the level's authored weather model.
 			if ( WeatherSim.Current is { } weather )
@@ -89,7 +107,7 @@ internal sealed class ParkStatsPanel : HudPanel
 					WeatherKind.Snow => weather.State.Lightning ? "BLIZZARD" : "SNOW",
 					_ => "CLEAR",
 				};
-				lines.Insert( 1, $"{seasonName[weather.Season % 4]}  {sky} (q{weather.Quality})" );
+				InsertLine( 1, $"{seasonName[weather.Season % 4]}  {sky} (q{weather.Quality})" );
 			}
 
 		// Challenge status (T-054): offered (Y/N), active (progress + days), or the last result.
@@ -98,7 +116,7 @@ internal sealed class ParkStatsPanel : HudPanel
 			if ( cm.State == ChallengeManager.Phase.Offered && cm.Active is { } off )
 				lines.Add( $"CHALLENGE: {ChallengeMetrics.Describe( off )}  (Y accept / N decline)" );
 			else if ( cm.State == ChallengeManager.Phase.Active && cm.Active is { } act )
-				lines.Add( $"CHALLENGE: {ChallengeMetrics.Describe( act )}  [{cm.Progress:0}/{act.TargetVal}, {cm.DaysLeft}d left]" );
+				lines.Add( $"CHALLENGE: {ChallengeMetrics.Describe( act )}  [{cm.Progress:0}/{ChallengeMetrics.Target( act ):0}, {cm.DaysLeft}d left]" );
 			else if ( cm.LastResult is { } r )
 				lines.Add( r.Won ? $"CHALLENGE WON! +${r.Challenge.Prize:0}" : "CHALLENGE FAILED" );
 		}
@@ -107,9 +125,9 @@ internal sealed class ParkStatsPanel : HudPanel
 		if ( GoldenTicketGoals.Current is { } gt && gt.Total > 0 )
 			lines.Add( gt.Awarded ? "GOLDEN TICKET WON!" : $"TICKET GOALS {gt.Met}/{gt.Total}" );
 		if ( fin.Debt > 0 )
-			lines.Add( $"DEBT {fin.Debt:0}  (L loans, K repay)" );
+			AddLine( $"DEBT {fin.Debt:0}  (L loans, K repay)", "b_loan" );
 		else
-			lines.Add( "LOANS: L  (no debt)" );
+			AddLine( "LOANS: L  (no debt)", "b_loan" );
 		if ( fin.Bankrupt )
 			lines.Add( "*** BANKRUPT ***" );
 		// Staff on strike, or warned (T-049 depth).
@@ -189,12 +207,12 @@ internal sealed class ParkStatsPanel : HudPanel
 		// What the crowd thinks, in the game's own words (THOUGHTS.str) — the two most common thoughts.
 		var crowd = CrowdThoughts.Summary( Peep.CrowdThoughtTally() );
 		if ( crowd.Length > 0 )
-			lines.Add( $"{Localization.Get( UIStrings.Top3Thoughts, "Thoughts" )}: {crowd}" );
+			AddLine( $"{Localization.Get( UIStrings.Top3Thoughts, "Thoughts" )}: {crowd}", "b_speeps" );
 
 		// Park rating = average visitor happiness (T-039); shown as a coloured gauge under the stats.
 		float rating = Peep.AverageHappiness;
 		if ( rating >= 0f )
-			lines.Add( $"{Localization.Get( UIStrings.ParkRating, "Park rating" )} {rating:0}%" );
+			AddLine( $"{Localization.Get( UIStrings.ParkRating, "Park rating" )} {rating:0}%", "b_ssatis" );
 
 		// Translucent backing so the text reads over the bright park; covers the lines + the rating bar.
 		int n = lines.Count;
@@ -205,10 +223,18 @@ internal sealed class ParkStatsPanel : HudPanel
 		float backBottom = barTop - barH - 8f;
 		var mat = Material.UI;
 		mat.Set( "Color", Bg );
-		Graphics.Quad( new Rectangle( Left - 12f, backBottom, 392f, blockTop - backBottom ), mat );
+		Graphics.Quad( new Rectangle( Left - 12f, backBottom, 420f, blockTop - backBottom ), mat );
 
 		for ( int i = 0; i < lines.Count; i++ )
-			Graphics.DrawText( Font, lines[i], Left, Top - i * LineStep, TextAlign.Left, Scale );
+		{
+			float x = Left;
+			if ( icons.TryGetValue( i, out var iconName ) && Icon( iconName ) is { } icon )
+			{
+				DrawIcon( new Rectangle( Left - 6f, Top - i * LineStep - LineStep + 6f, LineStep - 2f, LineStep - 2f ), icon );
+				x += LineStep;
+			}
+			Graphics.DrawText( Font, lines[i], x, Top - i * LineStep, TextAlign.Left, Scale );
+		}
 
 		if ( rating >= 0f )
 		{
