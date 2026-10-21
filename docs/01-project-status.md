@@ -22,8 +22,18 @@ You therefore **need a legal copy of the game** to provide the assets — which 
 > weather, day/night, save/load, particle effects. ~60 fps with ~100 visitors, ~35–48 with 250; a park loads in
 > ~12 s. **Missing / approximate**: the original 3D-widget UI (we have a text HUD, T-065), the exact arrival /
 > fee / ground-blend formulas (data-driven approximations), arrival buses, coaster loops & curved pieces, ride
-> lights, player profiles. Tests: 334 passing, 1 inconclusive (no `.TPWS` sample) with the game data
+> lights, player profiles. Tests: 365 passing, 1 inconclusive (no `.TPWS` sample) with the game data
 > (`tools/run-integration-tests.sh`). The ticket index (`tickets/README.md`) is the detailed source of truth.
+>
+> **Later on 2026-10-21**: every theme stall is buildable (fries, ice cream, restaurants, gift/balloon/costume
+> shops as impulse buys, litter bins, each theme's toilet) with the authored purchase effects and per-product
+> challenge counters (types 1–10); visitors wear costumes, carry balloons and show thought bubbles; peep, staff
+> and balloon sprites decode cleanly (the TPC RLE is PackBits — they were noisy before); litter, vomit puddles,
+> stink bombs, selection arrows and build/demolish puffs use the game's own sprites/effects; ride throughput
+> doubled (visitors join a line at its back; wear follows the authored `WearRate`); more `Standard.sam` rules
+> (ride sickness, ride mood by taste, pranksters, stall price opinion, staff pay ratios) and `Advisor.sam` advice
+> (pricing, staffing, building, open the park). The in-game calendar's dev pace (8 s/month) is the next balance
+> issue ([T-076](tickets/T-076-calendar-pace.md)).
 
 - **Stage: boots, runs & plays on Linux** (window + Vulkan render loop) — the core park loop is live.
   Verified this session by running on an AMD Radeon (Vulkan): the park renders with terrain, placed
