@@ -21,7 +21,11 @@ public class Ride : Entity
 	public (float X, float Y) ExitAppearPos { get; private set; } = (0.5f, 0.5f);
 
 	/// <summary>One research/upgrade level from the ride's <c>Upgrades[*]</c> table.</summary>
-	public readonly record struct UpgradeLevelInfo( int Capacity, float CostResearch, float CostUpgrade );
+	public readonly record struct UpgradeLevelInfo( int Capacity, float CostResearch, float CostUpgrade, float WearRate = 5f );
+
+	// Rides.sam's per-level defaults for Upgrades[n].WearRate ("out of 10"), for a ride .sam that doesn't set its own:
+	// an upgraded ride wears more slowly.
+	private static readonly float[] DefaultWearRates = { 5f, 3f, 2f };
 
 	private int maxCapacity = 8;
 	private readonly List<UpgradeLevelInfo> upgrades = new();
@@ -198,9 +202,13 @@ public class Ride : Entity
 	public int Riders => Queue?.Riders ?? 0;
 
 	// Reliability & breakdown (T-032/T-039): reliability wears down while the ride carries riders; at 0 it
-	// breaks down — stops boarding + running until a mechanic repairs it. Wear is tuned for visible dev
-	// breakdowns; a real balance pass would slow it (and scale by upgrade level / age).
-	private const float WearPerSecond = 0.04f; // ~25 s of occupied running before a breakdown
+	// breaks down — stops boarding + running until a mechanic repairs it. The rate follows the current level's
+	// authored Upgrades[n].WearRate (out of 10: 5 as built, 3 and 2 once upgraded): a 5 ride breaks after ~250 s of
+	// occupied running (~2½ in-game years), a fully upgraded one after ~625 s. It was a flat 0.04/s "for visible
+	// dev breakdowns" — every ride broke after 25 s of use and one mechanic couldn't keep up, so most rides stood
+	// broken beside their lines and a 250-visitor park managed ~1 ride per visitor in 2½ minutes.
+	private const float WearPerRatePoint = 0.0008f; // reliability lost per second of use per WearRate point
+	internal float WearPerSecond => WearPerRatePoint * (upgrades.Count > 0 ? upgrades[Math.Min( UpgradeLevel, upgrades.Count - 1 )].WearRate : DefaultWearRates[0]);
 
 	/// <summary>Mechanical condition, 1 = perfect, 0 = broken down.</summary>
 	public float Reliability { get; private set; } = 1f;
@@ -420,7 +428,8 @@ public class Ride : Entity
 					break;
 				upgrades.Add( new UpgradeLevelInfo( cap,
 					ReadInt( settings, $"Upgrades[{i}].CostOfResearch", 0 ),
-					ReadInt( settings, $"Upgrades[{i}].CostOfUpgrade", 0 ) ) );
+					ReadInt( settings, $"Upgrades[{i}].CostOfUpgrade", 0 ),
+					ReadFloat( settings, $"Upgrades[{i}].WearRate", DefaultWearRates[Math.Min( i, DefaultWearRates.Length - 1 )] ) ) );
 			}
 			Excitement = Math.Max( 1, ReadInt( settings, "UsageInfo.ExcitementLevel", 50 ) );
 			Attraction = ReadInt( settings, "Info.AttractionValue", 25 );

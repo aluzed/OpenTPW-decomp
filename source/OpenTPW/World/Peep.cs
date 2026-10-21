@@ -81,6 +81,7 @@ public sealed class Peep : ModelEntity
 	private const float DrinkBladderBump = 35f;        // a drink fills the bladder noticeably (T-039)
 	private const float BurstPenaltyPerSec = 3f;       // happiness lost while desperate with no toilet reachable
 	private const float IndoorShelterBias = 1.5f;      // ride-choice bonus for an indoor attraction in bad weather (T-056)
+	private const float JoinReach = 40f;               // this close to the back of a ride's line, a visitor joins it
 	private const float ImpulseRadius = 40f;           // a gift/balloon/costume shop this close can tempt a passer-by
 	private const float ImpulseCheckSeconds = 2f;      // how often a wandering peep considers an impulse buy
 	private const float ImpulseChance = 0.06f;         // per check, scaled by mood (a happy peep splurges more)
@@ -496,6 +497,16 @@ public sealed class Peep : ModelEntity
 		int pos = route.PositionOf( this );
 		if ( pos < 0 )
 		{
+			// Walk to the back of the line and join it there. Joining on choosing the ride put a visitor still crossing
+			// the park (from the gate, 20–40 tiles away) at the front of an empty line, and everyone who arrived after
+			// it waited at the entrance until it walked all the way over: rides stood empty beside lines of 10–17.
+			var back = route.StandPoint( route.LineLength );
+			if ( !MoveTo( back ) && (Position - back).Length > JoinReach )
+			{
+				FaceCamera();
+				ApplySprite();
+				return;
+			}
 			route.Enqueue( this );
 			pos = route.PositionOf( this );
 		}
@@ -999,8 +1010,7 @@ public sealed class Peep : ModelEntity
 		int idx = RideChoiceScorer.ChooseWeighted( scores, (float)Random.Shared.NextDouble() );
 		route = idx >= 0 ? candidates[idx] : candidates[^1];
 
-		lastRoute = route;
-		route.Enqueue( this );
+		lastRoute = route; // joins the line on reaching its back (see the queue walk in OnUpdate)
 	}
 
 	private static Model SharedModel( int colorIndex )

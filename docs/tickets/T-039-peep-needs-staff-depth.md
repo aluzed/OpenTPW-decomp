@@ -19,6 +19,13 @@
   handymen, souring visitors near it like litter), the `P_EFFECT_GreenPuke` effect and −15 happiness
   (`MediumHappinessChange`). With the authored values it takes ~10–20 rides, so it shows in long stays on intense
   rides (verified by forcing the divisor: 66 visitors sick in two minutes, puddles + effect).
+  **Ride throughput (2026-10-21)**: a 250-visitor dev park managed ~1 ride per visitor in 2½ minutes, with lines of
+  10–17 beside empty rides. Two causes: (1) a visitor joined a ride's line the moment it *chose* the ride, so one
+  still crossing the park from the gate (20–40 tiles) sat at the front of the line and everyone behind it waited at
+  the entrance — visitors now walk to the back of the line and join it there; (2) the "visible dev breakdowns" wear
+  (every ride broke after 25 s of use, one mechanic couldn't keep up) — wear now follows the level's authored
+  `Upgrades[n].WearRate` (5/10 as built → ~250 s of occupied running; 3 and 2 once upgraded). Rides ridden at the
+  2-minute mark: 87 → 197. This is the reliability-balance pass the ticket was waiting on.
 - **Related**: [T-034](T-034-peeps.md) (needs, economy, staff — core done).
 
 ## Context
