@@ -1,65 +1,23 @@
 namespace OpenTPW;
 
 /// <summary>
-/// The clickable build/manage catalog (T-038): a vertical list of buttons down the right side, one per
-/// <see cref="BuildMode"/> catalog item, that selects the item to place on click — so every item is
-/// mouse-reachable (the old number-key list capped at 1–9). The selected item is highlighted; items the
-/// park can't afford are dimmed red. Tabs split the catalog the way the original's build menu does (rides,
-/// sideshows, shops, features — <c>Info.WhichUIType</c> — and staff). Renders nothing outside build mode.
-///
-/// <para>Shared mouse/hit-test/button helpers live in <see cref="HudPanel"/>. <see cref="BuildMode"/>
-/// consults <see cref="HudPanel.PointerOverUi"/> so a click on the panel doesn't also act on the tile
-/// behind it.</para>
+/// The original's buy window (docs/10-ui-reference.md; the handheld's buy button opens it): the <c>w_big</c> frame,
+/// "Buy Ride" / "Buy Shop" / "Buy Sideshow" / "Buy Misc Items" at the top with the balance, a preview box, the
+/// item's figures under it (number owned, excitement, safe capacity, reliability as gauges), the round category tabs
+/// over a list of names and prices — items not researched yet in red — and the close button down the right edge.
+/// Picking an item closes the window so it can be placed, as in the original. Measured on captures of the PC
+/// version; the catalog is <see cref="BuildMode"/>'s.
 /// </summary>
-internal sealed class BuildPanel : HudPanel
+internal sealed class BuildPanel : GameWindow
 {
 	public static BuildPanel? Current { get; private set; }
 
-	// Layout in 1280×720 base space (right-anchored column).
-	private const float PanelW = 250f;
-	private const float Left = 1280f - PanelW - 12f;
-	private const float TopY = 690f;
-	private const float RowH = 30f;
-	private const float RowGap = 4f;
-	private const float TabH = 44f;
-	private const float TabY = TopY - 54f;                // bottom of the tab row
-	private const float FirstRowTop = TabY - 8f;
-
-	private static BuildCategory tab = BuildCategory.Rides;
-	// Each tab shows the original's build-menu icon (ui.wad b_s*: its "d" look when selected), or a word without one.
-	private static readonly (BuildCategory Category, string Label, string Icon)[] Tabs =
+	public BuildPanel()
 	{
-		(BuildCategory.Rides, "RIDES", "b_srides"), (BuildCategory.Sideshows, "GAMES", "b_sshows"),
-		(BuildCategory.Shops, "SHOPS", "b_sshops"), (BuildCategory.Features, "SCENERY", "b_sfeature"),
-		(BuildCategory.Staff, "STAFF", "b_shandy"),
-	};
-
-	private static Rectangle TabRect( int i )
-	{
-		float w = PanelW / Tabs.Length;
-		return new Rectangle( Left + i * w + (w - TabH) / 2f, TabY, TabH, TabH );
+		Current = this;
+		// Dev aid: open on load (OPENTPW_UI_OPEN=buy), to look at the window without clicking.
+		IsOpen = Environment.GetEnvironmentVariable( "OPENTPW_UI_OPEN" ) == "buy";
 	}
-
-	// The catalog indices shown under the current tab.
-	private static List<int> Visible()
-	{
-		var list = new List<int>();
-		if ( BuildMode.Current is { } build )
-			for ( int i = 0; i < build.Catalog.Count; i++ )
-				if ( build.Catalog[i].Category == tab )
-					list.Add( i );
-		return list;
-	}
-
-	private static Texture? bg, normal, selected, unaffordable;
-	private static Texture Bg => bg ??= Solid( 18, 18, 28, 190 );
-	private static Texture Normal => normal ??= Solid( 58, 58, 92, 225 );
-	private static Texture Selected => selected ??= Solid( 80, 165, 90, 240 );
-	private static Texture Unaffordable => unaffordable ??= Solid( 95, 48, 48, 215 );
-	private static Texture? locked;
-	private static Texture Locked => locked ??= Solid( 40, 40, 48, 200 );
-
-	public BuildPanel() => Current = this;
 
 	protected override void OnDelete()
 	{
@@ -67,111 +25,193 @@ internal sealed class BuildPanel : HudPanel
 			Current = null;
 	}
 
-	// Rows shrink to keep a long catalog (a theme's rides + sideshows + every stall + staff) on screen.
-	private const float BottomMargin = 8f;
-	private static float RowStep => RowCount <= 0 ? RowH + RowGap : MathF.Min( RowH + RowGap, (FirstRowTop - BottomMargin) / RowCount );
-	private static float RowHeight => RowStep - RowGap;
-	private static float RowLabelScale => LabelScale * MathF.Min( 1f, RowHeight / RowH );
+	/// <summary>Whether the window is open.</summary>
+	public static bool Open => Current?.IsOpen ?? false;
 
-	// The button rect (base space) for catalog row i: X,Y = bottom-left.
-	private static Rectangle Row( int i )
-	{
-		var top = FirstRowTop - i * RowStep;
-		return new Rectangle( Left, top - RowHeight, PanelW, RowHeight );
-	}
-
-	private static int RowCount => Visible().Count;
-
-	// Whole-panel bounds (title + all rows), used to block world clicks while the cursor is over the UI.
-	private static Rectangle PanelBounds()
-	{
-		var bottom = RowCount > 0 ? Row( RowCount - 1 ).Y - RowGap : TabY - 4f;
-		return new Rectangle( Left - 6f, bottom, PanelW + 12f, TopY + 24f - bottom );
-	}
-
-	/// <summary>Whether the catalog is open — the handheld's buy button opens it, as in the original.</summary>
-	public static bool Open { get; private set; }
-
-	/// <summary>Open / close the catalog; closing drops the item being placed.</summary>
+	/// <summary>Open / close the window (picking an item closes it too).</summary>
 	public static void Toggle()
 	{
-		Open = !Open;
-		if ( !Open && BuildMode.Current is { Selected: >= 0 } build )
-			build.SelectIndex( build.Selected );
+		if ( Current is { } w )
+			w.IsOpen = !w.IsOpen;
 	}
 
-	/// <summary>True when the window mouse (mapped to base space) is over the panel.</summary>
-	public bool ContainsMouse()
-		=> Open && BuildMode.Current is { Catalog.Count: > 0 } && Contains( PanelBounds(), MouseBase() );
+	protected override Rectangle Frame => At( 95f, 18f, 850f, 448f );
+
+	private static BuildCategory tab = BuildCategory.Rides;
+	private int scroll;
+
+	// The original's four tabs (ui.wad b_s*), plus staff (the original hires from its own window).
+	private static readonly (BuildCategory Category, string Icon, UIStrings Title, string Fallback)[] Tabs =
+	{
+		(BuildCategory.Rides, "b_srides", UIStrings.BuyRide, "Buy Ride"),
+		(BuildCategory.Sideshows, "b_sshows", UIStrings.BuySideshow, "Buy Sideshow"),
+		(BuildCategory.Shops, "b_sshops", UIStrings.BuyShop, "Buy Shop"),
+		(BuildCategory.Features, "b_sfeature", UIStrings.BuyMiscItems, "Buy Misc Items"),
+		(BuildCategory.Staff, "b_shandy", UIStrings.HireCleaners, "Hire Staff"),
+	};
+
+	private static Rectangle TabRect( int i ) => At( 597f + i * 50f, 91f, 46f, 46f );
+	private static readonly Rectangle Preview = At( 196f, 86f, 189f, 190f );
+	private static readonly Rectangle Stats = At( 124f, 291f, 331f, 129f );
+	private static readonly Rectangle List = At( 476f, 141f, 371f, 279f );
+	private static readonly Rectangle CloseButton = At( 885f, 382f, 42f, 42f );
+	private const float HeaderTop = 147f, HeaderHeight = 46f, RowTop = 202f, RowHeight = 14f;
+	private const int VisibleRows = 15;
+
+	private static Rectangle RowRect( int row ) => At( 482f, RowTop + row * RowHeight, 359f, RowHeight );
+
+	private static List<int> Items( BuildMode build )
+	{
+		var list = new List<int>();
+		for ( int i = 0; i < build.Catalog.Count; i++ )
+			if ( build.Catalog[i].Category == tab )
+				list.Add( i );
+		return list;
+	}
+
+	private int hovered = -1;
 
 	protected override void OnUpdate()
 	{
-		if ( !Open || BuildMode.Current is not { } build || build.Catalog.Count == 0 || !Input.MouseLeftPressed )
+		if ( !IsOpen || BuildMode.Current is not { } build )
 			return;
-
 		var m = MouseBase();
-		for ( var t = 0; t < Tabs.Length; t++ )
+		var items = Items( build );
+		hovered = -1;
+		for ( int row = 0; row < VisibleRows && row + scroll < items.Count; row++ )
+			if ( Contains( RowRect( row ), m ) )
+				hovered = items[row + scroll];
+
+		// The mouse wheel scrolls a long list.
+		if ( Contains( List, m ) && Input.Mouse.Wheel != 0 )
+			scroll = Math.Clamp( scroll - Math.Sign( Input.Mouse.Wheel ), 0, Math.Max( 0, items.Count - VisibleRows ) );
+
+		if ( !Input.MouseLeftPressed )
+			return;
+		for ( int t = 0; t < Tabs.Length; t++ )
 			if ( Contains( TabRect( t ), m ) )
 			{
 				tab = Tabs[t].Category;
+				scroll = 0;
 				return;
 			}
-		var visible = Visible();
-		for ( var i = 0; i < visible.Count; i++ )
+		if ( Contains( CloseButton, m ) )
 		{
-			if ( !Contains( Row( i ), m ) )
-				continue;
-			build.SelectIndex( visible[i] ); // toggles off if already selected
-			break;
+			IsOpen = false;
+			return;
+		}
+		// Picking an item arms it for placement and gets the window out of the way, as in the original.
+		if ( hovered >= 0 && build.IsBuildable( hovered ) && (ParkFinances.Current?.CanAfford( build.Catalog[hovered].Cost ) ?? true) )
+		{
+			if ( build.Selected != hovered )
+				build.SelectIndex( hovered );
+			IsOpen = false;
 		}
 	}
 
 	protected override void OnRender()
 	{
-		if ( !Open || BuildMode.Current is not { } build || build.Catalog.Count == 0 )
+		if ( !IsOpen || BuildMode.Current is not { } build )
 			return;
 
+		DrawFrame( "w_big" );
+		int tabIndex = Array.FindIndex( Tabs, t => t.Category == tab );
+		DrawHeading( Localization.Get( Tabs[tabIndex].Title, Tabs[tabIndex].Fallback ), 488f, 828f, 44f );
+
+		// The item under the cursor (else the one armed) is described on the left.
+		int shown = hovered >= 0 ? hovered : build.Selected >= 0 && build.Catalog[build.Selected].Category == tab ? build.Selected : -1;
+		DrawInset( Preview );
+		DrawInset( Stats );
+		if ( shown >= 0 )
+			DrawDetails( build, shown );
+
+		// Tabs over the list.
+		for ( int t = 0; t < Tabs.Length; t++ )
+			RoundButton( TabRect( t ), Tabs[t].Icon, Tabs[t].Category == tab );
+
+		DrawInset( List );
+		Fill( At( 482f, HeaderTop, 196f, HeaderHeight ), Header );
+		Fill( At( 682f, HeaderTop, 98f, HeaderHeight ), Header );
+		Fill( At( 784f, HeaderTop, 57f, HeaderHeight ), Header );
+		Text( Small, Localization.Get( UIStrings.Name, "Name" ), 580f, HeaderTop + 16f, 13f, HeaderInk, TextAlign.Center );
+		Text( Small, Localization.Get( UIStrings.Price, "Price" ), 731f, HeaderTop + 16f, 13f, HeaderInk, TextAlign.Center );
+
 		var fin = ParkFinances.Current;
-
-		var mat = Material.UI;
-		mat.Set( "Color", Bg );
-		Graphics.Quad( PanelBounds(), mat );
-
-		Graphics.DrawText( Font, "BUILD", Left + 8f, TopY + 20f, TextAlign.Left, LabelScale );
-
-		for ( var t = 0; t < Tabs.Length; t++ )
+		var items = Items( build );
+		for ( int row = 0; row < VisibleRows && row + scroll < items.Count; row++ )
 		{
-			bool on = Tabs[t].Category == tab;
-			if ( (Icon( on ? Tabs[t].Icon + "d" : Tabs[t].Icon ) ?? Icon( Tabs[t].Icon )) is { } icon )
-			{
-				if ( on )
-				{
-					mat.Set( "Color", Selected );
-					Graphics.Quad( TabRect( t ), mat );
-				}
-				DrawIcon( TabRect( t ), icon );
-			}
-			else
-				DrawButton( TabRect( t ), Tabs[t].Label, on ? Selected : Normal, 1.0f );
-		}
-
-		var visible = Visible();
-		for ( var i = 0; i < visible.Count; i++ )
-		{
-			var item = build.Catalog[visible[i]];
+			int i = items[row + scroll];
+			var item = build.Catalog[i];
+			float top = RowTop + row * RowHeight;
+			if ( i == build.Selected || i == hovered )
+				Fill( RowRect( row ), Selected );
+			bool locked = !build.IsBuildable( i );
 			bool affordable = fin?.CanAfford( item.Cost ) ?? true;
-			var fill = build.Selected == visible[i] ? Selected : affordable ? Normal : Unaffordable;
-			// Staff show their authentic TPW role name (Cleaner/Scientist/…); the catalog key (item.Name) is
-			// unchanged (T-062).
-			var label = item.Staff is { } role ? StaffNames.For( role ) : item.Label;
-			// Not researched yet: greyed, with how far the scientists have got if it's their current target.
-			if ( !build.IsBuildable( visible[i] ) )
+			var ink = locked || !affordable ? LockedInk : default;
+			var name = item.Staff is { } role ? StaffNames.For( role ) : item.Label;
+			if ( locked )
 			{
 				float done = ItemResearch.Current?.ProgressOf( item.Name ) ?? 0f;
-				DrawButton( Row( i ), done > 0f ? $"{label}  researching {done * 100f:0}%" : $"{label}  (research)", Locked, RowLabelScale );
-				continue;
+				name = done > 0f ? $"??? {name} ???  {done * 100f:0}%" : $"??? {name} ???";
 			}
-			DrawButton( Row( i ), $"{label}  ${item.Cost:0}", fill, RowLabelScale );
+			Text( Small, name, 487f, top + 1f, 11f, ink );
+			Text( Small, $"$ {item.Cost:0}", 776f, top + 1f, 11f, ink, TextAlign.Right );
 		}
+
+		// The right-hand column: close.
+		RoundButton( CloseButton, "b_exit" );
+	}
+
+	// The left-hand boxes: the item's name in the preview, its figures under it.
+	private static void DrawDetails( BuildMode build, int index )
+	{
+		var item = build.Catalog[index];
+		var name = item.Staff is { } role ? StaffNames.For( role ) : item.Label;
+		Text( Small, name, 290f, 92f, 13f, default, TextAlign.Center );
+
+		var figures = ItemFigures.For( item );
+		float y = 300f;
+		void Row( string label, string? value, float? gauge )
+		{
+			Text( Small, label, 133f, y, 11f );
+			if ( value != null )
+				Text( Small, value, 338f, y, 11f );
+			if ( gauge is { } g )
+				DrawGauge( At( 338f, y + 1f, 110f, 9f ), g );
+			y += 24f;
+		}
+		int owned = Entity.All.OfType<Ride>().Count( r => r.Name.Equals( item.Name, StringComparison.OrdinalIgnoreCase ) );
+		Row( Localization.Get( UIStrings.NumberOwned, "Number owned" ), owned == 0 ? "None" : owned.ToString(), null );
+		if ( figures.Excitement is { } excitement )
+			Row( Localization.Get( UIStrings.Excitement, "Excitement" ), null, excitement / 100f );
+		if ( figures.Capacity is { } capacity )
+			Row( Localization.Get( UIStrings.SafeCapacity, "Safe capacity" ), capacity.ToString(), null );
+		if ( figures.Reliability is { } reliability )
+			Row( Localization.Get( UIStrings.Reliability, "Reliability" ), null, reliability );
+	}
+}
+
+/// <summary>An item's figures for the buy window, read from its <c>.sam</c> (cached).</summary>
+internal readonly record struct ItemFigures( float? Excitement, int? Capacity, float? Reliability )
+{
+	private static readonly Dictionary<string, ItemFigures> cache = new( StringComparer.OrdinalIgnoreCase );
+
+	public static ItemFigures For( BuildCatalogItem item )
+	{
+		if ( item.RidePath == null )
+			return default;
+		if ( cache.TryGetValue( item.Name, out var f ) )
+			return f;
+		try
+		{
+			var sam = new SettingsFile( FileSystem.OpenRead( $"{item.RidePath}/{item.Name}.sam" ) );
+			float? F( string key ) => float.TryParse( sam[key], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var v ) ? v : null;
+			// Wear rate runs ~1 (sturdy) to ~10 (fragile): reliability is its complement.
+			f = new ItemFigures( F( "UsageInfo.ExcitementLevel" ), (int?)F( "Upgrades[0].InitCapacity" ),
+				F( "Upgrades[0].WearRate" ) is { } wear ? Math.Clamp( 1f - wear / 10f, 0.05f, 1f ) : null );
+		}
+		catch { f = default; }
+		cache[item.Name] = f;
+		return f;
 	}
 }
