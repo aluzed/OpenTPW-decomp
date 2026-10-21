@@ -44,15 +44,25 @@ public static class RideThoughtText
 /// peep sprites — <c>esprites.wad</c>'s <c>.TPC</c>/<c>.FPC</c>, a custom encoded image format — are
 /// decoded). It picks rides (weighted by excitement), queues for them, boards, rides, then re-routes,
 /// gaining <see cref="happiness"/> from exciting rides and losing it to long waits while
-/// <see cref="energy"/> drains as it walks the park. A tired or fed-up peep heads home and is recycled
-/// as a fresh arrival, so the crowd turns over. Always dropped onto the terrain surface; the billboard
+/// <see cref="energy"/> drains over its stay (<c>PeepInfo.ExitLevel</c> ± <c>ExitLevelVar</c> seconds). A tired or
+/// fed-up peep heads home; with arrivals running (T-074) it then leaves the park, otherwise it is recycled as a
+/// fresh arrival, so the crowd turns over. Always dropped onto the terrain surface; the billboard
 /// yaws (about world up) to face the camera.
 /// </summary>
 public sealed class Peep : ModelEntity
 {
 	private const float StartHappiness = 50f;  // mood on arrival (0..100)
 	private const float MaxEnergy = 100f;       // full on arrival, drains while in the park
-	private const float EnergyDrainPerSec = 2f; // walking/queuing tires the peep (~50 s of activity)
+
+	/// <summary>How long a visitor stays, in seconds: <c>PeepInfo.ExitLevel</c> ± <c>PeepInfo.ExitLevelVar</c>
+	/// ("starting value for the ExitLevel counter, in SECONDS"). Set from the level's <c>Standard.sam</c>; energy
+	/// drains to 0 over that stay (it was a hard-coded 2/s, ~50 s).</summary>
+	public static float ExitLevelSeconds { get; set; } = 120f;
+	public static float ExitLevelVarSeconds { get; set; } = 60f;
+
+	/// <summary>True while an <see cref="ArrivalScheduler"/> feeds the park (T-074): a departing peep then leaves
+	/// for good instead of being recycled into a fresh visitor.</summary>
+	public static bool LeaveOnExit { get; set; }
 	private const float WaitPenaltyPerSec = 1f; // standing in a line that isn't moving sours the mood
 	private const float RideRewardScale = 0.3f; // happiness gained = ride excitement × this
 	private const float LeaveHappiness = 10f;   // fed up below this
@@ -182,6 +192,7 @@ public sealed class Peep : ModelEntity
 	public RideThought? LastThought { get; private set; }
 
 	private float energy = MaxEnergy;
+	private float energyDrainPerSec = MaxEnergy / 120f; // set per visitor from the ExitLevel stay
 	private float hunger;
 	private float thirst;
 	private float bladder;
@@ -235,6 +246,7 @@ public sealed class Peep : ModelEntity
 		Position = spawn;
 		shadow = new ModelEntity { Model = ShadowModel(), Scale = new Vector3( spriteHeight * 0.4f, spriteHeight * 0.4f, 1f ) };
 		ParkFinances.Current?.TakeEntryFee(); // pays the gate on arrival
+		energyDrainPerSec = DrainForStay();
 		PickRoute();
 		DropToGround();
 	}
@@ -276,7 +288,12 @@ public sealed class Peep : ModelEntity
 		if ( leaving )
 		{
 			if ( MoveTo( home ) )
-				Recycle();
+			{
+				if ( LeaveOnExit )
+					LeavePark();
+				else
+					Recycle();
+			}
 			FaceCamera();
 			ApplySprite();
 			return;
@@ -320,7 +337,7 @@ public sealed class Peep : ModelEntity
 		}
 
 		// Being in the park is tiring; a long enough day (or a soured mood) sends the peep home.
-		energy -= EnergyDrainPerSec * Time.Delta;
+		energy -= energyDrainPerSec * Time.Delta;
 
 		// Visitors occasionally drop litter, and standing among litter sours the mood (until a handyman
 		// clears it). Both raise the chance the peep heads home unhappy. A nearby guard deters littering.
@@ -466,6 +483,21 @@ public sealed class Peep : ModelEntity
 		leaving = true;
 	}
 
+	// Energy drain for one visitor's stay: ExitLevel ± ExitLevelVar seconds (at least 10 s).
+	private static float DrainForStay()
+	{
+		float stay = ExitLevelSeconds + ((float)Random.Shared.NextDouble() * 2f - 1f) * ExitLevelVarSeconds;
+		return MaxEnergy / MathF.Max( 10f, stay );
+	}
+
+	// A departed visitor leaves the park for good (arrivals running, T-074): drop it and its shadow.
+	private void LeavePark()
+	{
+		Entity.All.Remove( this );
+		if ( shadow != null )
+			Entity.All.Remove( shadow );
+	}
+
 	// Recycle a departed peep as a fresh arrival, keeping the crowd steady without churning entities.
 	private void Recycle()
 	{
@@ -475,6 +507,7 @@ public sealed class Peep : ModelEntity
 		ResetPath();
 		happiness = StartHappiness;
 		energy = MaxEnergy;
+		energyDrainPerSec = DrainForStay();
 		hunger = 0f;
 		thirst = 0f;
 		bladder = 0f;

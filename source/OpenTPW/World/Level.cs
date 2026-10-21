@@ -45,6 +45,10 @@ public class Level
 
 	private void SetupEntities()
 	{
+		// Visitor arrivals belong to a loaded park; the lobby (and a park being rebuilt) starts without them (T-074).
+		arrivals = null;
+		Peep.LeaveOnExit = false;
+
 		SunLight = new Sun() { Position = new( 0, 100, 100 ) };
 
 		LoadProgress.Report( "Loading sky...", 0.12f );
@@ -139,6 +143,13 @@ public class Level
 			var peepSam = new SettingsFile( "/levels/Standard.sam" );
 			RideChoiceScorer.Weights = DecisionWeights.Load( peepSam );
 			NeedChoiceScorer.Weights = NeedWeights.Load( peepSam );
+
+			// Visitor stays + arrivals (T-074): ExitLevel ± ExitLevelVar seconds in the park, groups at the gate.
+			if ( float.TryParse( peepSam["PeepInfo.ExitLevel"], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var exitLevel ) )
+				Peep.ExitLevelSeconds = exitLevel;
+			if ( float.TryParse( peepSam["PeepInfo.ExitLevelVar"], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var exitVar ) )
+				Peep.ExitLevelVarSeconds = exitVar;
+			arrivalSettings = ArrivalSettings.Load( peepSam );
 			PeepTypes.Preferences = PeepTypes.Load( peepSam );
 		}
 		catch ( Exception e ) { Log.Warning( $"[peep] decision weights load failed: {e.Message}" ); }
@@ -404,15 +415,32 @@ public class Level
 		var (gateTx, gateTy) = ReadEntranceTile( standard );
 		var gate = grid.PointToWorld( gateTx, gateTy );
 		Log.Info( $"[park] entrance gate at tile ({gateTx:0.0},{gateTy:0.0})" );
-		for ( int i = 0; i < 30; i++ )
-		{
-			// Fan the queue back from the gate (just outside it) so arrivals don't all stack on one tile.
-			var spawn = gate + new Vector3( (i % 6 - 2.5f) * 10f, -(i / 6) * 14f - 10f, 0 );
-			_ = new Peep( terrain, parkQueues, spawn, i, pathGraph );
-		}
+		// The opening crowd, then arrivals in groups at the gate (T-074); departing visitors leave for good.
+		visitorSpawn = (gate, terrain, pathGraph);
+		SpawnVisitors( 30 );
+		arrivals = new ArrivalScheduler( arrivalSettings );
+		Peep.LeaveOnExit = true;
 		Log.Info( $"[park] build mode ready ({catalog.Count} catalog items), {parkQueues.Count} queues" );
 		// Staff start empty too — the player hires entertainers/handymen/guards/researchers from the
 		// catalog (T-043), each charged a hire cost and then drawing wages.
+	}
+
+	// Visitor arrivals (T-074): the scheduler, its settings, and where/how new visitors spawn.
+	private static ArrivalScheduler? arrivals;
+	private static ArrivalSettings arrivalSettings = ArrivalSettings.Defaults;
+	private static (Vector3 Gate, ParkTerrain Terrain, PathGraph Paths)? visitorSpawn;
+	private static int visitorSerial;
+
+	// Spawn a group of visitors fanned out just outside the gate so they don't all stack on one tile.
+	private static void SpawnVisitors( int count )
+	{
+		if ( visitorSpawn is not { } at )
+			return;
+		for ( int i = 0; i < count; i++ )
+		{
+			var spawn = at.Gate + new Vector3( (i % 6 - 2.5f) * 10f, -(i / 6) * 14f - 10f, 0 );
+			_ = new Peep( at.Terrain, parkQueues, spawn, visitorSerial++, at.Paths );
+		}
 	}
 
 	// The park's ride queues — placed rides register here so peeps (which hold this list) can use them.
@@ -1091,6 +1119,18 @@ public class Level
 			entity.Update();
 
 		GameClock.Current?.Tick( Time.Delta ); // advances the calendar; fires OnNewMonth → finances settle (T-053)
+
+		// Visitor arrivals (T-074): a group at the gate every interval, sized by the park rating.
+		if ( arrivals != null )
+		{
+			int inPark = Entity.All.Count( e => e is Peep );
+			int arriving = arrivals.Update( Time.Delta, Peep.AverageHappiness, GameClock.Current?.TotalDays ?? 0, inPark );
+			if ( arriving > 0 )
+			{
+				SpawnVisitors( arriving );
+				Log.Info( $"[park] {arriving} visitor(s) arrived ({inPark + arriving} in park)" );
+			}
+		}
 		WeatherAudio.Update();                 // rain loop + thunder claps follow the weather (T-056)
 
 		// Diagnostic: periodically report the park's balance and the cumulative income/cost flows.
