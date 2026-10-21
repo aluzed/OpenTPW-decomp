@@ -45,11 +45,15 @@ public class LipSyncFileTests
 		Assert.AreEqual( 2, lip.IntervalAt( TimeSpan.FromSeconds( 2.5 ) ) );
 		Assert.AreEqual( -1, lip.IntervalAt( TimeSpan.FromSeconds( 6.0 ) ), "at/after the last keyframe" );
 
-		// Mouth is closed outside the clip, and cycles the five visemes across intervals (1..5 then wraps).
+		// Outside the clip there is no mouth; the timestamps toggle it open / closed (FUN_00599880): closed it is
+		// "normal", open it shows a viseme re-picked every 100 ms.
 		Assert.AreEqual( MouthShape.Closed, lip.ShapeAt( TimeSpan.FromSeconds( 7 ) ) );
-		Assert.AreEqual( MouthShape.Normal, lip.ShapeAt( TimeSpan.FromSeconds( 0.5 ) ) ); // interval 0 -> viseme 1
-		Assert.AreEqual( MouthShape.Sss, lip.ShapeAt( TimeSpan.FromSeconds( 4.5 ) ) );    // interval 4 -> viseme 5
-		Assert.AreEqual( MouthShape.Normal, lip.ShapeAt( TimeSpan.FromSeconds( 5.5 ) ) ); // interval 5 -> wraps to 1
+		Assert.AreEqual( MouthShape.Normal, lip.ShapeAt( TimeSpan.FromSeconds( 1.5 ) ), "interval 1: closed" );
+		Assert.AreEqual( MouthShape.Normal, lip.ShapeAt( TimeSpan.FromSeconds( 5.5 ) ), "interval 5: closed" );
+		var open = Enumerable.Range( 0, 10 ).Select( i => lip.ShapeAt( TimeSpan.FromMilliseconds( 2000 + i * 100 + 50 ) ) ).ToList();
+		Assert.IsTrue( open.All( s => s is >= MouthShape.Normal and <= MouthShape.Sss ), "open: one of the five visemes" );
+		Assert.IsTrue( open.Distinct().Count() > 1, "the open mouth changes viseme" );
+		Assert.AreEqual( lip.ShapeAt( TimeSpan.FromMilliseconds( 2010 ) ), lip.ShapeAt( TimeSpan.FromMilliseconds( 2090 ) ), "one pick per 100 ms" );
 	}
 
 	[TestMethod]

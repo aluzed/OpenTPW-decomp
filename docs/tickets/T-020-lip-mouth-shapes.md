@@ -2,7 +2,7 @@
 
 - **Priority**: 🟡 Feature
 - **Type**: Reverse engineering
-- **Status**: ⚠️ Mostly done — **mouth-shape semantics resolved** (item 1) and the **lip-sync is wired to
+- **Status**: ✅ Done (2026-10-21) — previously ⚠️ Mostly done — **mouth-shape semantics resolved** (item 1) and the **lip-sync is wired to
   real speech playback with visible output** (item 2): an in-engine advisor face plays a real `sp_001.mp2`
   clip and changes its mouth per viseme from the companion `.LIP`, in sync. The viseme→advisor-mesh-part
   names are RE'd (`mouth - normal/aah/eee/ooh/sss`). Only rendering the *real* advisor model's named
@@ -54,3 +54,12 @@ levels), exposed via `Duration` / `TimeOf` / `UnitsPerSecond`.
 
 `source/OpenTPW.Files/Formats/Sound/LipSyncFile.cs`, `source/OpenTPW.Tests/LipSyncFileTests.cs`,
 plus engine wiring (TBD).
+
+## 2026-10-21 — the runtime viseme choice, reversed
+
+The real advisor model's `mouth - *` parts are what the advisor shows (T-046). The viseme choice is now the game's:
+`FUN_005989c0` records, per advisor, the mesh index of each of the five mouths (`FUN_0044b2e0`); the per-frame
+update `FUN_00599880` walks the `.LIP` timestamps (µs ÷ 1000 → ms) and **toggles** an open flag at each one; while
+open it picks `rand() % 5 + 1` every 100 ms (hiding the previous mouth part, showing the new one), while closed it
+shows viseme 1, "mouth - normal". `LipSyncFile.ShapeAt` does exactly that, with a fixed per-100 ms hash in place of
+`rand()` so it stays repeatable (unit-tested).

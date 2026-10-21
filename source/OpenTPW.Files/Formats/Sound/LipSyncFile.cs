@@ -54,9 +54,11 @@ public static class MouthShapeExtensions
 /// timestamp — the values use all 24+ low bits for the time, with no spare high bits, and the file is
 /// exactly <c>N×u32 + terminator</c> (no room for a parallel shape stream). The five visemes
 /// (<see cref="MouthShape"/>) exist in the engine (<c>tp.exe FUN_0044b2e0</c>) and are chosen at
-/// runtime; the <c>.LIP</c> only marks <i>when</i> the mouth changes (phoneme boundaries), not
-/// <i>which</i> shape. <see cref="ShapeAt"/> therefore cycles the visemes deterministically as an
-/// engine-side stand-in for driving a character in sync. See docs/tickets/T-020.</para>
+/// runtime; the <c>.LIP</c> only marks <i>when</i> the mouth changes, not <i>which</i> shape. The advisor update
+/// (<c>FUN_00599880</c>) treats each timestamp as a toggle — the mouth opens at the first, closes at the next… —
+/// and, while it is open, shows a random viseme (<c>rand() % 5 + 1</c>), re-rolled every 100 ms; while closed it
+/// shows viseme 1 ("mouth - normal"). <see cref="ShapeAt"/> does the same with a deterministic per-100 ms pick.
+/// See docs/tickets/T-020.</para>
 /// </summary>
 public sealed class LipSyncFile : BaseFormat
 {
@@ -94,15 +96,26 @@ public sealed class LipSyncFile : BaseFormat
 		return -1;
 	}
 
+	/// <summary>How often an open mouth changes viseme (the original re-rolls every 100 ms).</summary>
+	public const int VisemeChangeMs = 100;
+
 	/// <summary>
-	/// The mouth shape to show at <paramref name="time"/>. The file marks only phoneme boundaries, so the
-	/// viseme is an engine choice — we cycle the five visemes by interval (deterministic), and return
-	/// <see cref="MouthShape.Closed"/> before the first / at-or-after the last keyframe.
+	/// The mouth shape to show at <paramref name="time"/>, as the game does it (<c>FUN_00599880</c>): the keyframes
+	/// toggle the mouth open / closed (open after the 1st, 3rd, 5th… timestamp); open, it shows one of the five
+	/// visemes picked afresh every <see cref="VisemeChangeMs"/> (the game's <c>rand() % 5 + 1</c>; here a fixed hash of
+	/// the 100 ms slot, so it is repeatable); closed, <see cref="MouthShape.Normal"/>. <see cref="MouthShape.Closed"/>
+	/// before the first / at-or-after the last keyframe.
 	/// </summary>
 	public MouthShape ShapeAt( TimeSpan time )
 	{
 		var interval = IntervalAt( time );
-		return interval < 0 ? MouthShape.Closed : (MouthShape)(1 + interval % VisemeCount);
+		if ( interval < 0 )
+			return MouthShape.Closed;
+		if ( interval % 2 == 1 )
+			return MouthShape.Normal; // between a closing and the next opening timestamp
+		long slot = (long)(time.TotalMilliseconds / VisemeChangeMs);
+		uint hash = unchecked((uint)slot * 2654435761u) >> 16;
+		return (MouthShape)(1 + hash % VisemeCount);
 	}
 
 	public LipSyncFile( string path ) => ReadFromFile( path );
