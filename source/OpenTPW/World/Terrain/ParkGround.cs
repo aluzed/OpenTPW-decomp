@@ -70,7 +70,7 @@ public sealed class ParkGround
 		Vertex Corner( float x, float y, float u, float v ) => new()
 		{
 			Position = new Vector3( x, y, GroundZ ),
-			Normal = new Vector3( 0, 0, 1 ),
+			Normal = new Vector3( 0, 1, 0 ), // up, in the MD2 (Y-up) convention test.shader expects
 			TexCoords = new Vector2( u, v )
 		};
 		var vertices = new[]

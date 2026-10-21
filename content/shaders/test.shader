@@ -29,7 +29,9 @@ vertex {
     void main() {
         vs_out.vTexCoords = texCoords;
         vs_out.vTexCoords.y = 1.0 - vs_out.vTexCoords.y;
-        vs_out.vNormal = normal;
+        // MD2 normals are in the file's Y-up convention while positions are swizzled to Z-up on load: swizzle the
+        // normal the same way, then rotate it with the model, so shading follows the face's real world orientation.
+        vs_out.vNormal = mat3(g_oUbo.g_mModel) * vec3(normal.x, normal.z, normal.y);
         vs_out.vPosition = vec3(g_oUbo.g_mModel * vec4(position, 1.0));
 
         vec4 pos = g_oUbo.g_mModel * vec4(position, 1.0);
@@ -103,7 +105,8 @@ fragment {
         }*/
 
         vec3 N = normalize(vs_out.vNormal);
-        vec3 L = normalize(g_oUbo.g_vLightPos - vs_out.vWorldPosition);
+        // The sun is a direction (see 3d.shader); vWorldPosition is actually view-space (used for the fog below).
+        vec3 L = normalize(g_oUbo.g_vLightPos);
         
         vec3 vDiffuse = max(dot(N, L), 0.0) * g_oUbo.g_vLightColor;
         vec3 vAmbient = vec3(0.4);
