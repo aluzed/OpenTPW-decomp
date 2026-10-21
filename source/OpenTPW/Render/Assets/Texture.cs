@@ -70,7 +70,12 @@ public partial class Texture : Asset
 	/// </summary>
 	private void UpdateFromWct( string path, TextureFlags flags )
 	{
-		var textureFileData = new TextureFile( path ).Data;
+		// A path missing from its WAD opens as a null stream, which TextureFile turns into a 1×1 magenta placeholder.
+		// Throw instead, so callers' fallbacks run (next folder, the level's sharetex, Texture.Missing): the
+		// placeholder drew magenta faces, or — chroma-keyed — made the mesh invisible (T-073).
+		using var stream = FileSystem.OpenRead( path )
+			?? throw new FileNotFoundException( $"Texture not found: {path}", path );
+		var textureFileData = new TextureFile( stream ).Data;
 
 		CreateTexture( path, textureFileData.Data, (uint)textureFileData.Width, (uint)textureFileData.Height, flags );
 	}

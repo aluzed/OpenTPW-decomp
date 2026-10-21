@@ -11,13 +11,13 @@ internal static class ShopBuilding
 {
 	// Candidate archive paths per kind for a theme, tried in order. Food/drink stalls live under shops/ and are
 	// authored corner-anchored at their own scale, so BuildParts re-centres + fits each to its footprint. Toilets
-	// are a "feature" under features/, but the model (jungle toilet.md2, …) is a thin single-facade panel rather
-	// than a boxy outhouse — scaled up it reads as a flat plate top-down, worse than the upright billboard — so it
-	// stays on the billboard fallback (empty candidate list) pending a fuller toilet model / multi-part load.
+	// are a "feature" under features/: a base plate, a door and a booth (J_WC01, ~8×7×10). The booth looked missing
+	// — its textures (gk_roof5, GK_side2) live in the level's sharetex.wad, and a texture missing from the toilet
+	// WAD used to load as a chroma-keyed (invisible) placeholder instead of falling back (T-073).
 	private static IEnumerable<string> Candidates( ShopKind kind, string theme ) => kind switch
 	{
 		ShopKind.Drink => new[] { "coconut", "drinks", "cola", "ices", "icecream" }.Select( n => $"levels/{theme}/shops/{n}" ),
-		ShopKind.Toilet => Enumerable.Empty<string>(),
+		ShopKind.Toilet => new[] { $"levels/{theme}/features/toilet" },
 		_ => new[] { "burger", "fries", "steak", "hotdog", "sburger", "gchips" }.Select( n => $"levels/{theme}/shops/{n}" ),
 	};
 

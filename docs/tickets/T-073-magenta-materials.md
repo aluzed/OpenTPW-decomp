@@ -24,6 +24,11 @@ fantasy coaster track was a magenta ribbon, and the Space island never appeared 
 4. **Space lobby island**: a material points past the MD2's texture list → `ModelFile` threw → the island was
    skipped. It now leaves that material unnamed (missing texture). A missing lobby texture no longer throws either.
 
+5. **A texture missing from its WAD never failed.** The VFS returns a null stream, which `TextureFile` turns into
+   a 1×1 magenta placeholder — drawn magenta, or invisible once chroma-keyed — and no exception, so every
+   fallback (next folder, `sharetex`, `Texture.Missing`) was dead code (`ParkTerrain` never reached `spathtex/`).
+   `Texture` now throws `FileNotFoundException` for a missing `.wct`; all dynamic callers already catch.
+
 Scans showed no lossy near-magenta texels in fantasy textures, so the exact `(255,0,255)` chroma key is fine.
 
 ## Not changed / noted

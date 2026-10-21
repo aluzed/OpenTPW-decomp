@@ -2,7 +2,7 @@
 
 - **Priority**: 🟠 Medium (visual)
 - **Type**: Engine / rendering
-- **Status**: ⚠️ Mostly done — retro-ticket for five untracked commits (`3535f43`, `3b22724`, `7758a10`,
+- **Status**: ✅ Done — retro-ticket for five untracked commits (`3535f43`, `3b22724`, `7758a10`,
   `e987772`, `59c3ad7`):
   - **Ride textures**: `LoadRideTexture` tries `stexture/` → `textures/` → `gtexture/` and loads with
     `PinkChromaKey` so magenta (255,0,255) cutouts are discarded (bodies were solid magenta noise). Build
@@ -17,8 +17,9 @@
 
 ## Remaining
 
-- **Toilets** stay on the billboard fallback: `features/toilet.md2` is a thin single-facade panel that reads as
-  a flat plate from the top-down camera.
+- ~~Toilets stay on the billboard~~ — done (2026-10-21): `features/toilet` is a base plate + door + a full booth
+  (`J_WC01`, ~8×7×10). The "thin panel" was only the door: the booth's textures live in `sharetex.wad` and a
+  texture missing from a WAD loaded as an invisible chroma-keyed placeholder (fixed in T-073).
 
 ## Affected files
 

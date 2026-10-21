@@ -106,7 +106,7 @@ All format/VM decoding and the core gameplay loop are done. Open work falls into
 | [T-064](T-064-advisor-size.md) | 🟢 Low | ✅ Done | Advisor head shrunk to a small upright corner head (scale 0.28 → 0.15); a camera-locked overlay pass is optional |
 | [T-065](T-065-player-hud.md) | 🟠 Medium | ✅ Core done | Player-only HUD by default; debug dump + FPS behind the **backtick** toggle (`GameSettings.ShowDebug`). A graphical TPW-style HUD remains |
 | [T-066](T-066-hide-ride-debug-markers.md) | 🟠 Medium | ✅ Done | Ride-engine light/particle/node stand-in cubes hidden behind the debug toggle; real light/particle rendering remains |
-| [T-067](T-067-real-ride-shop-models.md) | 🟠 Medium | ⚠️ Mostly done | Real ride textures (`stexture`/`gtexture` + magenta chroma-key), flat entrance/exit pads, real tour/go-kart vehicles, real food/drink stall buildings fitted to their footprint. Toilets stay billboards |
+| [T-067](T-067-real-ride-shop-models.md) | 🟠 Medium | ✅ Done | Real ride textures (`stexture`/`gtexture` + magenta chroma-key), flat entrance/exit pads, real tour/go-kart vehicles, real food/drink stall buildings fitted to their footprint, and the **real toilet booth** (its sharetex textures had loaded as invisible placeholders) |
 | [T-068](T-068-quit-game-button.md) | 🟠 Medium | ✅ Done | **Bug**: lobby "Quit Game" now quits (`PurpleButton.OnClick` → `Renderer.RequestQuit`); quick clicks no longer dropped by `Input` |
 | [T-069](T-069-sigterm-segfault.md) | 🟡 Low | ✅ Done | **Bug**: SIGTERM / SIGINT segfaulted (exit 139); now handled → clean window-close shutdown (exit 0) |
 | [T-070](T-070-lobby-label-overlap.md) | 🟢 Low | ✅ Done | **Bug**: lobby world names slid under the button column — camera reframed left + no label/click behind the buttons |
