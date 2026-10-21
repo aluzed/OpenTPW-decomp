@@ -106,7 +106,7 @@ internal sealed class ItemInfoWindow : GameWindow
 			ride.IsBroken ? LockedInk : default, TextAlign.Center );
 
 		statsY = 87f;
-		StatRow( "Times ridden", $"{ride.TimesRidden}" );
+		StatRow( Localization.Get( UIStrings.UsersLastMonth, "Users last month" ), $"{ride.UsersLastMonth}" );
 		StatRow( Localization.Get( UIStrings.Age, "Age" ), $"{ride.AgeDays} days" );
 		StatRow( Localization.Get( UIStrings.Excitement, "Excitement" ), null, ride.Excitement / 100f );
 		StatRow( Localization.Get( UIStrings.Reliability, "Reliability" ), null, ride.Reliability );
@@ -156,13 +156,15 @@ internal sealed class ItemInfoWindow : GameWindow
 			ItemPreview.For( archive, Path.GetFileName( archive ) )?.Draw( Preview );
 
 		statsY = 87f;
-		StatRow( "In use", $"{shop.InUse}" );
-		StatRow( "Waiting", $"{shop.Waiting}" );
+		StatRow( Localization.Get( UIStrings.CustomersLastMonth, "Customers last month" ), $"{shop.CustomersLastMonth}" );
 		if ( !shop.IsFree )
 		{
-			StatRow( Localization.Get( UIStrings.SalePrice, "Sale price" ), $"$ {shop.Price:0}" );
-			StatRow( "Cost of goods", $"$ {shop.CostOfGoods:0}" );
+			StatRow( Localization.Get( UIStrings.CostOfGoods, "Cost of goods" ), $"$ {shop.CostOfGoods:0}" );
+			StatRow( Localization.Get( UIStrings.TakingsLastMonth, "Takings last month" ), $"$ {shop.TakingsLastMonth:0}" );
+			StatRow( Localization.Get( UIStrings.ProfitLastMonth, "Profit last month" ), $"$ {shop.ProfitLastMonth:0}" );
 		}
+		else
+			StatRow( "Queueing", $"{shop.Waiting}" );
 		if ( shop.Kind == ShopKind.Toilet )
 			StatRow( "Cleanliness", null, 1f - shop.Filth / 100f );
 		StatRow( Localization.Get( UIStrings.ScrapValue, "Scrap value" ), $"$ {shop.BuildCost * Ride.SellRefundFraction:0}" );

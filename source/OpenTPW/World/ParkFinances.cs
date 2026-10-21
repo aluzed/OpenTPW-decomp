@@ -217,6 +217,7 @@ public sealed class ParkFinances
 	/// finance graph (T-049).</summary>
 	public void SettleMonth()
 	{
+		Shop.RollMonth();
 		foreach ( var l in loans )
 		{
 			if ( !l.Bought )

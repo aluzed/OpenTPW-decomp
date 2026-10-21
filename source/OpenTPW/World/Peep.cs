@@ -1082,6 +1082,7 @@ public sealed class Peep : ModelEntity
 	{
 		var category = shop.Category;
 		ParkFinances.Current?.TakeFoodSale( shop.Price, shop.Kind == ShopKind.Drink, shop.CostOfGoods, category );
+		shop.NoteSale( shop.Price, shop.CostOfGoods );
 		if ( shop.Stats is { } stats )
 		{
 			(hunger, thirst, happiness, energy) = ShopBuilding.ApplyEffects( stats, hunger, thirst, happiness, energy,

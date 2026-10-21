@@ -110,6 +110,34 @@ public sealed class Shop : ModelEntity
 	/// <summary>What one sale costs the park in goods (<c>UsageInfo.InitCostOfGoods</c>); the profit is the price minus this.</summary>
 	public float CostOfGoods { get; set; }
 
+	// This month's trade and last month's (the shop window's "Customers / Takings / Profit last month").
+	private int customers;
+	private float takings, goods;
+	public int CustomersLastMonth { get; private set; }
+	public float TakingsLastMonth { get; private set; }
+	public float ProfitLastMonth { get; private set; }
+
+	/// <summary>A visitor bought something here.</summary>
+	public void NoteSale( float price, float costOfGoods )
+	{
+		customers++;
+		takings += price;
+		goods += costOfGoods;
+	}
+
+	/// <summary>Close the month: this month's trade becomes last month's (every stall).</summary>
+	public static void RollMonth()
+	{
+		foreach ( var s in Stalls )
+		{
+			s.CustomersLastMonth = s.customers;
+			s.TakingsLastMonth = s.takings;
+			s.ProfitLastMonth = s.takings - s.goods;
+			s.customers = 0;
+			s.takings = s.goods = 0f;
+		}
+	}
+
 	/// <summary>Grid footprint (set when placed) — used to select it by clicking a covered tile, and to
 	/// free its cells on sell/demolish (T-041).</summary>
 	public int TileX { get; set; }
