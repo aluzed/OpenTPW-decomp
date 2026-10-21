@@ -37,7 +37,10 @@ public readonly record struct ParkFacilities(
 	// Features (scenery) placed, and how many of them are security cameras; -1 = not counted (older callers).
 	int Features = -1, int Cameras = 0,
 	// The average number of visitors queueing at a toilet (FeaturesNotEnoughToilets).
-	float ToiletQueue = 0f );
+	float ToiletQueue = 0f,
+	// Research (T-044): the kinds of ride the park may build, how many of them it has built, and how many are still
+	// to be researched (-1 = not counted).
+	int RideKindsAvailable = -1, int RideKindsBuilt = 0, int RidesToResearch = 0 );
 
 /// <summary>
 /// Maps the live park state to advisor message candidates — <c>(id, group, score)</c> for the
@@ -184,6 +187,19 @@ public static class AdvisorAdvice
 			string id = filthy ? (f.Handymen == 0 ? "FeaturesDirtyToilets3" : "FeaturesDirtyToilets4")
 				: (f.Handymen == 0 ? "FeaturesDirtyToilets1" : "FeaturesDirtyToilets2");
 			Add( id, P( id, "PointsPerFilthPct", filthy ? 2f : 1f ) * f.WorstToiletFilth );
+		}
+
+		// Research: most of the available rides built and nobody researching more (StaffHireResearchers1: past Most 70 %,
+		// PointsPerExtraPct 5; StaffHireResearchers2 when all are built), or all built with scientists (RidesResearchMore).
+		if ( f.RideKindsAvailable > 0 && f.RidesToResearch > 0 )
+		{
+			float pct = 100f * f.RideKindsBuilt / f.RideKindsAvailable;
+			if ( f.Researchers == 0 && f.RideKindsBuilt >= f.RideKindsAvailable )
+				Add( "StaffHireResearchers2", P( "StaffHireResearchers2", "Score", 90f ) );
+			else if ( f.Researchers == 0 && pct > P( "StaffHireResearchers1", "Most", 70f ) )
+				Add( "StaffHireResearchers1", (pct - P( "StaffHireResearchers1", "Most", 70f )) * P( "StaffHireResearchers1", "PointsPerExtraPct", 5f ) );
+			else if ( f.Researchers > 0 && f.RideKindsBuilt >= f.RideKindsAvailable )
+				Add( "RidesResearchMore", P( "RidesResearchMore", "Score", 100f ) );
 		}
 
 		// Toilet queues (FeaturesNotEnoughToilets.AverageQueueLongerThan 2.5): "a park this size should have more".

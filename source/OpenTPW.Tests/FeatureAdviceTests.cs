@@ -46,4 +46,15 @@ public class FeatureAdviceTests
 		CollectionAssert.Contains( Ids( f ), "FeaturesNotEnoughToilets" );
 		CollectionAssert.DoesNotContain( Ids( f with { ToiletQueue = 1f } ), "FeaturesNotEnoughToilets" );
 	}
+
+	[TestMethod]
+	public void ResearchAdviceFollowsWhatsBuiltAndWhoResearches()
+	{
+		var f = new ParkFacilities( 1, 1, 1, 1, 3, 0, 0, 2, 0, 1, 0, 50, 0, 0, Days: 10, Features: 2,
+			RideKindsAvailable: 4, RideKindsBuilt: 3, RidesToResearch: 6, Researchers: 0 );
+		CollectionAssert.Contains( Ids( f ), "StaffHireResearchers1", "75 % built, nobody researching" );
+		CollectionAssert.Contains( Ids( f with { RideKindsBuilt = 4 } ), "StaffHireResearchers2", "all built" );
+		CollectionAssert.Contains( Ids( f with { RideKindsBuilt = 4, Researchers = 2 } ), "RidesResearchMore" );
+		CollectionAssert.DoesNotContain( Ids( f with { RidesToResearch = 0, RideKindsBuilt = 4 } ), "StaffHireResearchers2", "nothing left to research" );
+	}
 }

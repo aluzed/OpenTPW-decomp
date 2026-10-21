@@ -72,3 +72,24 @@ object", "Found upgrade... modify?". So an object starts at upgrade level 0 and 
 
 `source/OpenTPW/World/Rides/Ride.cs`, `RideQueue.cs`, `source/OpenTPW/World/ParkFinances.cs`,
 `source/OpenTPW/World/Staff.cs` (researchers), UI, `Level.cs`.
+
+## Researching new items (2026-10-21, night)
+
+The original's research **unlocks** rides, sideshows, shops and features — until now everything was buildable from
+the start, and research only upgraded rides. `ItemResearch` (pure, unit-tested) follows the data:
+
+- each item's `.sam` gives `Research.Group` (0 = available from the start; 1–4 later) and its research cost
+  `Upgrades[0].CostOfResearch` (jungle: hyenas 700, karts 600, coaster 1050, the mine coaster 800…);
+- `Standard.sam` gates the groups (`ResearchTech[g].PercentageForThisTech` 0 / 0 / 80 / 85 / 85: group g opens once
+  that share of the items below it is researched) and splits the work by category (`ResearchCategories[c].Effort`:
+  rides 100, shops 15, sideshows 30, features 15); each category works on its cheapest open item;
+- the scientists' rate is OpenTPW's: 1.5 points a second per grade-1 researcher (`Staff.ResearchPower`, so better
+  grades research faster), split half-and-half with a ride-upgrade research when one is under way.
+
+The build menu greys out what isn't researched ("(research)", or "researching 34%" for a category's current target)
+and won't select or place it. A finished item is announced by the advisor in the game's words (TAG_SYSTEM 114 "Your
+scientists have researched the …", 118 "You've researched a new feature: …"; `ResearchRideResearched` 150 …), and the
+advisor asks for scientists when most / all the available rides are built (TAG 21 / 22, `StaffHireResearchers1/2`) or
+for more research (66, `RidesResearchMore`). Challenge 16 ("Research 2 new rides") counts rides researched; 30
+("Research and build the Hocus Pocus") means something now. Saved with the park. The dev park (`OPENTPW_AUTOPLACE`)
+has everything researched; `OPENTPW_RESEARCH_DEMO=1` hires four scientists in a fresh park.

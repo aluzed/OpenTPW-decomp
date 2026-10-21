@@ -73,3 +73,5 @@ now does that: each goal met awards its ticket (logged, fireworks from every rid
 that water rides are built from pieces, T-045) and the **secret** one for `MinCellsCovered` (2000) map cells watched
 by security cameras (190, T-077). `CoasterHeight`, `GokartExcitement`, `MinCellsOwned` (land buying) stay out — the
 park doesn't model them. The HUD reads "GOLDEN TICKETS n (goals m/6)".
+A third global ticket joined with item research (T-044): "…for researching and building all the items" (TAG_SYSTEM
+183) — every catalog item researched and each built at least once.

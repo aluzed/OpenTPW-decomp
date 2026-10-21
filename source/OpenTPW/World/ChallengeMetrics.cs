@@ -77,7 +77,7 @@ public static class ChallengeMetrics
 			11 => fin.VisitorsTotal,   // "Get N new visitors"
 			12 => fin.ShopProfit,      // "Make N profit from all shops" (takings minus cost of goods)
 			13 => fin.SideshowRevenue, // "Get your sideshows to make N profit"
-			16 => fin.ResearchCompleted, // "Research N new rides" (approx: ride research completed)
+			16 => fin.RidesResearched, // "Research N new rides"
 			// "Get N peeps onto [the Jaw Dropper]": that ride's riders (any ride's when the file names none).
 			17 or 20 => c.TargetObj != 0 ? RidesOf( c ).Sum( r => r.TimesRidden ) : fin.RidesRidden,
 			21 => RidesOf( c ).Select( r => (float)(r.Track?.SegmentCount ?? r.TileTrack?.SegmentCount ?? 0) ).DefaultIfEmpty( 0f ).Max(), // "with N sections"

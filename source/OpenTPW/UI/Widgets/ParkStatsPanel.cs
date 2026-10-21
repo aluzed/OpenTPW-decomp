@@ -121,6 +121,9 @@ internal sealed class ParkStatsPanel : HudPanel
 			AddLine( "LOANS: L  (no debt)", "b_loan" );
 		if ( fin.Bankrupt )
 			lines.Add( "*** BANKRUPT ***" );
+		// What the scientists are researching (the next ride), when there are any (T-044).
+		if ( ItemResearch.Current?.Target( BuildCategory.Rides ) is { } researching && Staff.ResearchPower > 0f )
+			lines.Add( $"RESEARCH: {researching.Title} {ItemResearch.Current.ProgressOf( researching.Key ) * 100f:0}%" );
 		// Staff on strike, or warned (T-049 depth).
 		if ( StaffStrikes.Current is { } strikes )
 		{

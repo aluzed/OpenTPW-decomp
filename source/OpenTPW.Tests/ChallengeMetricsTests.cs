@@ -47,8 +47,8 @@ public class ChallengeMetricsTests
 			fin.TakeRideTicket( 4f );               // a ride ridden
 			fin.TakeSideshowTakings( 25f, won: false ); // sideshow profit
 			fin.NoteCoasterBuilt();                 // a coaster placed
-			fin.NoteResearchCompleted();            // a ride research done
-			fin.NoteResearchCompleted();
+			fin.NoteRideResearched();               // a new ride researched
+			fin.NoteRideResearched();
 
 			Assert.AreEqual( 1f, ChallengeMetrics.Current( OfType( 1 ) ), "type 1 → fries sold" );
 			Assert.AreEqual( 0f, ChallengeMetrics.Current( OfType( 2 ) ), "type 2 → burgers sold (none)" );
@@ -57,7 +57,7 @@ public class ChallengeMetricsTests
 			Assert.AreEqual( 25f, ChallengeMetrics.Current( OfType( 13 ) ), "type 13 → SideshowRevenue" );
 			Assert.AreEqual( 1f, ChallengeMetrics.Current( OfType( 20 ) ), "type 20 → RidesRidden" );
 			Assert.AreEqual( 6f, ChallengeMetrics.Current( OfType( 12 ) ), "type 12 → concession takings (food + drink)" );
-			Assert.AreEqual( 2f, ChallengeMetrics.Current( OfType( 16 ) ), "type 16 → ResearchCompleted" );
+			Assert.AreEqual( 2f, ChallengeMetrics.Current( OfType( 16 ) ), "type 16 → new rides researched" );
 			Assert.AreEqual( 1f, ChallengeMetrics.Current( OfType( 18 ) ), "type 18 → CoastersBuilt" );
 			Assert.AreEqual( 0f, ChallengeMetrics.Current( OfType( 99 ) ), "an unmapped type reads 0" );
 		}

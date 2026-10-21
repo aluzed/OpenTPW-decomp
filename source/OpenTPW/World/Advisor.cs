@@ -310,7 +310,36 @@ public sealed class Advisor : Entity
 			AverageGrades: StaffStrikes.Roles.Select( r => staff.Where( s => s.Role == r ).Select( s => (float)s.Grade ).DefaultIfEmpty( float.NaN ).Average() ).ToArray(),
 			StaffNotices: PendingStaffNotices(),
 			Features: Ride.Features.Count, Cameras: Ride.Features.Count( r => r.ProvidesSecurity ),
-			ToiletQueue: Shop.AverageToiletQueue() );
+			ToiletQueue: Shop.AverageToiletQueue(),
+			RideKindsAvailable: RideKinds( available: true ), RideKindsBuilt: RideKinds( available: false ),
+			RidesToResearch: BuildMode.Current?.Catalog.Count( c => c.Category == BuildCategory.Rides && !(ItemResearch.Current?.IsUnlocked( c.Name ) ?? true) ) ?? 0 );
+	}
+
+	// The researched kinds of ride in the catalog (available) or those of them the park has built.
+	private static int RideKinds( bool available )
+	{
+		var rides = BuildMode.Current?.Catalog.Where( c => c.Category == BuildCategory.Rides && (ItemResearch.Current?.IsUnlocked( c.Name ) ?? true) ).ToList();
+		if ( rides == null )
+			return -1;
+		if ( available )
+			return rides.Count;
+		var built = Entity.All.OfType<Ride>().Select( r => r.Archive ).ToHashSet( StringComparer.OrdinalIgnoreCase );
+		return rides.Count( c => c.RidePath != null && built.Contains( c.RidePath ) );
+	}
+
+	// One-off announcements raised by the game (a new ride researched…), waiting for the next snapshot.
+	private static readonly List<string> announcements = new();
+
+	/// <summary>Have the advisor announce <paramref name="messageId"/> (an Advisor.sam message) about
+	/// <paramref name="name"/>, with the game's own sentence (TAG_SYSTEM 114 "Your scientists have researched the …",
+	/// 118 "You've researched a new feature: …").</summary>
+	public static void Announce( string messageId, string name )
+	{
+		int? tag = messageId switch { "ResearchRideResearched" => 114, "ResearchFeatureResearched" => 118, _ => null };
+		var opening = tag is { } t && AdvisorTips.GameMessageLines( t ) is { Length: > 0 } lines ? lines[0] : "You've researched";
+		AdvisorTips.Raised[messageId] = opening.EndsWith( ':' ) || opening.EndsWith( "the" ) ? $"{opening} {name}." : $"{opening}: {name}.";
+		lock ( announcements )
+			announcements.Add( messageId );
 	}
 
 	// Strike announcements wait up to StaffNoticeLife seconds for the advisor to have a free moment.
@@ -322,6 +351,12 @@ public sealed class Advisor : Entity
 		if ( StaffStrikes.Current is { } strikes )
 			foreach ( var id in strikes.TakeNotices() )
 				staffNotices[id] = Time.Now + StaffNoticeLife;
+		lock ( announcements )
+		{
+			foreach ( var id in announcements )
+				staffNotices[id] = Time.Now + StaffNoticeLife;
+			announcements.Clear();
+		}
 		foreach ( var id in staffNotices.Where( kv => kv.Value < Time.Now || activeMessage == kv.Key ).Select( kv => kv.Key ).ToList() )
 			staffNotices.Remove( id );
 		return staffNotices.Keys.ToList();

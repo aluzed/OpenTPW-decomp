@@ -262,6 +262,12 @@ public sealed class ParkFinances
 	/// <summary>A ride finished researching its next level.</summary>
 	public void NoteResearchCompleted() => ResearchCompleted++;
 
+	/// <summary>New rides researched (challenge 16 "Research N new rides").</summary>
+	public int RidesResearched { get; private set; }
+
+	/// <summary>A new ride was researched.</summary>
+	public void NoteRideResearched() => RidesResearched++;
+
 	/// <summary>A peep pays to board a ride.</summary>
 	public void TakeRideTicket( float price )
 	{

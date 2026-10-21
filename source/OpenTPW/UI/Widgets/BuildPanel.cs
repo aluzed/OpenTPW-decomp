@@ -56,6 +56,8 @@ internal sealed class BuildPanel : HudPanel
 	private static Texture Normal => normal ??= Solid( 58, 58, 92, 225 );
 	private static Texture Selected => selected ??= Solid( 80, 165, 90, 240 );
 	private static Texture Unaffordable => unaffordable ??= Solid( 95, 48, 48, 215 );
+	private static Texture? locked;
+	private static Texture Locked => locked ??= Solid( 40, 40, 48, 200 );
 
 	public BuildPanel() => Current = this;
 
@@ -151,6 +153,13 @@ internal sealed class BuildPanel : HudPanel
 			// Staff show their authentic TPW role name (Cleaner/Scientist/…); the catalog key (item.Name) is
 			// unchanged (T-062).
 			var label = item.Staff is { } role ? StaffNames.For( role ) : item.Label;
+			// Not researched yet: greyed, with how far the scientists have got if it's their current target.
+			if ( !build.IsBuildable( visible[i] ) )
+			{
+				float done = ItemResearch.Current?.ProgressOf( item.Name ) ?? 0f;
+				DrawButton( Row( i ), done > 0f ? $"{label}  researching {done * 100f:0}%" : $"{label}  (research)", Locked, RowLabelScale );
+				continue;
+			}
 			DrawButton( Row( i ), $"{label}  ${item.Cost:0}", fill, RowLabelScale );
 		}
 	}

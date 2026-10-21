@@ -27,6 +27,8 @@ public sealed class SaveGame
 	public ChallengeState? Challenge { get; set; }    // active/offered challenge progress (null = none)
 	public bool GoldenTicketAwarded { get; set; }     // the level-win flag (T-055), so a won park stays won
 	public List<string> GoldenTickets { get; set; } = new(); // the golden tickets won, by goal (T-055)
+	public List<string>? Researched { get; set; }              // the items researched (null: an older save — keep the start set)
+	public Dictionary<string, float> ResearchProgress { get; set; } = new(); // each category's research progress
 	public MetaInfo? Meta { get; set; }               // at-a-glance slot summary (T-061; null on pre-Meta saves)
 
 	public sealed class LoanState

@@ -68,6 +68,8 @@ public sealed class GoldenTicketGoals
 			Award( "Water ride", GoldenTicket.Announcement( "Water ride", globals.WaterLength, 0 ) );
 		if ( globals.MinCellsCovered > 0 && CellsCoveredByCameras() >= globals.MinCellsCovered )
 			Award( "Cameras", GoldenTicket.Announcement( "Cameras", globals.MinCellsCovered, 0 ) );
+		if ( !won.Contains( "Everything" ) && ResearchedAndBuiltEverything() )
+			Award( "Everything", GoldenTicket.Announcement( "Everything", 0, 0 ) );
 
 		if ( !Awarded && GoldenTicket.AllMet( targets, state ) )
 		{
@@ -89,6 +91,16 @@ public sealed class GoldenTicketGoals
 		foreach ( var ride in Entity.All.OfType<Ride>().ToList() ) // a snapshot: the fireworks add particles
 			ride.Celebrate();
 		TicketWon?.Invoke( text.Headline, text.Sentence );
+	}
+
+	// Every item researched, and every ride / sideshow / shop / feature built at least once (TAG_SYSTEM 183).
+	private static bool ResearchedAndBuiltEverything()
+	{
+		if ( ItemResearch.Current is not { Busy: false } || BuildMode.Current?.Catalog is not { } catalog )
+			return false;
+		var built = new HashSet<string>( Entity.All.OfType<Ride>().Select( r => r.Archive ), StringComparer.OrdinalIgnoreCase );
+		var stalls = new HashSet<string>( Shop.Stalls.Select( s => s.CatalogKey ), StringComparer.OrdinalIgnoreCase );
+		return catalog.Where( c => c.Staff == null ).All( c => c.RidePath != null ? built.Contains( c.RidePath ) : stalls.Contains( c.Name ) );
 	}
 
 	// The longest water ride, in map cells of track (GoldenTicketGlobal.WaterLength).

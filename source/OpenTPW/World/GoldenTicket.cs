@@ -85,6 +85,7 @@ public static class GoldenTicket
 		["Profit/yr"] = (184, "", " profit in a year."),
 		["Recent visitors"] = (185, "", " visitors in {0} months."),
 		["Water ride"] = (188, "", ""),
+		["Everything"] = (183, "", ""),
 		["Cameras"] = (190, "", ""),
 	};
 

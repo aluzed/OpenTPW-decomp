@@ -70,7 +70,10 @@ public sealed class BuildMode : Entity
 	/// <summary>Select catalog item <paramref name="index"/> (or clear with any out-of-range value, e.g. -1).
 	/// Clicking the already-selected item toggles it off. Used by the clickable build UI (T-038).</summary>
 	public void SelectIndex( int index )
-		=> Selected = (index >= 0 && index < Catalog.Count && index != Selected) ? index : -1;
+		=> Selected = (index >= 0 && index < Catalog.Count && index != Selected && IsBuildable( index )) ? index : -1;
+
+	/// <summary>Whether catalog item <paramref name="index"/> has been researched (or needed no research).</summary>
+	public bool IsBuildable( int index ) => ItemResearch.Current?.IsUnlocked( Catalog[index].Name ) ?? true;
 
 	public (int X, int Y)? HoveredTile { get; private set; }
 
@@ -221,7 +224,7 @@ public sealed class BuildMode : Entity
 		bool Hit( Key k ) => down.Contains( k ) && !prevDown.Contains( k );
 
 		for ( int i = 0; i < NumberKeys.Length && i < Catalog.Count; i++ )
-			if ( Hit( NumberKeys[i] ) )
+			if ( Hit( NumberKeys[i] ) && IsBuildable( i ) )
 				Selected = i;
 		if ( Hit( Key.Escape ) || Hit( Key.Number0 ) )
 			Selected = -1;

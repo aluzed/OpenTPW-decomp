@@ -878,6 +878,7 @@ public class Ride : Entity
 		// Researchers advance only the queue's active ride (one at a time park-wide), so the team concentrates
 		// instead of every researching ride progressing in parallel (T-044).
 		if ( ResearchQueue.Active == this )
-			TickResearch( Time.Delta, Staff.ResearchPower );
+			// (Half the scientists' time while new items are being researched too.)
+			TickResearch( Time.Delta, Staff.ResearchPower * (ItemResearch.Current?.Busy == true ? 0.5f : 1f) );
 	}
 }

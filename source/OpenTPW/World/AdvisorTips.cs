@@ -97,6 +97,8 @@ public static class AdvisorTips
 		["SideshowsBuildSideshows"] = 81,
 		["FeaturesNoToilets"] = 86,
 		["FeaturesNotEnoughToilets"] = 88, // "A park this size should have more toilets."
+		// Research: hire scientists (21: most rides built, 22: all built) / research more rides (66).
+		["StaffHireResearchers1"] = 21, ["StaffHireResearchers2"] = 22, ["RidesResearchMore"] = 66,
 		["ShopsBuildMoreShops"] = 78,
 		["SideshowsBuildMoreSideshows"] = 82,
 		["FeaturesDirtyToilets1"] = 89, // "…getting dirty and you have no cleaners…"
@@ -143,8 +145,13 @@ public static class AdvisorTips
 
 	/// <summary>The readable tip for an advice id: the game's own message when mapped, else OpenTPW's English tip,
 	/// else a generic line.</summary>
+	/// <summary>Texts made when the message was raised (a research announcement naming the ride), by message id.</summary>
+	public static Dictionary<string, string> Raised { get; } = new();
+
 	public static string TextFor( string messageId )
 	{
+		if ( messageId != null && Raised.TryGetValue( messageId, out var raised ) )
+			return raised;
 		if ( string.IsNullOrEmpty( messageId ) )
 			return "";
 		if ( GameText.TryGetValue( messageId, out var index ) && GameMessage( index ) is { } original )

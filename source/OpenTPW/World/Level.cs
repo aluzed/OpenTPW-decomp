@@ -292,6 +292,15 @@ public class Level
 		var catalog = BuildCatalog();
 		// Keep the placement context so a loaded save can rebuild placements (T-059).
 		saveGrid = grid; saveTerrain = terrain; saveCatalog = catalog;
+		// Research decides what can be built: group-0 items now, the rest once the scientists get to them. The dev park
+		// (OPENTPW_AUTOPLACE) has everything researched so its tests can build it all.
+		ItemResearch.Current = NewItemResearch( catalog, standard );
+		if ( Environment.GetEnvironmentVariable( "OPENTPW_AUTOPLACE" ) != null )
+			ItemResearch.Current.UnlockAll();
+		// Dev: OPENTPW_RESEARCH_DEMO=1 hires four scientists in a fresh park, to watch the research unlock items.
+		if ( Environment.GetEnvironmentVariable( "OPENTPW_RESEARCH_DEMO" ) == "1" )
+			for ( int i = 0; i < 4; i++ )
+				_ = new Staff( StaffRole.Researcher, terrain, grid.TileToWorld( openX + i, openY ).WithZ( 0 ), roam: 60f );
 		_ = new BuildMode( grid, terrain, catalog,
 			( item, tx, ty, rot ) => CommitPlacement( item, grid, terrain, tx, ty, rot ),
 			ride => DemolishRide( ride, grid ),
@@ -701,6 +710,8 @@ public class Level
 			};
 		s.GoldenTicketAwarded = GoldenTicketGoals.Current?.Awarded ?? false;
 		s.GoldenTickets = GoldenTicketGoals.Current?.Won.ToList() ?? new();
+		s.Researched = ItemResearch.Current?.Unlocked.ToList();
+		s.ResearchProgress = ItemResearch.Current?.CategoryProgress ?? new();
 
 		// Slot-menu metadata (T-061): an at-a-glance summary so the player can tell saves apart.
 		s.Meta = new SaveGame.MetaInfo
@@ -812,6 +823,8 @@ public class Level
 			&& Enum.TryParse<ChallengeManager.Phase>( cs.Phase, out var phase ) )
 			cm.RestoreState( phase, cs.ActiveIndex, cs.DaysLeft, cs.Progress, cs.Won, cs.Lost );
 		GoldenTicketGoals.Current?.RestoreAwarded( s.GoldenTicketAwarded, s.GoldenTickets );
+		if ( s.Researched != null )
+			ItemResearch.Current?.Restore( s.Researched, s.ResearchProgress );
 
 		Log.Info( $"[save] restored {s.Placements.Count} placement(s) + {s.Staff.Count} staff" );
 	}
@@ -977,6 +990,51 @@ public class Level
 		return new TileTrack( ride, prefix, grid, terrain, cost );
 	}
 
+	// What research an item needs: its .sam's Research.Group and Upgrades[0].CostOfResearch (group 0 / none: buildable
+	// from the start). Shops read their stall archive's .sam; staff need none.
+	private static (int Group, float Cost) ReadResearch( BuildCatalogItem item )
+	{
+		string? archive = item.RidePath ?? item.ShopPath ?? (item.Staff == null ? ShopBuilding.DefaultArchive( ShopKindOf( item.Name ), Current.Name ) : null);
+		if ( archive == null )
+			return (0, 0f);
+		try
+		{
+			var name = Path.GetFileName( archive );
+			var s = new SettingsFile( FileSystem.OpenRead( $"{archive}/{name}.sam" ) );
+			int group = int.TryParse( s["Research.Group"], out var g ) ? g : 0;
+			float cost = float.TryParse( s["Upgrades[0].CostOfResearch"], System.Globalization.NumberStyles.Float,
+				System.Globalization.CultureInfo.InvariantCulture, out var c ) ? c : 0f;
+			return (group, cost);
+		}
+		catch { return (0, 0f); }
+	}
+
+	// The level's item research (T-044 follow-up): every catalog item with its group + cost, the .sam's efforts and gates.
+	private static ItemResearch NewItemResearch( IEnumerable<BuildCatalogItem> catalog, SettingsFile standard )
+	{
+		var items = catalog.Where( c => c.Staff == null ).Select( c =>
+		{
+			var (group, cost) = ReadResearch( c );
+			return new ItemResearch.Item( c.Name, c.Category, group, cost, c.Label );
+		} );
+		var (effort, tech) = ItemResearch.LoadSettings( standard );
+		var research = new ItemResearch( items, effort, tech );
+		research.Researched += item =>
+		{
+			Log.Info( $"[research] researched {item.Title} ({item.Category})" );
+			if ( item.Category == BuildCategory.Rides )
+				ParkFinances.Current?.NoteRideResearched(); // challenge 16 "Research N new rides"
+			Advisor.Announce( item.Category switch
+			{
+				BuildCategory.Rides => "ResearchRideResearched",
+				BuildCategory.Shops => "ResearchShopResearched",
+				BuildCategory.Sideshows => "ResearchSideshowResearched",
+				_ => "ResearchFeatureResearched",
+			}, item.Title );
+		};
+		return research;
+	}
+
 	// The theme's buildable rides and sideshows by Info.Id → (localized) name, for challenges about one ride.
 	private static Dictionary<int, string> ThemeObjects( string theme )
 	{
@@ -1015,6 +1073,8 @@ public class Level
 		var fin = ParkFinances.Current;
 		if ( charge && fin != null && !fin.CanAfford( item.Cost ) )
 			return false;
+		if ( charge && ItemResearch.Current?.IsUnlocked( item.Name ) == false )
+			return false; // not researched yet (a loaded save rebuilds for free, whatever its research)
 
 		// Staff are mobile — hire + drop at the tile, no grid reservation.
 		if ( item.Staff is { } role )
@@ -1383,6 +1443,7 @@ public class Level
 		GoldenTicketGoals.Current = null;
 		WeatherSim.Current = null;
 		StaffStrikes.Current = null;
+		ItemResearch.Current = null;
 		QueuePieces.Reset();
 		arrivalBus = null;
 
@@ -1458,6 +1519,9 @@ public class Level
 			}
 		}
 		arrivalBus?.Update( Time.Delta, Time.Now );
+
+		// The scientists research new items; while a ride upgrade is being researched too, they split their time.
+		ItemResearch.Current?.Tick( Time.Delta, Staff.ResearchPower * (ResearchQueue.Active != null ? 0.5f : 1f) );
 		WeatherAudio.Update();                 // rain loop + thunder claps follow the weather (T-056)
 
 		// Diagnostic: periodically report the park's balance and the cumulative income/cost flows.
