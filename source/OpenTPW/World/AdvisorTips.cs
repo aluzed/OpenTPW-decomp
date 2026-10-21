@@ -58,6 +58,8 @@ public static class AdvisorTips
 		["PricingRestaurantTooCheap"] = "Your restaurant is very cheap — you could raise the price.",
 		["PricingShopsTooExpensive"] = "Your shops are too expensive.",
 		["PricingShopsTooCheap"] = "Your shops are cheap — you could raise the price.",
+		["PricingSideshowsTooExpensive"] = "Some of your sideshows are too expensive.",
+		["PricingSideshowsTooCheap"] = "Your sideshows are cheap — you could raise the price.",
 	};
 
 	// Advice id → TAG_SYSTEM.str entry with the same meaning (first line only: the challenge entries continue with
@@ -107,6 +109,7 @@ public static class AdvisorTips
 		["PricingShopsTooCheap"] = 101,
 		["PricingRestaurantTooExpensive"] = 102,
 		["PricingRestaurantTooCheap"] = 103,
+		["PricingSideshowsTooExpensive"] = 111, // (no "too cheap" sideshow line: the game speaks of prizes instead)
 	};
 
 	private static string[]? tagSystem;

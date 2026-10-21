@@ -111,14 +111,15 @@ public sealed class Peep : ModelEntity
 	private float prankTimer = PrankCheckSeconds;
 
 	// Stall-price verdicts since the advisor last looked, by AdvisorAdvice.PriceGroups.
-	private static int[] priceComplaints = new int[4], priceBargains = new int[4];
+	private static int[] priceComplaints = new int[5], priceBargains = new int[5];
+	private const int SideshowPriceGroup = 4; // AdvisorAdvice.PriceGroups "Sideshows"
 
 	/// <summary>The stall-price complaints / bargains counted since the last call, by price group (and reset).</summary>
 	public static (int[] Complaints, int[] Bargains) TakePriceVerdicts()
 	{
 		var taken = (priceComplaints, priceBargains);
-		priceComplaints = new int[4];
-		priceBargains = new int[4];
+		priceComplaints = new int[5];
+		priceBargains = new int[5];
 		return taken;
 	}
 
@@ -602,6 +603,23 @@ public sealed class Peep : ModelEntity
 			// A sideshow is pay-to-play with a chance of winning a prize (T-058); a normal ride takes a flat ticket.
 			if ( route.Ride.IsSideshow )
 			{
+				// A game priced far above its authored price is refused, like a stall (EntryFeeOpinion bands).
+				float priceMood = EntryFeeOpinion.StallPriceMood( route.Ride.TicketPrice, route.Ride.SideshowPrice, EntryFeeOpinion.Settings );
+				if ( float.IsNaN( priceMood ) )
+				{
+					happiness = MathF.Max( 0f, happiness - 15f );
+					StallsRefused++;
+					priceComplaints[SideshowPriceGroup]++;
+					route.Dequeue( this );
+					lastRoute = route;
+					route = null;
+					ResetPath();
+					PickRoute();
+					return;
+				}
+				happiness = Math.Clamp( happiness + priceMood, 0f, 100f );
+				if ( priceMood != 0f )
+					(priceMood < 0f ? priceComplaints : priceBargains)[SideshowPriceGroup]++;
 				if ( !TrySpend( route.Ride.TicketPrice ) ) // can't pay for a game → give up and go home
 				{
 					BeginLeaving();

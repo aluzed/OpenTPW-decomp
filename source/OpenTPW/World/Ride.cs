@@ -321,7 +321,9 @@ public class Ride : Entity
 	/// <see cref="SideshowEconomy"/>.</summary>
 	public (float Net, bool Won) PlaySideshow()
 	{
-		var result = SideshowEconomy.Play( SideshowPrice, SideshowCostOfGoods, SideshowChanceOfLoosing, sideshowRng.NextDouble() );
+		// The player's price (TicketPrice, what the visitor paid), not the authored one: a re-priced game used to
+		// take the visitor's new price but bank the old one.
+		var result = SideshowEconomy.Play( (int)MathF.Round( TicketPrice ), SideshowCostOfGoods, SideshowChanceOfLoosing, sideshowRng.NextDouble() );
 		if ( result.Won )
 		{
 			Log.Info( $"[sideshow] {Name}: a peep won! burst effect {sideshowWinEffect}" );

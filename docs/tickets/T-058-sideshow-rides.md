@@ -63,3 +63,10 @@ OpenTPW has only VM string stubs (`SideshowTakings`, `EventSideshowWin`); none a
 
 `source/OpenTPW/World/Level.cs` (catalog), `source/OpenTPW/World/Ride.cs` (or a `Sideshow` variant),
 `VM/Handlers/*` (sideshow-win/takings), tests for the takings logic.
+
+## Update (2026-10-21)
+
+A game's takings now use the player's price (`TicketPrice`, what the visitor pays) — they used the authored
+`InitPricePerUse` whatever the player set. Visitors judge a game's price against the authored one like a stall's
+(`EntryFeeOpinion.StallPriceMood`: ≥ 2× refused, > 1.25× grudging, ≤ 0.75× pleased), and the advisor's
+`PricingSideshowsTooExpensive` (TAG_SYSTEM 111) speaks when complaints pile up.

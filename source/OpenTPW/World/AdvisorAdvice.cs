@@ -44,7 +44,7 @@ public static class AdvisorAdvice
 	public const int GroupGeneral = 0, GroupTutorial = 1, GroupCongrats = 3, GroupResearch = 4;
 
 	/// <summary>The stall groups the original's price advice speaks about (TAG_SYSTEM.str 96–103), by index.</summary>
-	public static readonly string[] PriceGroups = { "Food", "Drinks", "Restaurant", "Shops" };
+	public static readonly string[] PriceGroups = { "Food", "Drinks", "Restaurant", "Shops", "Sideshows" };
 
 	/// <summary>The price-advice group of a sale (food stalls, drinks, restaurants, souvenir shops).</summary>
 	public static int PriceGroupOf( SaleCategory c ) => c switch

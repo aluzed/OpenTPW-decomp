@@ -223,7 +223,7 @@ public sealed class Advisor : Entity
 	// golden ticket is won / a challenge is won or lost (T-054/T-055), rather than re-firing while the state holds.
 	private bool prevTicketAwarded;
 	private int prevChallengesWon, prevChallengesLost;
-	private readonly float[] complaintTally = new float[4], bargainTally = new float[4];
+	private readonly float[] complaintTally = new float[5], bargainTally = new float[5];
 	private const float PriceVerdictMemory = 30f; // seconds for a price verdict to fade (e-folding)
 
 	private ParkSnapshot BuildSnapshot()
