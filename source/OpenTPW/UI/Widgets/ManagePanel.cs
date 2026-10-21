@@ -16,6 +16,10 @@ internal sealed class ManagePanel : HudPanel
 	private const float RideY = 22f;  // bottom of the ride row buttons
 	private const float BtnH = 26f;
 
+	// The game's own words where UITEXT.str has them ("Price", "Available Loans"), in the selected language.
+	private static string PriceLabel => Localization.Get( UIStrings.Price, "Price" ).ToUpperInvariant();
+	private static string LoansLabel => Localization.Get( UIStrings.GraphAvailableLoans, "Loans" );
+
 	private static Texture? bg, normal, disabled, warn, research;
 	private static Texture Bg => bg ??= Solid( 18, 18, 28, 190 );
 	private static Texture Normal => normal ??= Solid( 58, 58, 92, 230 );
@@ -53,7 +57,7 @@ internal sealed class ManagePanel : HudPanel
 			() => fin.EntryFee += 1f ) );
 		// The bank (T-042): the level's loan offers live in the LoanPanel list (they don't fit as one button each).
 		list.Add( new Btn( new Rectangle( 152f, EconY, 160f, BtnH ),
-			fin.Debt > 0 ? $"LOANS (owe ${fin.Debt / 1000f:0.0}k)" : "LOANS", true,
+			fin.Debt > 0 ? $"{LoansLabel} (${fin.Debt / 1000f:0.0}k)" : LoansLabel, true,
 			() => LoanPanel.Current?.Toggle(), Warned: fin.Debt > 0 ) );
 
 		// Selected-ride row (only when a ride is selected via the Default tool).
@@ -62,9 +66,9 @@ internal sealed class ManagePanel : HudPanel
 			// Only sideshows charge (the price of a game); rides are free in TPW.
 			if ( ride.IsSideshow )
 			{
-				list.Add( new Btn( new Rectangle( 16f, RideY, 64f, BtnH ), "PRICE-", ride.TicketPrice > 1f,
+				list.Add( new Btn( new Rectangle( 16f, RideY, 64f, BtnH ), $"{PriceLabel} -", ride.TicketPrice > 1f,
 					() => ride.TicketPrice = System.Math.Max( 1f, ride.TicketPrice - 1f ) ) );
-				list.Add( new Btn( new Rectangle( 84f, RideY, 88f, BtnH ), $"PRICE+ {ride.TicketPrice:0}", true,
+				list.Add( new Btn( new Rectangle( 84f, RideY, 88f, BtnH ), $"{PriceLabel} + {ride.TicketPrice:0}", true,
 					() => ride.TicketPrice += 1f ) );
 			}
 			list.Add( ResearchButton( fin, ride ) );
@@ -77,9 +81,9 @@ internal sealed class ManagePanel : HudPanel
 		{
 			if ( !shop.IsFree )
 			{
-				list.Add( new Btn( new Rectangle( 16f, RideY, 64f, BtnH ), "PRICE-", shop.Price > 1f,
+				list.Add( new Btn( new Rectangle( 16f, RideY, 64f, BtnH ), $"{PriceLabel} -", shop.Price > 1f,
 					() => shop.Price = System.Math.Max( 1f, shop.Price - 1f ) ) );
-				list.Add( new Btn( new Rectangle( 84f, RideY, 88f, BtnH ), $"PRICE+ {shop.Price:0}", true,
+				list.Add( new Btn( new Rectangle( 84f, RideY, 88f, BtnH ), $"{PriceLabel} + {shop.Price:0}", true,
 					() => shop.Price += 1f ) );
 			}
 			list.Add( new Btn( new Rectangle( 192f, RideY, 230f, BtnH ),
