@@ -2,7 +2,7 @@
 
 - **Priority**: 🟡 Feature
 - **Type**: Engine / UI
-- **Status**: ⚠️ Core done — `GoldenTicketLocal.*` targets parse from `Standard.sam`; a pure `GoldenTicket`
+- **Status**: ✅ Done (2026-10-21) — previously ⚠️ Core done — `GoldenTicketLocal.*` targets parse from `Standard.sam`; a pure `GoldenTicket`
   evaluator + `GoldenTicketGoals` manager track the live park (visitors / in-park / happiness / happy-people /
   profit-per-year / **recent-visitors-over-a-months-window**, on `GameClock.OnNewDay`) and award the ticket
   once all set targets are met; the HUD shows `TICKET GOALS n/N` → `GOLDEN TICKET WON!`. Unit-tested, verified
@@ -61,3 +61,15 @@ OpenTPW reads them.
 Winning the golden ticket now makes every ride launch a firework (`Ride.Celebrate()` → `P_EFFECT_FW1explosion`,
 rendered by the new particle sprites, T-066). Not seen in-game yet: a 200 s autoplace run met 4/6 goals (the
 15 000/year profit is far off). A visitor counts as "happy" over **66**: the game's own happy band, reversed from its park-happiness gauge (`FUN_004a52a0` shows `FUN_004c9670(0x42)` — the % of visitors over 66 — against `FUN_004c9750(0x21)`, the % under 33). It was an approximate 50.
+
+## A golden ticket per goal (2026-10-21, night)
+
+The original awards a golden ticket for **each** goal the first time it is met — TAG_SYSTEM 180–189 are one
+announcement per goal ("YOU'VE WON A GOLDEN TICKET! Congratulations! You've won a golden ticket for getting " + N +
+…, "…for having a high level of visitor happiness") — not a single ticket once everything is met. `GoldenTicketGoals`
+now does that: each goal met awards its ticket (logged, fireworks from every ride, and the game's banner for 9 s —
+`GoldenTicketPanel`), the tickets are saved, and "every level goal met" stays the level win. Two
+`GoldenTicketGlobal.*` tickets are awarded too: a water ride of `WaterLength` (50) cells of track (188, possible now
+that water rides are built from pieces, T-045) and the **secret** one for `MinCellsCovered` (2000) map cells watched
+by security cameras (190, T-077). `CoasterHeight`, `GokartExcitement`, `MinCellsOwned` (land buying) stay out — the
+park doesn't model them. The HUD reads "GOLDEN TICKETS n (goals m/6)".

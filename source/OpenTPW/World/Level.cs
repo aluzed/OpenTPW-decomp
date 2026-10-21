@@ -223,7 +223,7 @@ public class Level
 		catch ( Exception e ) { Log.Warning( $"[peep] decision weights load failed: {e.Message}" ); }
 
 		// Golden-ticket goals (T-055): the level win condition; re-evaluate daily, award once all are met.
-		var goals = new GoldenTicketGoals( GoldenTicketTargets.ParseLocal( standard ) );
+		var goals = new GoldenTicketGoals( GoldenTicketTargets.ParseLocal( standard ), GoldenTicketGlobals.Parse( standard ) );
 		GoldenTicketGoals.Current = goals;
 		GameClock.Current.OnNewDay += goals.Evaluate;
 
@@ -700,6 +700,7 @@ public class Level
 				DaysLeft = cm.DaysLeft, Progress = cm.Progress, Won = cm.Won, Lost = cm.Lost,
 			};
 		s.GoldenTicketAwarded = GoldenTicketGoals.Current?.Awarded ?? false;
+		s.GoldenTickets = GoldenTicketGoals.Current?.Won.ToList() ?? new();
 
 		// Slot-menu metadata (T-061): an at-a-glance summary so the player can tell saves apart.
 		s.Meta = new SaveGame.MetaInfo
@@ -810,7 +811,7 @@ public class Level
 		if ( s.Challenge is { } cs && ChallengeManager.Current is { } cm
 			&& Enum.TryParse<ChallengeManager.Phase>( cs.Phase, out var phase ) )
 			cm.RestoreState( phase, cs.ActiveIndex, cs.DaysLeft, cs.Progress, cs.Won, cs.Lost );
-		GoldenTicketGoals.Current?.RestoreAwarded( s.GoldenTicketAwarded );
+		GoldenTicketGoals.Current?.RestoreAwarded( s.GoldenTicketAwarded, s.GoldenTickets );
 
 		Log.Info( $"[save] restored {s.Placements.Count} placement(s) + {s.Staff.Count} staff" );
 	}
@@ -1302,6 +1303,7 @@ public class Level
 			Hud.AddChild( new LoanPanel() );      // L / LOANS: the level's loan offers (T-042)
 			Hud.AddChild( new ThemePanel() );     // F12 theme picker (jungle/hallow/fantasy/space) (T-062)
 			Hud.AddChild( new ChallengePanel() ); // offered / running / finished challenge, ACCEPT / DECLINE (T-054)
+			Hud.AddChild( new GoldenTicketPanel() ); // each golden ticket's announcement (T-055)
 			Hud.AddChild( new BankruptPanel() );  // six months in the red: the end screen + Restart Park (T-042)
 		}
 		else

@@ -114,7 +114,7 @@ internal sealed class ParkStatsPanel : HudPanel
 
 		// Golden-ticket goals (T-055): the level win condition — goals met, or the win banner.
 		if ( GoldenTicketGoals.Current is { } gt && gt.Total > 0 )
-			lines.Add( gt.Awarded ? "GOLDEN TICKET WON!" : $"TICKET GOALS {gt.Met}/{gt.Total}" );
+			lines.Add( gt.Awarded ? $"ALL LEVEL GOALS MET!  GOLDEN TICKETS {gt.Won.Count}" : $"GOLDEN TICKETS {gt.Won.Count}  (goals {gt.Met}/{gt.Total})" );
 		if ( fin.Debt > 0 )
 			AddLine( $"DEBT {fin.Debt:0}  (L loans, K repay)", "b_loan" );
 		else

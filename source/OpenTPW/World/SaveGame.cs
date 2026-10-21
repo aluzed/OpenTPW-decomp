@@ -26,6 +26,7 @@ public sealed class SaveGame
 	public List<TileTrackState> TileTracks { get; set; } = new(); // player-built coaster tracks (one per coaster)
 	public ChallengeState? Challenge { get; set; }    // active/offered challenge progress (null = none)
 	public bool GoldenTicketAwarded { get; set; }     // the level-win flag (T-055), so a won park stays won
+	public List<string> GoldenTickets { get; set; } = new(); // the golden tickets won, by goal (T-055)
 	public MetaInfo? Meta { get; set; }               // at-a-glance slot summary (T-061; null on pre-Meta saves)
 
 	public sealed class LoanState
