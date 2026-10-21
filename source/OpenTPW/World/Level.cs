@@ -136,6 +136,8 @@ public class Level
 		// In-game calendar (T-053): the single time source; finances settle once per in-game month.
 		GameClock.Current = new GameClock();
 		GameClock.Current.OnNewMonth += ParkFinances.Current.SettleMonth;
+		if ( Environment.GetEnvironmentVariable( "OPENTPW_BANKRUPT_DEMO" ) != null )
+			ParkFinances.Current.ForceBankrupt();
 
 		// Challenges (T-054): load the level's goals, keep the ones we can track, run them on the daily clock.
 		try
@@ -1124,6 +1126,7 @@ public class Level
 			Hud.AddChild( new SavePanel() );      // F8 save/load slot menu with park summaries (T-061)
 			Hud.AddChild( new LoanPanel() );      // L / LOANS: the level's loan offers (T-042)
 			Hud.AddChild( new ThemePanel() );     // F12 theme picker (jungle/hallow/fantasy/space) (T-062)
+			Hud.AddChild( new BankruptPanel() );  // six months in the red: the end screen + Restart Park (T-042)
 		}
 		else
 		{

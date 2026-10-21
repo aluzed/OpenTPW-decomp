@@ -172,6 +172,13 @@ public sealed class ParkFinances
 
 	public const int BankruptMonths = 6;
 
+	/// <summary>Dev (<c>OPENTPW_BANKRUPT_DEMO</c>): put the park straight into bankruptcy to exercise the end screen.</summary>
+	internal void ForceBankrupt()
+	{
+		Money = MathF.Min( Money, -1f );
+		MonthsInRed = BankruptMonths;
+	}
+
 	/// <summary>Take a loan: principal is credited now, repaid (principal + simple APR interest) over its period.</summary>
 	public void TakeLoan( int index )
 	{

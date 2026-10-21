@@ -136,7 +136,11 @@ public static class AdvisorTips
 	}
 
 	// TAG_SYSTEM.str entry `index`, first line, trimmed; null when unavailable.
-	private static string? GameMessage( int index )
+	private static string? GameMessage( int index ) => GameMessageLines( index )?[0];
+
+	/// <summary>Every line of <c>TAG_SYSTEM.str</c> entry <paramref name="index"/>, trimmed (the game separates a
+	/// message's paragraphs with line breaks); null when unavailable.</summary>
+	public static string[]? GameMessageLines( int index )
 	{
 		if ( tagSystem == null )
 		{
@@ -145,7 +149,7 @@ public static class AdvisorTips
 		}
 		if ( index < 0 || index >= tagSystem.Length || string.IsNullOrWhiteSpace( tagSystem[index] ) )
 			return null;
-		return tagSystem[index].Split( '\n' )[0].Trim();
+		return tagSystem[index].Split( '\n' ).Select( l => l.Trim() ).Where( l => l.Length > 0 ).ToArray();
 	}
 
 	/// <summary>Whether a tip id has authored text (vs. the generic fallback) — for tests.</summary>

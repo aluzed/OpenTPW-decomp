@@ -14,7 +14,7 @@
 - **Admission fee** (`ParkFinances.EntryFee` settable): `[`/`]` adjust the gate fee.
 - **Loans** (`ParkFinances.Loan`): two offers (principal + APR); `L` takes the small loan (cash in,
   outstanding = principal × (1+APR), 12 monthly instalments), `K` repays it in full. `Tick(dt)` debits
-  monthly instalments (one "month" = 8 s) and sets the **Bankrupt** flag below −5000.
+  monthly instalments (one "month" = 8 s at the time; the original pace since T-076) and sets the **Bankrupt** flag below −5000.
 - **HUD** (`ParkStatsPanel`): ADMISSION, DEBT/LOAN, selected RIDE + price, and a BANKRUPT line.
 - **Verified in-game**: `L` → DEBT 5500 (5000 × 1.10) + money +5000; over ~10 s the monthly instalments
   dropped DEBT 5500 → 3208. Admission/price use the same proven key-binding path as the loan key.
@@ -103,3 +103,11 @@ Bankruptcy follows the game's rule — six months running in the red (TAG_SYSTEM
 balance that could bankrupt a park in its first month; the advisor's escalation is 1 / 3 / 5 months (123/125/126) then
 `Bankrupted` (127). Bankruptcy closes the gates for good ("the banks have closed your park"; visitors inside finish
 their day); a game-over / restart screen is still to do.
+
+## The bankrupt end screen (2026-10-21)
+
+When the park goes bankrupt its gates close and `BankruptPanel` shows the game's own message (TAG_SYSTEM 127, in the
+selected language: "You have been in the red for six months, so the banks have closed your park and declared you
+bankrupt. / Click the tick button to restart this park.") with a **Restart Park** button (UITEXT 10) that rebuilds
+the park from scratch (`Level.RequestReload` of the same world). `OPENTPW_BANKRUPT_DEMO=1` starts a park bankrupt to
+exercise it. Verified in game (click → "[level] reloading park → jungle").
