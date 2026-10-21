@@ -600,26 +600,29 @@ public sealed class Peep : ModelEntity
 	// urgency (need ÷ its threshold) descending — or null if no need is pressing / no matching stall exists.
 	private Shop? NeedDetour()
 	{
-		Span<(float Urgency, ShopKind Kind)> needs =
-		[
+		// Every stall serving a need that has passed its threshold is a candidate, scored by the authored need
+		// weights against the walk (NeedChoiceScorer, T-060).
+		var candidates = new List<(ShopKind Kind, float Urgency, float Distance)>();
+		var stalls = new List<Shop>();
+		foreach ( var (urgency, kind) in new[]
+		{
 			(bladder / BladderThreshold, ShopKind.Toilet),
 			(thirst / ThirstThreshold, ShopKind.Drink),
 			(hunger / HungerThreshold, ShopKind.Food),
-		];
-
-		Shop? best = null;
-		float bestUrgency = 1f; // must be over threshold (urgency ≥ 1) to bother
-		foreach ( var (urgency, kind) in needs )
+		} )
 		{
-			if ( urgency < bestUrgency )
+			if ( urgency < 1f )
 				continue;
-			if ( Shop.Nearest( kind, Position ) is { } stall )
-			{
-				best = stall;
-				bestUrgency = urgency;
-			}
+			foreach ( var stall in Shop.Stalls )
+				if ( stall.Kind == kind )
+				{
+					candidates.Add( (kind, urgency, (stall.Position - Position).Length) );
+					stalls.Add( stall );
+				}
 		}
-		return best;
+
+		int best = NeedChoiceScorer.Choose( candidates, NeedChoiceScorer.Weights, RideChoiceScorer.Weights.Distance );
+		return best >= 0 ? stalls[best] : null;
 	}
 
 	// Act of vandalism: scatter a couple of pieces of litter around the peep (a mess a handyman must then

@@ -52,3 +52,12 @@ heuristic with it would make crowd flow read like the real game.
 
 `source/OpenTPW/World/RideChoiceScorer.cs` (new), `Peep.cs` (`PickRoute`), balance-key parsing in `Level`,
 `source/OpenTPW.Tests/RideChoiceScorerTests.cs` (new).
+
+## 2026-10-21 — need weights now steer shops
+
+`NeedChoiceScorer` (+ `NeedWeights` from `PeepInfo.DecisionVar{Thirst,Hunger,Toilet}Weight`): every stall serving
+a need past its threshold scores `needWeight · urgency − distanceWeight · distance / 200`, best wins — replacing
+"nearest stall of the single most urgent need". Unit-tested (`NeedChoiceScorerTests`). A 130 s autoplace session
+stays in the same range (shops $408 vs $472, toilet visits 48 vs 59); single runs are noisy (vandalism 29 vs 0
+in the previous run), so balance wasn't re-tuned. Illness weight (`DecisionVarIllnessWeight`) has no
+illness/first-aid model to drive yet.

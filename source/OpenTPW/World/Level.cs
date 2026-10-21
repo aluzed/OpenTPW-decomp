@@ -138,6 +138,7 @@ public class Level
 		{
 			var peepSam = new SettingsFile( "/levels/Standard.sam" );
 			RideChoiceScorer.Weights = DecisionWeights.Load( peepSam );
+			NeedChoiceScorer.Weights = NeedWeights.Load( peepSam );
 			PeepTypes.Preferences = PeepTypes.Load( peepSam );
 		}
 		catch ( Exception e ) { Log.Warning( $"[peep] decision weights load failed: {e.Message}" ); }

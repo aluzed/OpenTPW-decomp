@@ -5,8 +5,8 @@ namespace OpenTPW;
 /// <summary>The authored ride-choice decision weights (T-060), from <c>PeepInfo.DecisionVar*</c> in
 /// <c>levels/Standard.sam</c>: how much distance / queue length / excitement pull a peep's ride choice, plus
 /// the "new ride" bonus (<c>DecisionVariable2</c> multiplier while a ride is younger than
-/// <c>DecisionVariable1</c> days). The need weights (thirst/hunger/…) steer toward shops, not rides, so they
-/// aren't part of the ride scorer.</summary>
+/// <c>DecisionVariable1</c> days). The need weights (thirst/hunger/…) steer toward shops, not rides — see
+/// <see cref="NeedChoiceScorer"/>.</summary>
 public readonly record struct DecisionWeights( float Distance, float Queue, float Excitement, float NewRideMultiplier, int NewRideDays )
 {
 	/// <summary>The shipped jungle defaults (dist 1, queue 1, excitement 1, new×5 for 7 days).</summary>
@@ -23,6 +23,59 @@ public readonly record struct DecisionWeights( float Distance, float Queue, floa
 			Excitement: G( "DecisionVarExcitementWeight", 1f ),
 			NewRideMultiplier: G( "DecisionVariable2", 5f ),
 			NewRideDays: (int)G( "DecisionVariable1", 7f ) );
+	}
+}
+
+/// <summary>The authored need weights (T-060), from <c>PeepInfo.DecisionVar{Thirst,Hunger,Toilet}Weight</c> in
+/// <c>levels/Standard.sam</c> (2 / 2 / 2 shipped): how strongly each pressing need pulls a peep toward a stall,
+/// traded against the walk (<see cref="DecisionWeights.Distance"/>).</summary>
+public readonly record struct NeedWeights( float Thirst, float Hunger, float Toilet )
+{
+	public static NeedWeights Defaults => new( 2f, 2f, 2f );
+
+	public static NeedWeights Load( SettingsFile sam )
+	{
+		float G( string key, float fallback )
+			=> float.TryParse( sam[$"PeepInfo.{key}"], NumberStyles.Float, CultureInfo.InvariantCulture, out var v ) ? v : fallback;
+		return new NeedWeights( G( "DecisionVarThirstWeight", 2f ), G( "DecisionVarHungerWeight", 2f ), G( "DecisionVarToiletWeight", 2f ) );
+	}
+
+	public float For( ShopKind kind ) => kind switch { ShopKind.Drink => Thirst, ShopKind.Toilet => Toilet, _ => Hunger };
+}
+
+/// <summary>
+/// Which stall a peep with pressing needs heads for (T-060). Each stall serving a need whose urgency (level ÷
+/// threshold) has reached 1 scores <c>needWeight · urgency − distanceWeight · distance / RefDistance</c>, and the
+/// best wins — so a peep that is both thirsty and hungry weighs the two against where the stalls are, instead of
+/// always walking to the nearest stall of its single most urgent need. Pure (unit-tested).
+/// </summary>
+public static class NeedChoiceScorer
+{
+	public static NeedWeights Weights { get; set; } = NeedWeights.Defaults;
+
+	private const float RefDistance = 200f; // same scale as RideChoiceScorer
+
+	public static float Score( float urgency, float distance, float needWeight, float distanceWeight ) =>
+		needWeight * urgency - distanceWeight * (distance / RefDistance);
+
+	/// <summary>Index of the best (kind, urgency, distance) candidate, or -1 when no need has reached its threshold.</summary>
+	public static int Choose( IReadOnlyList<(ShopKind Kind, float Urgency, float Distance)> candidates, NeedWeights needs, float distanceWeight )
+	{
+		int best = -1;
+		float bestScore = float.MinValue;
+		for ( int i = 0; i < candidates.Count; i++ )
+		{
+			var (kind, urgency, distance) = candidates[i];
+			if ( urgency < 1f )
+				continue;
+			float score = Score( urgency, distance, needs.For( kind ), distanceWeight );
+			if ( score > bestScore )
+			{
+				best = i;
+				bestScore = score;
+			}
+		}
+		return best;
 	}
 }
 
