@@ -11,6 +11,10 @@ public class BuildCameraMode : CameraMode
 	/// <summary>The ground point the camera looks at; panning moves this.</summary>
 	public static Vector3 Focus = new();
 
+	/// <summary>Where <see cref="Focus"/> may go (world XY min/max) — the park plus a margin, so panning can't wander
+	/// off into the void. Null = unbounded (set by the level).</summary>
+	public static (Vector2 Min, Vector2 Max)? Bounds { get; set; }
+
 	private const float Pitch = 48f;       // degrees looking down (a park view that shows the rides in profile)
 	private const float MinDist = 90f, MaxDist = 700f;
 
@@ -55,6 +59,9 @@ public class BuildCameraMode : CameraMode
 			dragAnchor = Input.Mouse.Position;
 		}
 		wasRight = Input.Mouse.Right;
+
+		if ( Bounds is { } b )
+			Focus = new Vector3( Math.Clamp( Focus.X, b.Min.X, b.Max.X ), Math.Clamp( Focus.Y, b.Min.Y, b.Max.Y ), Focus.Z );
 
 		Position = Focus - dir * distance;
 		FieldOfView = 55f;

@@ -223,6 +223,9 @@ public class Level
 		// on jungle (T-072).
 		var (openX, openY) = grid.FindOpenAnchor();
 		BuildCameraMode.Focus = grid.TileToWorld( openX, openY ).WithZ( 0 );
+		const float CameraMargin = 120f; // world units beyond the park edge the camera may look at
+		BuildCameraMode.Bounds = (new Vector2( grid.Origin.X - CameraMargin, grid.Origin.Y - CameraMargin ),
+			new Vector2( grid.Origin.X + grid.Width * grid.TileSize + CameraMargin, grid.Origin.Y + grid.Height * grid.TileSize + CameraMargin ));
 		Camera.SetCameraMode<BuildCameraMode>();
 
 		// Build mode (T-041): an empty park the player fills via the catalog (number keys pick an item,
