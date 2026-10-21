@@ -27,16 +27,32 @@ public sealed class ParkGround
 	public float Width { get; }
 	public float Depth { get; }
 
-	public ParkGround( string terrainPath )
+	private readonly LndImage blendMap;
+
+	/// <summary>
+	/// True where the blend map has no ground (alpha below half) — the river, lake and entrance holes the scenery
+	/// meshes fill — or outside the map. World XY in, from the map's (0,0) corner.
+	/// </summary>
+	public bool IsScenery( float x, float y )
+	{
+		int px = (int)MathF.Floor( x / UnitsPerMapPixel );
+		int py = (int)MathF.Floor( (Depth - y) / UnitsPerMapPixel );
+		if ( px < 0 || py < 0 || px >= blendMap.Width || py >= blendMap.Height )
+			return true;
+		return blendMap.At( px, py ) < 128;
+	}
+
+	public ParkGround( string terrainPath, ParkTerrain? scenery = null )
 	{
 		LndFile lnd;
 		using ( var stream = FileSystem.OpenRead( $"{terrainPath}/base.lnd" ) )
 			lnd = new LndFile( stream );
+		blendMap = scenery != null ? FillUncoveredHoles( lnd.BlendMap, scenery.Triangles ) : lnd.BlendMap;
 		Width = lnd.BlendMap.Width * UnitsPerMapPixel;
 		Depth = lnd.BlendMap.Height * UnitsPerMapPixel;
 
 		int w = (int)(Width * OutputPixelsPerUnit), h = (int)(Depth * OutputPixelsPerUnit);
-		var texture = new Texture( Compose( lnd, w, h ), w, h );
+		var texture = new Texture( Compose( blendMap, lnd.Levels[0], w, h ), w, h );
 		Log.Info( $"[ground] {terrainPath}/base.lnd: {Width:0}×{Depth:0} units, composed {w}×{h}" );
 
 		var material = new Material<ObjectUniformBuffer>( "content/shaders/test.shader", MaterialFlags.DoubleSided );
@@ -69,10 +85,12 @@ public sealed class ParkGround
 	/// alpha is the map's ground mask, so the scenery holes stay transparent.
 	/// The exact original blend (it also has 7 masks, not used here) is still to be reversed.
 	/// </summary>
-	public static byte[] Compose( LndFile lnd, int width, int height )
+	public static byte[] Compose( LndFile lnd, int width, int height ) => Compose( lnd.BlendMap, lnd.Levels[0], width, height );
+
+	/// <inheritdoc cref="Compose(LndFile, int, int)"/>
+	public static byte[] Compose( LndImage map, LndLevel level, int width, int height )
 	{
-		var map = lnd.BlendMap;
-		var tex = lnd.Levels[0].Textures;
+		var tex = level.Textures;
 		float worldW = map.Width * UnitsPerMapPixel, worldH = map.Height * UnitsPerMapPixel;
 		var rgba = new byte[width * height * 4];
 		Span<float> weight = stackalloc float[4];
@@ -121,6 +139,47 @@ public sealed class ParkGround
 		}
 
 		return rgba;
+	}
+
+	/// <summary>
+	/// A copy of <paramref name="map"/> where every ground hole (alpha below half) that no scenery triangle covers
+	/// is turned back into ground (alpha 255). Some holes — the thin arms of the jungle river — have no mesh over
+	/// them, so drawing them as holes shows the sky through the park (T-072). Triangles are world XY.
+	/// </summary>
+	public static LndImage FillUncoveredHoles( LndImage map, IEnumerable<(System.Numerics.Vector2 A, System.Numerics.Vector2 B, System.Numerics.Vector2 C)> triangles )
+	{
+		float depth = map.Height * UnitsPerMapPixel;
+		var covered = new bool[map.Width * map.Height];
+		foreach ( var (a, b, c) in triangles )
+		{
+			// To map pixel space (row 0 = max Y).
+			System.Numerics.Vector2 P( System.Numerics.Vector2 v ) => new( v.X / UnitsPerMapPixel, (depth - v.Y) / UnitsPerMapPixel );
+			var (pa, pb, pc) = (P( a ), P( b ), P( c ));
+			int x0 = Math.Max( 0, (int)MathF.Floor( MathF.Min( pa.X, MathF.Min( pb.X, pc.X ) ) ) );
+			int x1 = Math.Min( map.Width - 1, (int)MathF.Floor( MathF.Max( pa.X, MathF.Max( pb.X, pc.X ) ) ) );
+			int y0 = Math.Max( 0, (int)MathF.Floor( MathF.Min( pa.Y, MathF.Min( pb.Y, pc.Y ) ) ) );
+			int y1 = Math.Min( map.Height - 1, (int)MathF.Floor( MathF.Max( pa.Y, MathF.Max( pb.Y, pc.Y ) ) ) );
+			for ( int y = y0; y <= y1; y++ )
+				for ( int x = x0; x <= x1; x++ )
+					if ( !covered[y * map.Width + x] && Inside( new( x + 0.5f, y + 0.5f ), pa, pb, pc ) )
+						covered[y * map.Width + x] = true;
+		}
+
+		var pixels = (byte[])map.Pixels.Clone();
+		for ( int i = 0; i < covered.Length; i++ )
+			if ( pixels[i * 4] < 128 && !covered[i] )
+				pixels[i * 4] = 255;
+		return map with { Pixels = pixels };
+	}
+
+	// Point-in-triangle, either winding (edges on the boundary count as inside).
+	private static bool Inside( System.Numerics.Vector2 p, System.Numerics.Vector2 a, System.Numerics.Vector2 b, System.Numerics.Vector2 c )
+	{
+		static float Cross( System.Numerics.Vector2 o, System.Numerics.Vector2 u, System.Numerics.Vector2 v ) =>
+			(u.X - o.X) * (v.Y - o.Y) - (u.Y - o.Y) * (v.X - o.X);
+		float d1 = Cross( a, b, p ), d2 = Cross( b, c, p ), d3 = Cross( c, a, p );
+		bool neg = d1 < 0 || d2 < 0 || d3 < 0, pos = d1 > 0 || d2 > 0 || d3 > 0;
+		return !(neg && pos);
 	}
 
 	private static int Wrap( int v, int n ) => ((v % n) + n) % n;

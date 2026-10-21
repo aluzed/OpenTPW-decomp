@@ -100,7 +100,8 @@ public class Level
 
 		// The park floor (T-071) lives in base.lnd, not in the terrain mesh. Best-effort: without it the scenery
 		// still loads, only the ground is missing.
-		try { _ = new ParkGround( $"levels/{Current.Name}/terrain" ); }
+		ParkGround? ground = null;
+		try { ground = new ParkGround( $"levels/{Current.Name}/terrain", terrain ); }
 		catch ( Exception e ) { Log.Warning( $"[ground] {e.Message}" ); }
 
 		// The park starts with a budget; peeps pay a gate fee + ride tickets, rides cost upkeep (see Ride / Peep).
@@ -174,19 +175,32 @@ public class Level
 		}
 		DayNightCycle.Reset( Time.Now ); // start the visual day/night cycle at midday for this park
 		WeatherAudio.Reset();            // silence any rain loop carried over from a previous park
-		var centre = terrain.Centroid;
-		var grid = PlacementGrid.FromLevelSettings( standard, tileSize: 16f, worldCenter: new Vector3( centre.X, centre.Y, 0 ) );
+		var grid = PlacementGrid.FromLevelSettings( standard );
 
-		// Flag low terrain as water so peeps route around lakes/moats and nothing is built on them (T-050).
-		// Water level = a little above the terrain's lowest point (the dev park has no explicit water plane).
-		var waterLevel = terrain.Min.Z + (terrain.Max.Z - terrain.Min.Z) * 0.08f;
-		var waterTiles = grid.MarkWaterFromTerrain( terrain.SampleHeight, waterLevel );
-		Log.Info( $"[park] water tiles: {waterTiles}/{grid.Width * grid.Height} (level z={waterLevel:0.0})" );
+		// Scenery (T-072): where base.lnd has no ground, the terrain meshes take over — the river and lake become
+		// water (impassable, unbuildable; T-050), the gate + forecourt connected to the entrance tile a walkable
+		// reserved path. Without a ground layer, fall back to flagging low terrain as water.
+		var (gateTileX, gateTileY) = ReadEntranceTile( standard );
+		if ( ground != null )
+		{
+			var (waterTiles, entranceTiles) = grid.MarkScenery(
+				( tx, ty ) => { var c = grid.TileToWorld( tx, ty ); return ground.IsScenery( c.X, c.Y ); },
+				((int)gateTileX, (int)gateTileY) );
+			Log.Info( $"[park] scenery: {waterTiles} water + {entranceTiles} entrance tiles of {grid.Width * grid.Height}" );
+		}
+		else
+		{
+			var waterLevel = terrain.Min.Z + (terrain.Max.Z - terrain.Min.Z) * 0.08f;
+			var waterTiles = grid.MarkWaterFromTerrain( terrain.SampleHeight, waterLevel );
+			Log.Info( $"[park] water tiles: {waterTiles}/{grid.Width * grid.Height} (level z={waterLevel:0.0})" );
+		}
 
 		var pathGraph = new PathGraph( grid ); // peeps route around ride/shop footprints + water (T-036/T-050)
 
-		// Player-controlled build/manage camera focused on the park centroid (T-040).
-		BuildCameraMode.Focus = new Vector3( centre.X, centre.Y, centre.Z );
+		// Player-controlled build/manage camera (T-040), framing the biggest open lawn — the park's middle is a river
+		// on jungle (T-072).
+		var (openX, openY) = grid.FindOpenAnchor();
+		BuildCameraMode.Focus = grid.TileToWorld( openX, openY ).WithZ( 0 );
 		Camera.SetCameraMode<BuildCameraMode>();
 
 		// Build mode (T-041): an empty park the player fills via the catalog (number keys pick an item,
@@ -203,7 +217,8 @@ public class Level
 		// Diagnostic: deterministically exercise the placement pipeline (the same path a click commits).
 		if ( Environment.GetEnvironmentVariable( "OPENTPW_AUTOPLACE" ) != null )
 		{
-			int cx = grid.Width / 2, cy = grid.Height / 2;
+			int cx = openX, cy = openY; // the open lawn, not the grid centre (which may be water — T-072)
+			Log.Info( $"[build] autoplace anchor: tile ({cx},{cy}) — the biggest open lawn" );
 			BuildCatalogItem Item( string name ) => catalog.First( c => c.Name == name );
 
 			// Car demo: place the theme's circuit vehicles (tour ride + go-karts, whichever this theme ships) at
@@ -289,7 +304,11 @@ public class Level
 			// Car rides (T-032): place a tour ride + go-karts + bumpers and confirm each gets a moving
 			// RideVehicle. The bumper drives the arena collision sim (CarSim), the others the circuit loop.
 			foreach ( var (carName, ctx, cty) in new[] { ("tourride", cx - 12, cy + 2), ("gokarts", cx - 12, cy + 8), ("bumper", cx + 9, cy - 6) } )
-				if ( CommitPlacement( Item( carName ), grid, terrain, ctx, cty ) )
+				// Free (charge: false): this diagnostic runs after the main autoplace has spent the starting cash, which
+				// used to make all three placements fail silently.
+				if ( !CommitPlacementNear( Item( carName ), grid, terrain, ctx, cty, charge: false ) )
+					Log.Info( $"[build] car-test: {carName} found no free spot near tile ({ctx},{cty})" );
+				else
 				{
 					var car = Entity.All.OfType<Ride>().Last();
 					Log.Info( $"[build] car-test: {carName} isCarRide={car.IsCarRide} isBumper={car.IsBumperRide} vehicle={(car.Vehicle != null)}" );
@@ -724,6 +743,18 @@ public class Level
 		}
 		if ( charge ) fin?.PayBuild( item.Cost );
 		return true;
+	}
+
+	// Autoplace helper: CommitPlacement at the first tile that fits, in Chebyshev rings out from (tx,ty), so a demo
+	// layout survives a theme or grid whose exact spot is taken (river, a queue path…) instead of silently dropping.
+	private static bool CommitPlacementNear( BuildCatalogItem item, PlacementGrid grid, ParkTerrain terrain, int tx, int ty, int radius = 12, bool charge = true )
+	{
+		for ( int r = 0; r <= radius; r++ )
+			for ( int dy = -r; dy <= r; dy++ )
+				for ( int dx = -r; dx <= r; dx++ )
+					if ( Math.Max( Math.Abs( dx ), Math.Abs( dy ) ) == r && CommitPlacement( item, grid, terrain, tx + dx, ty + dy, charge: charge ) )
+						return true;
+		return false;
 	}
 
 	// The footprint a catalog item reserves (T-052): its .hmp template's solid-tile mask when one is set

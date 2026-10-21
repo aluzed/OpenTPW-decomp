@@ -644,7 +644,13 @@ public class Ride : Entity
 			// the orientation yaw — rotate each part's local offset and compose the yaw onto its rotation.
 			// 90° CW per step (negative about world +Z, which is up here). RegisterBody captures this as the
 			// rest pose, so the engine's animation composes on top of the placed orientation.
-			var localOffset = new Vector3( pos.X, pos.Z, pos.Y );
+			// Ride models are authored corner-anchored: the footprint spans (0,0)..(w,h)·WorldTileSize in model space
+			// (totem 3×4 → 30×40), while Position is the footprint centre — so shift by half the upright footprint
+			// before rotating (T-072).
+			int uprightW = Rotation % 2 == 1 ? Shape.Height : Shape.Width;
+			int uprightH = Rotation % 2 == 1 ? Shape.Width : Shape.Height;
+			var localOffset = new Vector3( pos.X, pos.Z, pos.Y )
+				- new Vector3( uprightW * PlacementGrid.WorldTileSize / 2f, uprightH * PlacementGrid.WorldTileSize / 2f, 0 );
 			var partRot = new Quaternion( rot.X, rot.Z, rot.Y, -rot.W );
 			if ( Rotation != 0 )
 			{

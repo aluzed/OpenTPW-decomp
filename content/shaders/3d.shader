@@ -70,8 +70,9 @@ fragment {
     // float fogAmount = ( length( vs_out.vPositionWs ) - fogStart ) / ( fogEnd - fogStart );
     // fogAmount = clamp( fogAmount, 0.0, 1.0 );
     // smoother fog, better looking
-    float fogAmount = ( 1.0 - exp( -length( vs_out.vPositionWs ) * 0.01 ) ) / ( 1.0 - exp( -fogEnd * 0.01 ) );
-    fogAmount = clamp( fogAmount, 0.0, 1.0 );
+    // Same ramp as test.shader (full at ~920 units). The old one, normalised to fogEnd = 30, fogged anything
+    // further than 30 units to pure sky colour — queue paths and coaster track read as cyan strips (T-072).
+    float fogAmount = clamp( exp( length( vs_out.vPositionWs ) * 0.004 ) * 0.025, 0.0, 1.0 );
 
     fragColor = vec4( vLambert + vAmbient, 1.0 ) * vColor;
     fragColor = mix( fragColor, vec4( fogColor, 1.0 ), fogAmount );

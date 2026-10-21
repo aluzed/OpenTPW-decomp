@@ -101,4 +101,77 @@ public class PlacementGridTests
 		Assert.IsTrue( g.IsWater( 0, 0 ) );
 		Assert.IsFalse( g.IsWater( 5, 0 ) );
 	}
+
+	// T-072 — scenery from the .lnd ground holes.
+	private static PlacementGrid SceneryGrid( string[] rows, (int, int) entrance, out (int Water, int Entrance) counts )
+	{
+		// rows[0] is the top (max Y) row, like the ASCII art reads; 'S' = scenery.
+		var g = new PlacementGrid( rows[0].Length, rows.Length, PlacementGrid.WorldTileSize, new Vector3( 0, 0, 0 ) );
+		counts = g.MarkScenery( ( x, y ) => rows[rows.Length - 1 - y][x] == 'S', entrance );
+		return g;
+	}
+
+	[TestMethod]
+	public void SceneryConnectedToTheEntranceIsAWalkableForecourtTheRestIsWater()
+	{
+		var g = SceneryGrid( new[]
+		{
+			"..SS..",
+			"..SS..",
+			"......",
+			"SSSS..",
+		}, (1, 0), out var counts );
+
+		Assert.AreEqual( (4, 4), counts );
+		Assert.IsTrue( g.IsWater( 2, 3 ) && g.IsWater( 3, 2 ), "the pond is water" );
+		Assert.IsFalse( g.IsWater( 0, 0 ) );
+		Assert.IsTrue( g.IsWalkable( 0, 0 ), "the forecourt is walkable…" );
+		Assert.IsFalse( g.CanPlace( 0, 0, 1, 1 ), "…but not buildable" );
+		Assert.IsTrue( g.CanPlace( 4, 0, 1, 1 ), "plain ground stays free" );
+	}
+
+	[TestMethod]
+	public void ForecourtIsFoundNearAGateTileThatIsGround()
+	{
+		// The gate notch itself has no mesh over it (so it's ground), the forecourt starts two tiles away.
+		var g = SceneryGrid( new[] { "......", "......", "SSS..." }, (1, 2), out var counts );
+		Assert.AreEqual( (0, 3), counts );
+		Assert.IsTrue( g.IsWalkable( 0, 0 ) && !g.IsWater( 2, 0 ) );
+	}
+
+	[TestMethod]
+	public void FindOpenAnchorPicksTheMiddleOfTheBiggestLawn()
+	{
+		var g = SceneryGrid( new[]
+		{
+			"S.........",
+			"S.........",
+			"S.........",
+			"S.........",
+			"S.........",
+			"S.........",
+			"SSSSSSSSSS",
+		}, (-10, -10), out _ );
+		var (x, y) = g.FindOpenAnchor();
+		// Free area x 1..9, y 1..6 (the edge row/column count as blocked): the centre is ~ (5, 3).
+		Assert.IsTrue( x >= 4 && x <= 6 && y >= 2 && y <= 4, $"anchor ({x},{y})" );
+		Assert.IsTrue( g.CanPlace( x, y, 1, 1 ) );
+	}
+
+	[TestMethod]
+	public void FromLevelSettingsUsesTenUnitTilesFromTheHeightfieldStart()
+	{
+		var sam = new SettingsFile( new System.IO.MemoryStream( System.Text.Encoding.ASCII.GetBytes(
+			"MapInfo.HeightfieldXStart 2\nMapInfo.HeightfieldYStart 1\nMapInfo.HeightfieldWidth 95\nMapInfo.HeightfieldHeight 84\n" ) ) );
+		var g = PlacementGrid.FromLevelSettings( sam );
+		Assert.AreEqual( 95, g.Width );
+		Assert.AreEqual( 84, g.Height );
+		Assert.AreEqual( 10f, g.TileSize );
+		Assert.AreEqual( 20f, g.Origin.X, 1e-4f );
+		Assert.AreEqual( 10f, g.Origin.Y, 1e-4f );
+		// Jungle's entrance tile (48,17) lands on the gate: x 480, y 170 from a (0,0) start.
+		var gate = new PlacementGrid( 95, 84, PlacementGrid.WorldTileSize, new Vector3( 0, 0, 0 ) ).PointToWorld( 48, 17 );
+		Assert.AreEqual( 480f, gate.X, 1e-4f );
+		Assert.AreEqual( 170f, gate.Y, 1e-4f );
+	}
 }

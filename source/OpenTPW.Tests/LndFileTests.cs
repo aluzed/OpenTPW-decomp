@@ -110,4 +110,20 @@ public class LndFileTests
 		CollectionAssert.AreEqual( new[] { 64, 32, 16 }, lnd.Levels.Select( l => l.TileSize ).ToArray() );
 		Assert.IsTrue( lnd.Levels.All( l => l.Textures.All( t => t.BytesPerPixel == 4 ) && l.Masks.All( m => m.BytesPerPixel == 1 ) ) );
 	}
+
+	[TestMethod]
+	public void FillUncoveredHolesKeepsOnlyHolesAMeshCovers()
+	{
+		// 4×2 map, all holes (alpha 0). One triangle covers the left half of the world (x 0..5 → pixels 0..1).
+		var lnd = new LndFile( new MemoryStream( BuildLnd( i => 0 ) ) );
+		var tri = (new System.Numerics.Vector2( -1, -1 ), new System.Numerics.Vector2( 5, -1 ), new System.Numerics.Vector2( 5, 99 ));
+		var tri2 = (new System.Numerics.Vector2( -1, -1 ), new System.Numerics.Vector2( 5, 99 ), new System.Numerics.Vector2( -1, 99 ));
+		var map = ParkGround.FillUncoveredHoles( lnd.BlendMap, new[] { tri, tri2 } );
+
+		Assert.AreEqual( 0, map.At( 0, 0 ), "covered → still a hole" );
+		Assert.AreEqual( 0, map.At( 1, 1 ) );
+		Assert.AreEqual( 255, map.At( 2, 0 ), "nothing over it → ground again" );
+		Assert.AreEqual( 255, map.At( 3, 1 ) );
+		Assert.AreEqual( 0, lnd.BlendMap.At( 3, 1 ), "the source map is not modified" );
+	}
 }

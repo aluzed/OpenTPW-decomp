@@ -28,9 +28,9 @@ overlay (`DayNightOverlay`) — or a missing terrain texture.
 
 ## Remaining
 
-- **Cyan gaps** remain in places: the thin "legs" of the jungle river hole only have geometry along one edge,
-  and some bands outside/near the park edge show sky. Needs a top-down debug view and, ideally, a comparison
-  with the original game (Wine + the no-CD build).
+- ~~Cyan gaps~~ — fixed in T-072: holes with no mesh over them are filled with ground
+  (`ParkGround.FillUncoveredHoles`), and the long "cyan strips" were queue paths fogged by `3d.shader` (full fog
+  at 30 units). A few pixel-size slivers remain at the river banks.
 - The **exact blend** is approximated (linear weights, each family = the average of its 2 textures); the 7
   masks per LOD (probably height/sharpness maps for a height-based blend) and the 11 header bytes are not
   interpreted. LOD 1/2 are unused.

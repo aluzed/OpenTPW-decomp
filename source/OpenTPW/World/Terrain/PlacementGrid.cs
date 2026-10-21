@@ -1,4 +1,4 @@
-namespace OpenTPW;
+﻿namespace OpenTPW;
 
 /// <summary>
 /// A Theme Park World park's tile placement grid. TPW parks are a fixed heightfield of tiles — the
@@ -177,6 +177,123 @@ public sealed class PlacementGrid
 	}
 
 	/// <summary>
+	/// Marks the level's scenery tiles (T-072) — <paramref name="isScenery"/>(tx, ty) is true where the terrain
+	/// meshes replace the ground (the <c>base.lnd</c> holes: river, lake, entrance forecourt). The scenery region
+	/// connected to the <paramref name="entrance"/> tile — or, when the gate tile itself is ground, to the nearest
+	/// scenery tile within <see cref="EntranceSearchRadius"/> — is the gate + forecourt: reserved but walkable (a
+	/// path), so peeps can come in. Every other scenery tile is water: impassable and unbuildable.
+	/// Returns the (water, entrance) tile counts.
+	/// </summary>
+	public (int Water, int Entrance) MarkScenery( Func<int, int, bool> isScenery, (int X, int Y) entrance )
+	{
+		var forecourt = new bool[Width, Height];
+		var stack = new Stack<(int X, int Y)>();
+		if ( NearestScenery( isScenery, entrance ) is { } seed )
+		{
+			forecourt[seed.X, seed.Y] = true;
+			stack.Push( seed );
+		}
+		while ( stack.Count > 0 )
+		{
+			var (x, y) = stack.Pop();
+			foreach ( var (nx, ny) in new[] { (x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1) } )
+				if ( InBounds( nx, ny ) && !forecourt[nx, ny] && isScenery( nx, ny ) )
+				{
+					forecourt[nx, ny] = true;
+					stack.Push( (nx, ny) );
+				}
+		}
+
+		int waterCount = 0, entranceCount = 0;
+		for ( int y = 0; y < Height; y++ )
+			for ( int x = 0; x < Width; x++ )
+			{
+				if ( forecourt[x, y] )
+				{
+					occupied[x, y] = true;
+					path[x, y] = true;
+					entranceCount++;
+				}
+				else if ( isScenery( x, y ) )
+				{
+					water[x, y] = true;
+					waterCount++;
+				}
+			}
+		return (waterCount, entranceCount);
+	}
+
+	/// <summary>How far (tiles, Chebyshev) from the entrance tile the forecourt's scenery may start.</summary>
+	public const int EntranceSearchRadius = 6;
+
+	// The scenery tile closest to the entrance (Chebyshev rings outward), or null when none is within reach.
+	private (int X, int Y)? NearestScenery( Func<int, int, bool> isScenery, (int X, int Y) entrance )
+	{
+		for ( int r = 0; r <= EntranceSearchRadius; r++ )
+			for ( int dy = -r; dy <= r; dy++ )
+				for ( int dx = -r; dx <= r; dx++ )
+				{
+					if ( Math.Max( Math.Abs( dx ), Math.Abs( dy ) ) != r )
+						continue;
+					int x = entrance.X + dx, y = entrance.Y + dy;
+					if ( InBounds( x, y ) && isScenery( x, y ) )
+						return (x, y);
+				}
+		return null;
+	}
+
+	/// <summary>
+	/// The free tile farthest from any blocked tile (water, occupied, or the grid edge) — the middle of the
+	/// biggest open lawn — breaking ties towards the grid centre. Lets demos and autoplace pick open ground on any
+	/// theme instead of a hard-coded spot that may be a river (T-072). Chebyshev distance, multi-source BFS.
+	/// </summary>
+	public (int X, int Y) FindOpenAnchor()
+	{
+		var dist = new int[Width, Height];
+		var queue = new Queue<(int X, int Y)>();
+		for ( int y = 0; y < Height; y++ )
+			for ( int x = 0; x < Width; x++ )
+			{
+				bool blocked = occupied[x, y] || water[x, y];
+				bool edge = x == 0 || y == 0 || x == Width - 1 || y == Height - 1;
+				dist[x, y] = blocked ? 0 : edge ? 1 : int.MaxValue;
+				if ( dist[x, y] != int.MaxValue )
+					queue.Enqueue( (x, y) );
+			}
+
+		while ( queue.Count > 0 )
+		{
+			var (x, y) = queue.Dequeue();
+			for ( int dy = -1; dy <= 1; dy++ )
+				for ( int dx = -1; dx <= 1; dx++ )
+				{
+					int nx = x + dx, ny = y + dy;
+					if ( InBounds( nx, ny ) && dist[nx, ny] > dist[x, y] + 1 )
+					{
+						dist[nx, ny] = dist[x, y] + 1;
+						queue.Enqueue( (nx, ny) );
+					}
+				}
+		}
+
+		(int X, int Y) best = (Width / 2, Height / 2);
+		int bestDist = -1;
+		float bestCentre = float.MaxValue;
+		for ( int y = 0; y < Height; y++ )
+			for ( int x = 0; x < Width; x++ )
+			{
+				float centre = MathF.Abs( x - Width / 2f ) + MathF.Abs( y - Height / 2f );
+				if ( dist[x, y] > bestDist || (dist[x, y] == bestDist && centre < bestCentre) )
+				{
+					best = (x, y);
+					bestDist = dist[x, y];
+					bestCentre = centre;
+				}
+			}
+		return best;
+	}
+
+	/// <summary>
 	/// Flags tiles whose terrain height (sampled at the tile centre) is at or below <paramref name="waterLevel"/>
 	/// as water — so peeps route around lakes/moats and nothing is built on them (T-050). <paramref name="sampleHeight"/>
 	/// is the terrain height sampler (world Z) for a world XY (e.g. <c>ParkTerrain.SampleHeight</c>).
@@ -198,15 +315,25 @@ public sealed class PlacementGrid
 	}
 
 	/// <summary>
-	/// Builds a grid from a level's <c>Standard.sam</c> (<c>MapInfo.HeightfieldWidth</c>/<c>Height</c>),
-	/// centred on <paramref name="worldCenter"/>. Falls back to the jungle defaults (95×84) if the keys
-	/// are missing.
+	/// World units per park tile, measured (T-072): ride models are authored at this scale (totem, 3×4 tiles, spans
+	/// exactly 30×40), the park fence spans 960×860 from world (0,0), and the <c>base.lnd</c> blend map covers that
+	/// rectangle at 4 pixels per tile.
 	/// </summary>
-	public static PlacementGrid FromLevelSettings( SettingsFile standard, float tileSize, Vector3 worldCenter )
+	public const float WorldTileSize = 10f;
+
+	/// <summary>
+	/// Builds a level's grid from its <c>Standard.sam</c>: <c>MapInfo.HeightfieldWidth</c>/<c>Height</c> tiles of
+	/// <see cref="WorldTileSize"/>, starting at <c>MapInfo.HeightfieldXStart</c>/<c>YStart</c> tiles from the map
+	/// mesh origin ("Heightfield offset from map mesh"; 0,0 on every shipped level). Falls back to the jungle
+	/// values (95×84 from 0,0) if the keys are missing.
+	/// </summary>
+	public static PlacementGrid FromLevelSettings( SettingsFile standard )
 	{
 		int w = ReadInt( standard, "MapInfo.HeightfieldWidth", 95 );
 		int h = ReadInt( standard, "MapInfo.HeightfieldHeight", 84 );
-		return Centered( w, h, tileSize, worldCenter );
+		int x0 = ReadInt( standard, "MapInfo.HeightfieldXStart", 0 );
+		int y0 = ReadInt( standard, "MapInfo.HeightfieldYStart", 0 );
+		return new PlacementGrid( w, h, WorldTileSize, new Vector3( x0 * WorldTileSize, y0 * WorldTileSize, 0 ) );
 	}
 
 	private static int ReadInt( SettingsFile s, string key, int fallback ) =>

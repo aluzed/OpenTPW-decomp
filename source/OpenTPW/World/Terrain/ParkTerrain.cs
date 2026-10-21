@@ -18,6 +18,11 @@ public sealed class ParkTerrain : Entity
 	public OpenTPW.Vector3 Min { get; private set; } = new( float.MaxValue );
 	public OpenTPW.Vector3 Max { get; private set; } = new( float.MinValue );
 
+	/// <summary>World-space XY of every terrain triangle — the top-down footprint of the scenery, used to tell
+	/// which <c>base.lnd</c> ground holes a mesh actually fills (T-072).</summary>
+	public IReadOnlyList<(System.Numerics.Vector2 A, System.Numerics.Vector2 B, System.Numerics.Vector2 C)> Triangles => triangles;
+	private readonly List<(System.Numerics.Vector2, System.Numerics.Vector2, System.Numerics.Vector2)> triangles = new();
+
 	/// <summary>Average vertex position — a robust centre that ignores stray distant scenery meshes.</summary>
 	public OpenTPW.Vector3 Centroid { get; private set; }
 
@@ -63,13 +68,17 @@ public sealed class ParkTerrain : Entity
 			var modelMatrix = Matrix4x4.CreateScale( mScl.GetSystemVector3() )
 				* Matrix4x4.CreateFromQuaternion( mRot )
 				* Matrix4x4.CreateTranslation( mPos.GetSystemVector3() );
-			foreach ( var v in vertices )
+			var meshXY = new System.Numerics.Vector2[vertices.Length];
+			for ( int vi = 0; vi < vertices.Length; vi++ )
 			{
-				var w = System.Numerics.Vector3.Transform( v.Position.GetSystemVector3(), modelMatrix );
+				var w = System.Numerics.Vector3.Transform( vertices[vi].Position.GetSystemVector3(), modelMatrix );
+				meshXY[vi] = new System.Numerics.Vector2( w.X, w.Y );
 				worldVerts.Add( new OpenTPW.Vector3( w.X, w.Y, w.Z ) );
 				Min = new OpenTPW.Vector3( MathF.Min( Min.X, w.X ), MathF.Min( Min.Y, w.Y ), MathF.Min( Min.Z, w.Z ) );
 				Max = new OpenTPW.Vector3( MathF.Max( Max.X, w.X ), MathF.Max( Max.Y, w.Y ), MathF.Max( Max.Z, w.Z ) );
 			}
+			for ( int t = 0; t + 2 < mesh.Indices.Length; t += 3 )
+				triangles.Add( (meshXY[mesh.Indices[t]], meshXY[mesh.Indices[t + 1]], meshXY[mesh.Indices[t + 2]]) );
 		}
 
 		if ( worldVerts.Count > 0 )

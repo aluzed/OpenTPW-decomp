@@ -2,7 +2,24 @@
 
 - **Priority**: 🟠 Medium (correctness: everything placed on the grid is offset from the terrain)
 - **Type**: Engine / world
-- **Status**: ☐ To do
+- **Status**: ✅ Done —
+  - `PlacementGrid.FromLevelSettings( standard )`: `MapInfo.HeightfieldWidth/Height` tiles of
+    `PlacementGrid.WorldTileSize` = 10, from `HeightfieldXStart/YStart` (0,0 everywhere; the .sam comment calls it
+    the "Heightfield offset from map mesh"). Cross-checked: the entrance tile (48,17) lands on the gate (x 480,
+    y 170) and ride models are authored at this scale (totem 3×4 tiles = 30×40 units, monkey 4×4 = 40×40).
+  - **Rides were drawn off their footprint**: their meshes are corner-anchored (0..w·10) while `Ride.Position` is
+    the footprint centre; `Ride` now shifts by half the upright footprint before rotating.
+  - **Water/unbuildable tiles come from the `.lnd` mask** (`PlacementGrid.MarkScenery`): the scenery region at
+    the entrance (nearest to the gate tile) is a walkable reserved forecourt, every other hole is water. The old
+    height sampling only found ~80 scattered tiles; jungle now has 539 water + 552 entrance tiles (river + lake).
+  - `ParkGround.FillUncoveredHoles`: a `.lnd` hole with no terrain triangle over it (the jungle river's thin
+    arms) is ground again, so it no longer shows the sky (and is walkable).
+  - Autoplace / camera use `PlacementGrid.FindOpenAnchor()` (biggest open lawn) instead of the grid centre — a
+    river on jungle. The car-ride diagnostic never placed anything (the main autoplace had spent the cash):
+    now free + `CommitPlacementNear`.
+  - Also fixed: `3d.shader` (queue paths) fogged to pure sky colour beyond 30 units — the "cyan strips".
+  - Verified in-game on all 4 themes (0 exceptions); unit-tested (`PlacementGridTests`, `LndFileTests`).
+  - Note: saves keep tile coordinates, so a park saved before this change reloads at the new (correct) scale.
 
 ## Observed (2026-10-21, while decoding `base.lnd` for T-071)
 
