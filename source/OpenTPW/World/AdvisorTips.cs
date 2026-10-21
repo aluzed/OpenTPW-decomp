@@ -20,7 +20,7 @@ public static class AdvisorTips
 		["InTheRedMonthLeft"] = "Money's tight this month — keep an eye on your wages and upkeep.",
 		["VisitorsThirsty"] = "Your visitors are getting thirsty. Build a drink stall!",
 		["VisitorsHungry"] = "Your visitors are hungry. Build a food stall!",
-		["NewResearchGroupRide"] = "New research is available — put a researcher to work to unlock ride upgrades.",
+		["NewResearchGroupRide"] = "A researched ride upgrade is ready — apply it!",
 		["CongratVisitorsHappy"] = "Your visitors are having a wonderful time — keep it up!",
 		["CongratGoldenTicket"] = "You've won the Golden Ticket — every park goal is met. Magnificent work!",
 		["CongratChallengeWon"] = "Challenge complete! The prize is in the bank — ready for the next one?",
@@ -73,7 +73,7 @@ public static class AdvisorTips
 		["InTheRedSixMonths"] = 126,   // "You have had no money for five months now…" (the last warning)
 		["VisitorsThirsty"] = 9,
 		["VisitorsHungry"] = 10,
-		["NewResearchGroupRide"] = 68, // "It's about time you researched some ride upgrades…"
+		["NewResearchGroupRide"] = 70, // "There are ride upgrades available that you haven't yet used." (68 is "you have none yet")
 		["CongratVisitorsHappy"] = 161,
 		["CongratGoldenTicket"] = 120,
 		["CongratChallengeWon"] = 194, // "Challenge completed!"
