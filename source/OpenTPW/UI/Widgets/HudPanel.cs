@@ -19,7 +19,7 @@ internal abstract class HudPanel : Panel
 	/// <summary>True when the cursor is over any interactive HUD panel (so world tools ignore the click).</summary>
 	public static bool PointerOverUi()
 		=> (ParkHud.Current?.ContainsMouse() ?? false) || (BuildPanel.Current?.ContainsMouse() ?? false) || (ItemInfoWindow.Current?.ContainsMouse() ?? false)
-			|| (ParkInfoWindow.Current?.ContainsMouse() ?? false) || (ManagePanel.Current?.ContainsMouse() ?? false)
+			|| (ParkInfoWindow.Current?.ContainsMouse() ?? false) || (ResearchWindow.Current?.ContainsMouse() ?? false) || (ManagePanel.Current?.ContainsMouse() ?? false)
 			|| (OptionsPanel.Current?.ContainsMouse() ?? false) || (FinancePanel.Current?.ContainsMouse() ?? false)
 			|| (MinimapPanel.Current?.ContainsMouse() ?? false) || (SavePanel.Current?.ContainsMouse() ?? false)
 			|| (ThemePanel.Current?.ContainsMouse() ?? false) || (LoanPanel.Current?.ContainsMouse() ?? false)

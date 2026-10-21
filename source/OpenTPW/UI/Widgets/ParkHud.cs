@@ -47,7 +47,7 @@ internal sealed class ParkHud : HudPanel
 		("b_buy", 107f, 543f, UiHelp.Buy, () => BuildPanel.Toggle()),
 		("b_info", 163f, 543f, UiHelp.Info, () => ParkInfoWindow.Current?.Toggle()),
 		("b_money", 102f, 600f, UiHelp.Finance, () => FinancePanel.Current?.Toggle()),
-		("b_resrch", 157f, 600f, UiHelp.Research, null),
+		("b_resrch", 157f, 600f, UiHelp.Research, () => ResearchWindow.Current?.Toggle()),
 		("b_map", 66f, 655f, UiHelp.Map, () => MinimapPanel.Current?.Toggle()),
 		("b_camera", 122f, 655f, UiHelp.Camera, null),
 	};

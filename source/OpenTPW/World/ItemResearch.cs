@@ -64,6 +64,12 @@ public sealed class ItemResearch
 		return (effort, tech);
 	}
 
+	/// <summary>A category's share of the scientists' work (0–100; the research lab's sliders).</summary>
+	public float EffortOf( BuildCategory category ) => effort.GetValueOrDefault( category );
+
+	/// <summary>Set a category's effort, clamped to 0–100.</summary>
+	public void SetEffort( BuildCategory category, float value ) => effort[category] = Math.Clamp( value, 0f, 100f );
+
 	/// <summary>Whether an item can be built (researched, or never needed researching). Unknown keys can (staff…).</summary>
 	public bool IsUnlocked( string key ) => !items.ContainsKey( key ) || unlocked.Contains( key );
 
