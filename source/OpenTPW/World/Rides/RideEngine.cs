@@ -336,8 +336,12 @@ public sealed class RideEngine : IRideEngine
 		7 => "staff",
 		8 => "ambient",
 		9 => "ui",
+		10 => "custom",
 		_ => null
 	};
+
+	/// <summary>The ride's archive, for its own sound bank (EVENT / ADDOBJ type 10) — set by the ride.</summary>
+	public string? Archive { get; set; }
 
 	/// <summary>Resolves this ride's node ids to world positions (T-048/T-047) — set by <see cref="Ride"/>
 	/// when the model loads. EVENT effects + REPAIREFFECT/SPARK spawn at the addressed node through it.</summary>
@@ -365,7 +369,7 @@ public sealed class RideEngine : IRideEngine
 		var category = EventSoundCategory( type );
 		if ( category == null )
 			return;
-		var track = CategoryBank( category )?.Resolve( code );
+		var track = (category == "custom" ? CustomBank() : CategoryBank( category ))?.Resolve( code );
 		if ( track == null )
 			return;
 		if ( EventDebounced( $"snd:{category}:{code}" ) )
@@ -391,6 +395,17 @@ public sealed class RideEngine : IRideEngine
 	// once from that category's BANK catalog (cat_<category>BANK.map). Cached (incl. a null = "no catalog")
 	// so a missing/headless install is only probed once. See EventSoundCategory + T-047.
 	private static readonly Dictionary<string, RideSoundBank?> categoryBanks = new();
+	// The ride's own bank (type 10), cached per archive like the categories.
+	private RideSoundBank? CustomBank()
+	{
+		if ( Archive == null )
+			return null;
+		var key = $"custom:{Archive}";
+		if ( !categoryBanks.TryGetValue( key, out var bank ) )
+			categoryBanks[key] = bank = RideSoundBank.FromArchive( Archive );
+		return bank;
+	}
+
 	private static RideSoundBank? CategoryBank( string category )
 	{
 		// A "level:" category lives with the park world's own sounds (levels/<theme>/Sound), the rest globally.

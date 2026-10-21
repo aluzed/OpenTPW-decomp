@@ -314,7 +314,7 @@ public class RideEngineTests
 		Assert.AreEqual( "ui", RideEngine.EventSoundCategory( 9 ) );
 		Assert.AreEqual( "level:rides", RideEngine.EventSoundCategory( 3 ) );   // the level's cat_rides (DAT_00803a3c)
 		Assert.AreEqual( "level:ambient", RideEngine.EventSoundCategory( 4 ) ); // the level's cat_ambient (a38)
-		Assert.IsNull( RideEngine.EventSoundCategory( 10 ) ); // the ride's custom bank, not resolved yet
+		Assert.AreEqual( "custom", RideEngine.EventSoundCategory( 10 ) ); // the ride's own bank (its .wad)
 	}
 
 	[TestMethod]

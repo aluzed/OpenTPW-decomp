@@ -493,6 +493,7 @@ public class Ride : Entity
 		// Script (the VFS resolves the path into the .wad; matching is case-insensitive — T-014).
 		VM = new RideVM( FileSystem.OpenRead( $"{rideArchive}/{rideName}.rse" ) );
 		VM.Engine = engine;
+		engine.Archive = rideArchive; // its own sound bank, if it ships one (EVENT type 10)
 		BindRiderPosition();
 
 		// SPAWNCHILD loads sibling child scripts from the same WAD, sharing this ride's engine.

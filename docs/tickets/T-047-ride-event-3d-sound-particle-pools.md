@@ -172,3 +172,7 @@ now plays every type 1-9 as a positioned sound through its category bank (`RideS
 their catalog, so a level catalog reads the level's `.sdt`s); `ClassifyEvent` no longer has a particle kind.
 ADDOBJ sound objects (types 1-9) play the same way. Verified in game (trace: `EVENT t3 cat=level:rides code=75 ->
 lion5.mp2`…), no exceptions.
+Type 10 (the ride's custom bank, `FUN_004145e0`) now resolves too: `RideSoundBank.FromArchive` reads a ride's own
+`cat_rideBANK.map` + banks from inside its `.wad` through the VFS. Only the jungle loudspeaker feature ships one
+(`BankHD.sdt`); the dev park now places it, but its script didn't fire a type-10 sound within a minute, so that path is
+in place but not heard yet.

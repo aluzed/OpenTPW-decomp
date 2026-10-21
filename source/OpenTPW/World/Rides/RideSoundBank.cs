@@ -19,13 +19,33 @@ public sealed class RideSoundBank
 {
 	private readonly string[] bankFiles;        // .sdt stems, in catalog order (e.g. "RideHD")
 	private readonly string directory;          // where the banks live: beside their catalog
+	private readonly bool virtualFiles;         // read through the game VFS (a bank inside a ride's .wad)
 	private readonly List<MP2File> tracks = new(); // concatenated samples loaded so far
 	private int loadedBanks;
 
-	private RideSoundBank( string[] bankFiles, string directory )
+	private RideSoundBank( string[] bankFiles, string directory, bool virtualFiles = false )
 	{
 		this.bankFiles = bankFiles;
 		this.directory = directory;
+		this.virtualFiles = virtualFiles;
+	}
+
+	/// <summary>A ride's own sound bank, packed in its <c>.wad</c> (the jungle loudspeaker's <c>cat_rideBANK.map</c> +
+	/// <c>BankHD.sdt</c>) — what EVENT / ADDOBJ type 10 plays. Null when the ride has none.</summary>
+	public static RideSoundBank? FromArchive( string archive )
+	{
+		try
+		{
+			using var s = FileSystem.OpenRead( $"{archive}/cat_rideBANK.map" );
+			if ( s == null )
+				return null;
+			var banks = new OpenTPW.MapFile( s ).Entries.Select( e => e.Split( '\\', '/' )[^1] + "HD" ).ToArray();
+			return banks.Length > 0 ? new RideSoundBank( banks, archive, virtualFiles: true ) : null;
+		}
+		catch
+		{
+			return null;
+		}
 	}
 
 	/// <summary>
@@ -66,11 +86,18 @@ public sealed class RideSoundBank
 		{
 			var path = Path.Join( directory, bankFiles[loadedBanks] + ".sdt" );
 			loadedBanks++;
-			if ( File.Exists( path ) )
+			try
 			{
-				try { tracks.AddRange( new SdtArchive( path ).soundFiles ); }
-				catch { /* skip a bad bank; higher ids just won't resolve */ }
+				if ( virtualFiles )
+				{
+					using var s = FileSystem.OpenRead( path );
+					if ( s != null )
+						tracks.AddRange( new SdtArchive( s ).soundFiles );
+				}
+				else if ( File.Exists( path ) )
+					tracks.AddRange( new SdtArchive( path ).soundFiles );
 			}
+			catch { /* skip a bad bank; higher ids just won't resolve */ }
 		}
 
 		return soundId < tracks.Count ? tracks[soundId] : null;

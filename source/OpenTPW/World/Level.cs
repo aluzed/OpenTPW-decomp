@@ -842,13 +842,14 @@ public class Level
 		Log.Info( $"[build] autoplace (theme {Current.Name}): {placed}/{rides.Count} ride(s) + shops + staff" );
 	}
 
-	// A few features in the dev park: a security camera, a staff room and two pieces of scenery.
+	// A few features in the dev park: a security camera, a staff room, a loudspeaker and two pieces of scenery.
 	private static void AutoplaceFeatures( List<BuildCatalogItem> catalog, PlacementGrid grid, ParkTerrain terrain, int cx, int cy )
 	{
 		var features = catalog.Where( c => c.Category == BuildCategory.Features ).ToList();
-		var picks = features.Where( f => f.Label.Contains( "Camera", StringComparison.OrdinalIgnoreCase ) || f.Label.Contains( "Staff", StringComparison.OrdinalIgnoreCase ) )
+		var picks = features.Where( f => f.Label.Contains( "Camera", StringComparison.OrdinalIgnoreCase ) || f.Label.Contains( "Staff", StringComparison.OrdinalIgnoreCase )
+				|| f.Name.StartsWith( "speaker", StringComparison.OrdinalIgnoreCase ) )
 			.Concat( features.Where( f => f.Width * f.Height <= 4 ).Take( 2 ) ).Distinct().ToList();
-		var spots = new (int dx, int dy)[] { (-3, 8), (2, 9), (-8, 8), (6, 9) };
+		var spots = new (int dx, int dy)[] { (-3, 8), (2, 9), (-8, 8), (6, 9), (-12, 9) };
 		int placed = 0;
 		for ( int i = 0; i < picks.Count && i < spots.Length; i++ )
 			if ( CommitPlacementNear( picks[i], grid, terrain, cx + spots[i].dx, cy + spots[i].dy, radius: 5 ) )
