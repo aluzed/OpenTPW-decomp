@@ -89,7 +89,11 @@ public sealed class ParkFinances
 	{
 		Money -= amount;
 		BuildSpent += amount;
+		Spent?.Invoke( amount );
 	}
+
+	/// <summary>Raised on a one-off purchase (the HUD flashes the amount under the balance, as the original).</summary>
+	public event Action<float>? Spent;
 
 	/// <summary>Refund part of a build cost when a ride/shop is sold (credits the balance back).</summary>
 	public void RefundBuild( float amount )

@@ -42,14 +42,14 @@ internal sealed class ParkHud : HudPanel
 	private const float ButtonSize = 70f; // the b_*.wct disc fills ~¾ of its texture: a ~52-px gold button
 
 	/// <summary>The handheld's six buttons, in the original's order: buy, info, money, research, map, postcard.</summary>
-	private static readonly (string Texture, float X, float Y, string Hint, Action? Act)[] Buttons =
+	private static readonly (string Texture, float X, float Y, int Hint, Action? Act)[] Buttons =
 	{
-		("b_buy", 107f, 543f, "Build rides, shops and scenery", () => BuildPanel.Toggle()),
-		("b_info", 163f, 543f, "Park information", () => ParkStatsPanel.ToggleInfo()),
-		("b_money", 102f, 600f, "Finances and loans", () => FinancePanel.Current?.Toggle()),
-		("b_resrch", 157f, 600f, "Research", null),
-		("b_map", 66f, 655f, "Map of the park", () => MinimapPanel.Current?.Toggle()),
-		("b_camera", 122f, 655f, "Postcard", null),
+		("b_buy", 107f, 543f, UiHelp.Buy, () => BuildPanel.Toggle()),
+		("b_info", 163f, 543f, UiHelp.Info, () => ParkStatsPanel.ToggleInfo()),
+		("b_money", 102f, 600f, UiHelp.Finance, () => FinancePanel.Current?.Toggle()),
+		("b_resrch", 157f, 600f, UiHelp.Research, null),
+		("b_map", 66f, 655f, UiHelp.Map, () => MinimapPanel.Current?.Toggle()),
+		("b_camera", 122f, 655f, UiHelp.Camera, null),
 	};
 
 	private static Rectangle ButtonRect( int i ) => FromTop( Buttons[i].X - ButtonSize / 2f, Buttons[i].Y - ButtonSize / 2f, ButtonSize, ButtonSize );
@@ -117,8 +117,20 @@ internal sealed class ParkHud : HudPanel
 	private int trend;
 	private int pressed = -1;
 
+	// The last purchase, shown under the balance in yellow while it fades ("$ 650").
+	private float spentAmount, spentAt = float.NegativeInfinity;
+	private ParkFinances? hooked;
+	private const float SpentSeconds = 2.5f;
+	private static readonly System.Numerics.Vector3 SpentInk = new( 1f, 0.85f, 0.1f );
+
 	protected override void OnUpdate()
 	{
+		if ( ParkFinances.Current is { } f && f != hooked )
+		{
+			hooked = f;
+			f.Spent += amount => { spentAmount = Time.Now - spentAt < SpentSeconds ? spentAmount + amount : amount; spentAt = Time.Now; };
+		}
+
 		if ( ParkFinances.Current is { } fin && Time.Now - trendAt > 4f )
 		{
 			trend = fin.Money > trendFrom + 0.5f ? 1 : fin.Money < trendFrom - 0.5f ? -1 : 0;
@@ -163,6 +175,13 @@ internal sealed class ParkHud : HudPanel
 		float right = 120f + CashFont.Atlas.Measure( text ) * scale + 10f;
 		if ( trend != 0 )
 			DrawTex( trend > 0 ? "green_up" : "red_down", FromTop( right, 56f, 26f, 42f ) );
+		// The last purchase drops in under the balance and fades (the font can't fade, so it shrinks away).
+		float age = Time.Now - spentAt;
+		if ( age < SpentSeconds )
+		{
+			float popScale = 22f / MathF.Max( 1f, CashFont.Atlas.LineHeight ) * (1f - 0.3f * age / SpentSeconds);
+			Graphics.DrawText( CashFont, $"$ {spentAmount:0}", 175f, 720f - 132f - age * 6f, SpentInk, TextAlign.Left, popScale );
+		}
 	}
 
 	// "n ×" and a golden ticket, top right.
@@ -231,16 +250,35 @@ internal sealed class ParkHud : HudPanel
 		}
 	}
 
-	/// <summary>The line shown in the hint strip: the button under the cursor, else what the advisor is saying.</summary>
+	/// <summary>The line shown in the hint strip, as the original: the HUD control under the cursor, else what the
+	/// advisor is saying, else what a click on the park would do.</summary>
 	private static string? HintText()
 	{
 		var m = MouseBase();
 		for ( int i = 0; i < Buttons.Length; i++ )
 			if ( Contains( ButtonRect( i ), m ) )
-				return Buttons[i].Act == null ? $"{Buttons[i].Hint} (not available yet)" : Buttons[i].Hint;
+				return UiHelp.Text( Buttons[i].Hint, "" ) + (Buttons[i].Act == null ? "  (not available yet)" : "");
+		if ( Contains( Gauge, m ) )
+			return UiHelp.Text( UiHelp.Happiness, "Happiness of the park visitors" );
+		if ( Contains( Lcd, m ) )
+			return UiHelp.Text( UiHelp.Date, "Current date" );
+		if ( Contains( FromTop( 50f, 30f, 220f, 90f ), m ) )
+			return UiHelp.Text( UiHelp.Balance, "Your bank balance" );
+		if ( Contains( FromRight( 175f, 74f, 100f, 44f ), m ) )
+			return UiHelp.Text( UiHelp.GoldenTickets, "Number of golden tickets you currently have" );
+		if ( HudPanel.PointerOverUi() )
+			return null;
+
 		if ( Advisor.Current is { } advisor && !string.IsNullOrEmpty( advisor.ClipName ) && advisor.Elapsed <= advisor.ClipLength + 2f )
 			return AdvisorTips.TextFor( advisor.ActiveMessage );
-		return null;
+
+		if ( BuildMode.Current is not { } build || build.HoveredTile is not { } tile )
+			return null;
+		if ( build.Selected >= 0 )
+			return $"{build.Catalog[build.Selected].Label}: {UiHelp.Text( UiHelp.BuildItem, "Left-click to build the item" )}";
+		var name = Entity.All.OfType<Ride>().FirstOrDefault( r => r.Covers( tile.X, tile.Y ) )?.Name
+			?? Shop.Stalls.FirstOrDefault( s => s.Covers( tile.X, tile.Y ) )?.Name;
+		return name != null ? $"{name}: {UiHelp.Text( UiHelp.ItemDetails, "Left-click to view/edit this item's details" )}" : null;
 	}
 
 	// The translucent strip at the bottom centre; a long line wraps onto more rows and the strip grows with it.
