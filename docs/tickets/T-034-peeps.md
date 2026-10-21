@@ -93,6 +93,11 @@ then `0xAARRGGBB`-style colour runs, same family as the `base.lnd` landscape dat
    every coloured run (`FE C5` = two pixels of 0xC5) was decoded as a long bogus literal, which is why peeps,
    staff and balloons rendered noisy and streaked. The corrected rule expands **all 6 417 scanlines** of the
    kid and balloon sheets to exactly `width` pixels (the old fit managed ~⅓) and the sprites now render clean.
+   **`.TPC` vs `.FPC`**: the same frames drawn twice (same count, same `.ESP` cycles, same RLE) — `.TPC` from
+   above (the top of the head shows), `.FPC` from the front. The kid's TPC frames are ~0.67× the FPC height
+   (29 vs 43 px), i.e. cos 48°: the top view is drawn for a ~48° camera, which is exactly the in-park camera's
+   fixed pitch (`BuildCameraMode.Pitch`), so OpenTPW correctly uses the `.TPC`. The front view would only matter
+   for a shallow camera (< ~25°), which OpenTPW doesn't have; not loaded (it would double the sprite textures).
    - **`.ESP`** = `ESP_FILE2.00` magic (12 bytes) + the referenced texture name (`SPR_KI.TPS`), zero-padded.
    - **`.TPC`/`.FPC`** layout (read primitive `FUN_005c4f60(dst, elemSize, count, stream)` = fread):
      ```
