@@ -497,6 +497,9 @@ public class Level
 	{
 		if ( arrivals == null )
 			return;
+		// A bankrupt park stays shut: "the banks have closed your park" (TAG_SYSTEM.str 127).
+		if ( !GatesOpen && ParkFinances.Current is { Bankrupt: true } )
+			return;
 		GatesOpen = !GatesOpen;
 		if ( GatesOpen && !openedOnce )
 		{
@@ -1240,6 +1243,10 @@ public class Level
 
 		GameClock.Current?.Tick( Time.Delta ); // advances the calendar; fires OnNewMonth → finances settle (T-053)
 		LevelSoundscape.Update();               // the park's ambient one-shots
+
+		// Bankruptcy closes the park (no more arrivals; visitors inside finish their day).
+		if ( GatesOpen && ParkFinances.Current is { Bankrupt: true } )
+			ToggleGates();
 
 		// Visitor arrivals (T-074): a group at the gate every interval, sized by the park rating.
 		if ( arrivals != null && !GatesOpen && Entity.All.Any( e => e is Ride ) )

@@ -101,4 +101,5 @@ loop, ride throughput unaffected.
 
 Bankruptcy follows the game's rule — six months running in the red (TAG_SYSTEM 123/127) — instead of a −5 000
 balance that could bankrupt a park in its first month; the advisor's escalation is 1 / 3 / 5 months (123/125/126) then
-`Bankrupted` (127). The HUD flags it; a game-over / restart flow is still to do.
+`Bankrupted` (127). Bankruptcy closes the gates for good ("the banks have closed your park"; visitors inside finish
+their day); a game-over / restart screen is still to do.
