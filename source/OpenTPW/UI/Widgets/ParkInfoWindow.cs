@@ -41,9 +41,10 @@ internal sealed class ParkInfoWindow : GameWindow
 		new( "People in park", 250, 235, 40, ( h, i ) => h[i].PeopleInPark ),
 		new( "Arrival rate", 150, 60, 200, ( h, i ) => i == 0 ? 0f : Math.Max( 0, h[i].Visitors - h[i - 1].Visitors ) ),
 		new( "Average happiness", 160, 20, 20, ( h, i ) => h[i].Happiness ),
+		new( "Time in park", 60, 200, 200, ( h, i ) => h[i].DaysInPark ),
 	};
 
-	private readonly bool[] shown = { true, false, true };
+	private readonly bool[] shown = { true, false, true, false };
 	private int range = 1; // 0 = 1 year, 1 = 3 years, 2 = 12 years
 	private static readonly int[] RangeMonths = { 12, 36, 144 };
 	private static readonly string[] RangeLabels = { "1 Year", "3 Years", "12 Years" };
@@ -82,6 +83,8 @@ internal sealed class ParkInfoWindow : GameWindow
 			Fill( new Rectangle( r.X - 2f, r.Y - 2f, r.Width + 4f, r.Height + 4f ), SolidOf( 20, 30, 90 ) );
 			Fill( r, shown[i] ? SolidOf( s.R, s.G, s.B ) : SolidOf( (byte)(s.R / 3), (byte)(s.G / 3), (byte)(s.B / 3) ) );
 			Text( Small, s.Label, 235f, 89f + i * 36f, 11f, s.R + s.G > 300 ? new( 0.1f, 0.1f, 0.1f ) : default, TextAlign.Center );
+			if ( Contains( r, MouseBase() ) )
+				Hint( 178 + i ); // "Left-click to show People in park on the graph" …
 		}
 		for ( int i = 0; i < RangeMonths.Length; i++ )
 		{
@@ -89,6 +92,8 @@ internal sealed class ParkInfoWindow : GameWindow
 			Fill( new Rectangle( r.X - 2f, r.Y - 2f, r.Width + 4f, r.Height + 4f ), SolidOf( 20, 30, 90 ) );
 			Fill( r, i == range ? SolidOf( 150, 210, 60 ) : SolidOf( 20, 100, 30 ) );
 			Text( Small, RangeLabels[i], 439f + i * 128f, 88f, 11f, default, TextAlign.Center );
+			if ( Contains( r, MouseBase() ) )
+				Hint( 183 + i );
 		}
 
 		DrawGraph( fin.History );

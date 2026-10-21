@@ -40,20 +40,25 @@ internal sealed class FinancePanel : GameWindow
 
 	private readonly record struct Series( UIStrings Label, string Fallback, byte R, byte G, byte B, Func<ParkFinances.FinanceSample, float> Value );
 
+	// The original's eight series, in its order (UIHELPTEXT 198–205 show them, 206–213 remove them).
 	private static readonly Series[] AllSeries =
 	{
 		new( UIStrings.BankBalance, "Bank balance", 250, 235, 40, s => s.Balance ),
+		new( UIStrings.ParkValue, "Park value", 230, 140, 230, s => s.ParkValue ),
 		new( UIStrings.MoneyIn, "Money in", 60, 200, 70, s => s.Income ),
+		new( UIStrings.GateTakings, "Gate takings", 150, 230, 150, s => s.Gate ),
+		new( UIStrings.ShopTakings, "Shop takings", 250, 160, 60, s => s.Shops ),
+		new( UIStrings.SideshowTakings, "Sideshow takings", 170, 120, 250, s => s.Sideshows ),
 		new( UIStrings.MoneyOut, "Money out", 200, 40, 40, s => s.Expense ),
 		new( UIStrings.GraphStaffCosts, "Staff costs", 60, 170, 230, s => s.Wages ),
 	};
 
-	private readonly bool[] shown = { true, true, true, false };
+	private readonly bool[] shown = { true, false, true, false, false, false, true, false };
 	private int range = 1;
 	private static readonly int[] RangeMonths = { 12, 36, 144 };
 	private static readonly string[] RangeLabels = { "1 Year", "3 Years", "12 Years" };
 
-	private static Rectangle SeriesRect( int i ) => At( 132f, 82f + i * 36f, 206f, 28f );
+	private static Rectangle SeriesRect( int i ) => At( 132f + i % 2 * 106f, 82f + i / 2 * 36f, 100f, 28f );
 	private static Rectangle RangeRect( int i ) => At( 380f + i * 128f, 82f, 118f, 24f );
 
 	protected override void OnUpdate()
@@ -89,7 +94,9 @@ internal sealed class FinancePanel : GameWindow
 			var r = SeriesRect( i );
 			Fill( new Rectangle( r.X - 2f, r.Y - 2f, r.Width + 4f, r.Height + 4f ), SolidOf( 20, 30, 90 ) );
 			Fill( r, shown[i] ? SolidOf( s.R, s.G, s.B ) : SolidOf( (byte)(s.R / 3), (byte)(s.G / 3), (byte)(s.B / 3) ) );
-			Text( Small, Localization.Get( s.Label, s.Fallback ), 235f, 89f + i * 36f, 11f, s.R + s.G > 300 ? new( 0.1f, 0.1f, 0.1f ) : default, TextAlign.Center );
+			Text( Small, Localization.Get( s.Label, s.Fallback ), 182f + i % 2 * 106f, 89f + i / 2 * 36f, 11f, s.R + s.G > 300 ? new( 0.1f, 0.1f, 0.1f ) : default, TextAlign.Center );
+			if ( Contains( r, MouseBase() ) )
+				Hint( (shown[i] ? 206 : 198) + i );
 		}
 		for ( int i = 0; i < RangeMonths.Length; i++ )
 		{
@@ -97,6 +104,8 @@ internal sealed class FinancePanel : GameWindow
 			Fill( new Rectangle( r.X - 2f, r.Y - 2f, r.Width + 4f, r.Height + 4f ), SolidOf( 20, 30, 90 ) );
 			Fill( r, i == range ? SolidOf( 150, 210, 60 ) : SolidOf( 20, 100, 30 ) );
 			Text( Small, RangeLabels[i], 439f + i * 128f, 88f, 11f, default, TextAlign.Center );
+			if ( Contains( r, MouseBase() ) )
+				Hint( 214 + i );
 		}
 
 		var history = fin.History;

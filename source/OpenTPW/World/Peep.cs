@@ -403,6 +403,22 @@ public sealed class Peep : ModelEntity
 
 	private static int recycles; // park-wide count of visitors that left and were replaced (diagnostics)
 
+	/// <summary>The game clock when the visitor came in (<see cref="GameClock.ElapsedSeconds"/>).</summary>
+	private readonly float arrivedAt = GameClock.Current?.ElapsedSeconds ?? 0f;
+
+	/// <summary>How long the visitor has been in the park, in game days (UITEXT 71 "Time in park").</summary>
+	public float DaysInPark => ((GameClock.Current?.ElapsedSeconds ?? 0f) - arrivedAt) / GameClock.SecondsPerDay;
+
+	/// <summary>The crowd's average <see cref="DaysInPark"/> (UITEXT 154 "Average time in park"); 0 if empty.</summary>
+	public static float AverageDaysInPark
+	{
+		get
+		{
+			var peeps = Entity.All.OfType<Peep>().ToList();
+			return peeps.Count == 0 ? 0f : peeps.Average( p => p.DaysInPark );
+		}
+	}
+
 	public Peep( ParkTerrain terrain, IReadOnlyList<RideQueue> queues, Vector3 spawn, int colorIndex, PathGraph? paths = null )
 	{
 		this.terrain = terrain;

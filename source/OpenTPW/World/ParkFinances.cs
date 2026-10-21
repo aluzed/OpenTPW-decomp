@@ -27,7 +27,8 @@ public sealed class ParkFinances
 	/// <summary>One period's finances: the closing balance, the income / expense that flowed that month, and the
 	/// cumulative visitor count at the close (drives the golden-ticket "recent visitors" window, T-055).</summary>
 	public readonly record struct FinanceSample( float Balance, float Income, float Expense, int Visitors = 0, float Wages = 0f,
-		int PeopleInPark = 0, float Happiness = 0f );
+		int PeopleInPark = 0, float Happiness = 0f, float Gate = 0f, float Shops = 0f, float Sideshows = 0f, float ParkValue = 0f,
+		float DaysInPark = 0f );
 
 	/// <summary>How many monthly samples the rolling history keeps (oldest dropped past this).</summary>
 	public const int MaxHistory = 144; // twelve years: the park information graph's longest range
@@ -42,7 +43,7 @@ public sealed class ParkFinances
 	/// <summary>Consecutive in-game months the park has closed in the red (Money &lt; 0); 0 when solvent.
 	/// Drives the advisor's escalating "in the red" warnings (T-046).</summary>
 	public int MonthsInRed { get; private set; }
-	private float lastWagesTotal;
+	private float lastWagesTotal, lastGateTotal, lastShopTotal, lastSideshowTotal;
 
 	/// <summary>Wages and income summed over the last <paramref name="months"/> closed months (advisor WagesHigh).</summary>
 	public (float Wages, float Income) RecentWagesAndIncome( int months )
@@ -68,9 +69,11 @@ public sealed class ParkFinances
 		lastExpenseTotal = TotalExpense;
 		float wages = WagesPaid - lastWagesTotal;
 		lastWagesTotal = WagesPaid;
+		float gate = EntryRevenue - lastGateTotal, shops = FoodRevenue - lastShopTotal, sideshows = SideshowRevenue - lastSideshowTotal;
+		(lastGateTotal, lastShopTotal, lastSideshowTotal) = (EntryRevenue, FoodRevenue, SideshowRevenue);
 
 		history.Add( new FinanceSample( Money, income, expense, VisitorsTotal, wages,
-			Entity.All.Count( e => e is Peep ), Peep.AverageHappiness ) );
+			Entity.All.Count( e => e is Peep ), Peep.AverageHappiness, gate, shops, sideshows, ParkValue, Peep.AverageDaysInPark ) );
 		if ( history.Count > MaxHistory )
 			history.RemoveRange( 0, history.Count - MaxHistory );
 
@@ -169,6 +172,9 @@ public sealed class ParkFinances
 	}
 
 	public IReadOnlyList<Loan> Loans => loans;
+	/// <summary>What the park's attractions would fetch (UITEXT 163 "Park value"): every ride's and stall's scrap value.</summary>
+	public static float ParkValue => (Entity.All.OfType<Ride>().Sum( r => r.BuildCost ) + Shop.Stalls.Sum( s => s.BuildCost )) * Ride.SellRefundFraction;
+
 	public float Debt => loans.Where( l => l.Bought ).Sum( l => l.Outstanding );
 
 	/// <summary>True once the park has been in the red for six months running — the game's rule (TAG_SYSTEM.str 123:

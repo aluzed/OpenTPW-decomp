@@ -75,6 +75,9 @@ internal sealed class VisitorWindow : GameWindow
 		Row( "Energy", peep.EnergyLevel );
 		Text( Small, "Money", 428f, y, 11f );
 		Text( Small, $"$ {peep.Cash:0}", 520f, y, 11f );
+		y += 18f;
+		Text( Small, Localization.Get( UIStrings.TimeInPark, "Time in park" ), 428f, y, 11f );
+		Text( Small, $"{peep.DaysInPark:0} days", 520f, y, 11f );
 
 		// Previous / next visitor, follow them round the park.
 		var all = Entity.All.OfType<Peep>().ToList();
