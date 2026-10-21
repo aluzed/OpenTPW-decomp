@@ -96,10 +96,11 @@ public sealed class ParkGround
 		var tex = level.Textures;
 		float worldW = map.Width * UnitsPerMapPixel, worldH = map.Height * UnitsPerMapPixel;
 		var rgba = new byte[width * height * 4];
-		Span<float> weight = stackalloc float[4];
 
-		for ( int oy = 0; oy < height; oy++ )
+		// Rows are independent: compose them in parallel (~2 s of the park load single-threaded).
+		Parallel.For( 0, height, oy =>
 		{
+			Span<float> weight = stackalloc float[4];
 			float wy = (oy + 0.5f) * worldH / height; // world units from the far edge
 			float my = wy / UnitsPerMapPixel - 0.5f;
 
@@ -139,7 +140,7 @@ public sealed class ParkGround
 				rgba[o + 2] = (byte)Math.Clamp( b, 0f, 255f );
 				rgba[o + 3] = (byte)Math.Clamp( weight[0], 0f, 255f );
 			}
-		}
+		} );
 
 		return rgba;
 	}
