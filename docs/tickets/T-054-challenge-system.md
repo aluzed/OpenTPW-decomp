@@ -19,7 +19,7 @@
   2 burgers (no longer the shared food counter), 4 ice creams, 5 gifts, 6 balloons, 7 costumes, 8 restaurant
   meals; 9/10 (% of kids with balloons / in costumes) measure the live share of visitors holding one
   (`ChallengeMetrics.IsLevel` — a level, not a gain since accepting; OpenTPW doesn't tell kids from adults).
-  Still-opaque types (loops 19, toilet cleanliness 24, staff happiness/skill, specific-ride builds/upgrades)
+  Still-opaque types (see the 2026-10-21 update below: now only loops 19 and kart crossroads 15)
   stay skipped until a counter exists. A dedicated clickable panel + advisor-delivered
   offers remain (polish).
 - **Needs**: [T-053](T-053-ingame-clock.md) (in-game days). **Related**: [T-055](T-055-golden-ticket-goals.md),
@@ -66,3 +66,20 @@ ride usage, shop sales) already exist.
 
 `source/OpenTPW/World/Challenge.cs` + `ChallengeManager.cs` (new), `UI/Widgets/ChallengePanel.cs` (new),
 hooks in `ParkFinances`/`Shop`/`Ride`/`Level`, `source/OpenTPW.Tests/ChallengeTests.cs` (new).
+
+## Specific rides, staff and upgrades (2026-10-21)
+
+- **`TargetObj` resolved**: rides now read their `Info.Id` (`Ride.InfoId`); the level maps the theme's rides and
+  sideshows by id → name (`ChallengeMetrics.Objects`), only offers a challenge whose ride exists in this world
+  (`IsAvailable` — Challenges.sam is shared by the four worlds: the Minecart is jungle's, the Jaw Dropper
+  Halloween's) and names the ride in the goal text.
+- **New types**: 17/20 peeps onto *that* ride (`Ride.TimesRidden`), 18/30/31 build that ride (`ParkFinances.Built(id)`,
+  counted on placement), 31/33 add an upgrade to it and 28 upgrade it to level N (its `UpgradeLevel`, a level),
+  21 its track with N sections (`CoasterTrack.SegmentCount`), 25/27 keep all staff / the handymen over N happiness
+  and 29 the mechanics' average skill (grade + training over grade 4) — the T-049 staff depth.
+- **"Keep … for N days"** (25, 27) must hold every day: lost the day it slips, won when the time is up.
+  Build / upgrade goals with `TargetVal 0` need at least one (`ChallengeMetrics.Target`).
+- **Offer pacing from `Standard.sam`** (`DaysUntilFirstChallenge` 540, `DaysAfterCompleted/DeclinedChallenge`
+  270) now that the calendar is the original's (T-076; was 3 / 5 / 8 days); offers and results are logged.
+- Still skipped: 15 (kart crossroads) and 19 (coaster loops) — OpenTPW tracks have neither. Unit-tested
+  (`ChallengeTypesTests`).

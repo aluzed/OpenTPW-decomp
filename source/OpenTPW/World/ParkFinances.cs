@@ -247,6 +247,18 @@ public sealed class ParkFinances
 	/// <summary>A track ride (coaster) was placed.</summary>
 	public void NoteCoasterBuilt() => CoastersBuilt++;
 
+	private readonly Dictionary<int, int> builtById = new();
+
+	/// <summary>How many of the object <c>Info.Id</c> <paramref name="id"/> have been built (challenge "build X").</summary>
+	public int Built( int id ) => builtById.GetValueOrDefault( id );
+
+	/// <summary>A ride / sideshow / feature with <c>Info.Id</c> <paramref name="id"/> was placed.</summary>
+	public void NoteBuilt( int id )
+	{
+		if ( id != 0 )
+			builtById[id] = Built( id ) + 1;
+	}
+
 	/// <summary>A ride finished researching its next level.</summary>
 	public void NoteResearchCompleted() => ResearchCompleted++;
 

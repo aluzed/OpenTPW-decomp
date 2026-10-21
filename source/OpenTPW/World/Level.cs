@@ -150,11 +150,24 @@ public class Level
 			using var cs = FileSystem.OpenRead( "Challenges.sam" );
 			if ( cs != null )
 			{
+				// Only challenges about rides this world has (TargetObj = a ride's Info.Id).
+				ChallengeMetrics.Objects = ThemeObjects( Current.Name );
 				var challenges = Challenge.ParseAll( new SettingsFile( cs ).Entries )
-					.Where( c => ChallengeMetrics.IsSupported( c.Type ) ).ToList();
+					.Where( c => ChallengeMetrics.IsSupported( c.Type ) && ChallengeMetrics.IsAvailable( c ) ).ToList();
+				// Offer pacing from Standard.sam (540 days to the first, 270 after one ends) — the calendar runs at the
+				// original's pace now (T-076); OPENTPW_FAST_CLOCK compresses it for testing.
+				var pacing = new SettingsFile( $"/levels/{Current.Name}/Standard.sam" );
+				int Days( string key, int fallback ) => int.TryParse( pacing[$"Challenges.{key}"], out var d ) ? d : fallback;
 				var mgr = new ChallengeManager( challenges, ChallengeMetrics.Current,
-					prize => ParkFinances.Current?.AwardPrize( prize ) );
+					prize => ParkFinances.Current?.AwardPrize( prize ) )
+				{
+					DaysUntilFirst = Days( "DaysUntilFirstChallenge", 540 ),
+					DaysAfterCompleted = Days( "DaysAfterCompletedChallenge", 270 ),
+					DaysAfterDeclined = Days( "DaysAfterDeclinedChallenge", 270 ),
+				};
 				ChallengeManager.Current = mgr;
+				mgr.Offered += c => Log.Info( $"[challenge] offered #{c.Index}: {ChallengeMetrics.Describe( c )}" );
+				mgr.Finished += ( c, won ) => Log.Info( $"[challenge] #{c.Index} {(won ? "won" : "lost")}" );
 				GameClock.Current.OnNewDay += mgr.OnNewDay;
 				Log.Info( $"[challenge] loaded {challenges.Count} trackable challenge(s)" );
 			}
@@ -896,6 +909,24 @@ public class Level
 		float.TryParse( s[key], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out value );
 
 	// A ride's build cost (Upgrades[0].CostOfUpgrade) and its display name (Info.Name, localized) from its .sam.
+	// The theme's buildable rides and sideshows by Info.Id → (localized) name, for challenges about one ride.
+	private static Dictionary<int, string> ThemeObjects( string theme )
+	{
+		var objects = new Dictionary<int, string>();
+		foreach ( var (folder, names) in new[] { ("rides", LevelTheme.RideNames( theme )), ("sideshow", LevelTheme.SideshowNames( theme )) } )
+			foreach ( var name in names )
+			{
+				try
+				{
+					var s = new SettingsFile( FileSystem.OpenRead( $"levels/{theme}/{folder}/{name}/{name}.sam" ) );
+					if ( int.TryParse( s["Info.Id"], out var id ) && id != 0 )
+						objects[id] = ReadRideInfo( $"levels/{theme}/{folder}/{name}", name ).Title ?? name;
+				}
+				catch { /* no .sam: not nameable by a challenge */ }
+			}
+		return objects;
+	}
+
 	private static (float Cost, string? Title) ReadRideInfo( string path, string name )
 	{
 		try
@@ -949,8 +980,12 @@ public class Level
 			return false;
 		}
 		if ( charge ) fin?.PayBuild( item.Cost );
-		if ( item.RidePath != null && Entity.All.OfType<Ride>().LastOrDefault() is { Shape.HasTrack: true } )
-			fin?.NoteCoasterBuilt(); // challenge type 18 (T-054)
+		if ( item.RidePath != null && Entity.All.OfType<Ride>().LastOrDefault() is { } placedRide )
+		{
+			if ( placedRide.Shape.HasTrack )
+				fin?.NoteCoasterBuilt(); // challenge type 18 (T-054)
+			fin?.NoteBuilt( placedRide.InfoId ); // "build the Minecart" (T-054)
+		}
 		// The build puff (not when a loaded save rebuilds the park).
 		if ( charge && item.RidePath != null && Entity.All.OfType<Ride>().LastOrDefault() is { } built )
 			ParticleEmitter.World.Spawn( built.IsFeature ? ParticleEmitter.CreateFeature : built.IsSideshow ? ParticleEmitter.CreateSideshow : ParticleEmitter.CreateRide, built.Position + Vector3.Up * 6f );

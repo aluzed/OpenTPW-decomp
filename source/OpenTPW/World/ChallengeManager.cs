@@ -64,8 +64,16 @@ public sealed class ChallengeManager
 			case Phase.Active:
 				DaysLeft--;
 				Progress = metric( Active! ) - baseline;
-				bool met = Progress >= Active!.TargetVal;
-				if ( met && !Active.CheckAtEndOnly )
+				bool met = Progress >= ChallengeMetrics.Target( Active! );
+				if ( ChallengeMetrics.IsKeep( Active! ) )
+				{
+					// "Keep … for N days": lost the day it slips, won when the time is up.
+					if ( !met )
+						Finish( won: false );
+					else if ( DaysLeft <= 0 )
+						Finish( won: true );
+				}
+				else if ( met && !Active!.CheckAtEndOnly )
 					Finish( won: true );
 				else if ( DaysLeft <= 0 )
 					Finish( won: met );
@@ -80,7 +88,7 @@ public sealed class ChallengeManager
 			return;
 		State = Phase.Active;
 		DaysLeft = c.TargetTime;
-		baseline = ChallengeMetrics.IsLevel( c.Type ) ? 0f : metric( c );
+		baseline = ChallengeMetrics.IsLevel( c ) ? 0f : metric( c );
 		Progress = 0f;
 	}
 
@@ -119,7 +127,7 @@ public sealed class ChallengeManager
 		{
 			DaysLeft = daysLeft;
 			Progress = progress;
-			baseline = ChallengeMetrics.IsLevel( active.Type ) ? 0f : metric( active ) - progress; // re-anchor so future OnNewDay gains stay consistent
+			baseline = ChallengeMetrics.IsLevel( active ) ? 0f : metric( active ) - progress; // re-anchor so future OnNewDay gains stay consistent
 		}
 	}
 
@@ -127,6 +135,7 @@ public sealed class ChallengeManager
 	{
 		var c = Active!;
 		LastResult = (c, won);
+		Finished?.Invoke( c, won );
 		if ( won )
 		{
 			Won++;
@@ -153,7 +162,13 @@ public sealed class ChallengeManager
 		}
 		Active = next;
 		State = Phase.Offered;
+		Offered?.Invoke( next );
 	}
+
+	/// <summary>Raised when a challenge is offered.</summary>
+	public event Action<Challenge>? Offered;
+	/// <summary>Raised when the active challenge ends (won or lost).</summary>
+	public event Action<Challenge, bool>? Finished;
 
 	private Challenge? PickNext()
 	{

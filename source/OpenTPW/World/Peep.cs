@@ -630,6 +630,7 @@ public sealed class Peep : ModelEntity
 			}
 			else
 				ParkFinances.Current?.TakeRideTicket( route.Ride.TicketPrice ); // pays to board
+				route.Ride.TimesRidden++;
 			route.Board( this );
 			riding = true;
 			rideTimer = route.RideDuration;

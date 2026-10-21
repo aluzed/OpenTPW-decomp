@@ -234,6 +234,12 @@ public class Ride : Entity
 	/// (<c>UsageInfo.ChillsYouOut</c>) is where tired staff rest.</summary>
 	public bool IsFeature { get; private set; }
 
+	/// <summary>The object's <c>Info.Id</c> (1180 = Minecart…), what challenges name rides by (T-054).</summary>
+	public int InfoId { get; private set; }
+
+	/// <summary>How many visitors have ridden this ride (challenge "get N peeps onto X").</summary>
+	public int TimesRidden { get; internal set; }
+
 	/// <summary>A security camera (<c>UsageInfo.ProvidesSecurity</c>).</summary>
 	public bool ProvidesSecurity { get; private set; }
 
@@ -496,6 +502,7 @@ public class Ride : Entity
 					ReadFloat( settings, $"Upgrades[{i}].WearRate", DefaultWearRates[Math.Min( i, DefaultWearRates.Length - 1 )] ) ) );
 			}
 			Excitement = Math.Max( 1, ReadInt( settings, "UsageInfo.ExcitementLevel", 50 ) );
+			InfoId = ReadInt( settings, "Info.Id", 0 );
 			Attraction = ReadInt( settings, "Info.AttractionValue", IsFeature ? 10 : 25 ); // Features.sam: 10
 			ProvidesSecurity = IsFeature && ReadInt( settings, "UsageInfo.ProvidesSecurity", 0 ) != 0;
 			ChillsYouOut = IsFeature && ReadInt( settings, "UsageInfo.ChillsYouOut", 0 ) != 0;
