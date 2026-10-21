@@ -20,11 +20,11 @@ namespace OpenTPW;
 public static class ChallengeMetrics
 {
 	/// <summary>Whether this challenge Type is tracked (so the manager can offer it).</summary>
-	public static bool IsSupported( int type ) => type is (>= 1 and <= 13) or 16 or 18 or 20;
+	public static bool IsSupported( int type ) => type is (>= 1 and <= 13) or 16 or 18 or 20 or 24;
 
 	/// <summary>True for a type that measures a level the park must reach (a share of visitors, 9/10) rather than a
 	/// count accumulated since the challenge was accepted — its progress is the live value, not a gain.</summary>
-	public static bool IsLevel( int type ) => type is 9 or 10;
+	public static bool IsLevel( int type ) => type is 9 or 10 or 24;
 
 	/// <summary>The current absolute value of the counter <paramref name="c"/>'s Type measures (the manager
 	/// tracks the gain since the challenge was accepted).</summary>
@@ -45,6 +45,7 @@ public static class ChallengeMetrics
 			8 => fin.Sold( SaleCategory.Restaurant ), // "Sell N Restaurant meals"
 			9 => PercentOfVisitors( p => p.HasBalloon ),  // "Get N% of the kids to have balloons"
 			10 => PercentOfVisitors( p => p.HasCostume ), // "Get N% of the kids in costumes"
+			24 => Shop.ToiletCleanliness(),               // "Keep toilets N% clean" (checked at the deadline)
 			11 => fin.VisitorsTotal,   // "Get N new visitors"
 			12 => fin.ShopProfit,      // "Make N profit from all shops" (takings minus cost of goods)
 			13 => fin.SideshowRevenue, // "Get your sideshows to make N profit"
@@ -81,6 +82,7 @@ public static class ChallengeMetrics
 		8 => $"Sell {c.TargetVal} restaurant meals in {c.TargetTime} days",
 		9 => $"Get {c.TargetVal}% of visitors holding balloons in {c.TargetTime} days",
 		10 => $"Get {c.TargetVal}% of visitors in costumes in {c.TargetTime} days",
+		24 => $"Keep your toilets {c.TargetVal}% clean for {c.TargetTime} days",
 		11 => $"Attract {c.TargetVal} new visitors in {c.TargetTime} days",
 		12 => $"Make {c.TargetVal} profit from shops in {c.TargetTime} days",
 		13 => $"Make {c.TargetVal} sideshow profit in {c.TargetTime} days",

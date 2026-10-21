@@ -11,10 +11,10 @@ public class ChallengeMetricsTests
 	[TestMethod]
 	public void SupportsTheDecodedTypes()
 	{
-		foreach ( var t in new[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 16, 18, 20 } )
+		foreach ( var t in new[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 16, 18, 20, 24 } )
 			Assert.IsTrue( ChallengeMetrics.IsSupported( t ), $"type {t} is decoded + tracked" );
 		// Still-opaque types stay unsupported (skipped by the manager).
-		foreach ( var t in new[] { 19, 24, 25 } )
+		foreach ( var t in new[] { 19, 25 } )
 			Assert.IsFalse( ChallengeMetrics.IsSupported( t ), $"type {t} has no counter yet" );
 	}
 
@@ -92,7 +92,8 @@ public class ChallengeMetricsTests
 	[TestMethod]
 	public void ShareOfVisitorsTypesAreLevelsNotGains()
 	{
-		Assert.IsTrue( ChallengeMetrics.IsLevel( 9 ) && ChallengeMetrics.IsLevel( 10 ) );
+		Assert.IsTrue( ChallengeMetrics.IsLevel( 9 ) && ChallengeMetrics.IsLevel( 10 ) && ChallengeMetrics.IsLevel( 24 ) );
+		StringAssert.Contains( ChallengeMetrics.Describe( OfType( 24, 20, 90 ) ), "toilets 20% clean" );
 		Assert.IsFalse( ChallengeMetrics.IsLevel( 6 ) );
 		StringAssert.Contains( ChallengeMetrics.Describe( OfType( 9, 15 ) ), "15%" );
 	}

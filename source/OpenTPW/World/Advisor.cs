@@ -291,7 +291,8 @@ public sealed class Advisor : Entity
 			NeedingToilet: Peep.CountNeedingToilet(),
 			Misbehaving: Peep.CountUnhappy(),
 			Days: GameClock.Current?.TotalDays ?? 0,
-			WaitingAtGate: Level.WaitingAtGate );
+			WaitingAtGate: Level.WaitingAtGate,
+			WorstToiletFilth: Shop.Stalls.Where( s => s.Kind == ShopKind.Toilet ).Select( s => s.Filth ).DefaultIfEmpty( 0f ).Max() );
 	}
 
 	protected override void OnUpdate()

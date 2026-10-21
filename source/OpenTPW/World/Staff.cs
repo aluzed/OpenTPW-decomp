@@ -350,6 +350,17 @@ public sealed class Staff : ModelEntity
 	// Head for the nearest litter and pick it up; wander if the park is clean.
 	private void DoHandyman()
 	{
+		// A toilet that needs cleaning comes first (it sickens visitors); otherwise the nearest litter.
+		if ( toiletTarget is { NeedsCleaning: true } || (toiletTarget = DirtiestToilet()) != null )
+		{
+			if ( WalkToward( toiletTarget!.Position ) )
+			{
+				toiletTarget.Filth = 0f;
+				toiletTarget = null;
+			}
+			return;
+		}
+
 		var litter = NearestLitter();
 		if ( litter == null )
 		{
@@ -359,6 +370,17 @@ public sealed class Staff : ModelEntity
 
 		if ( WalkToward( litter.Position ) )
 			litter.PickUp();
+	}
+
+	private Shop? toiletTarget;
+
+	private Shop? DirtiestToilet()
+	{
+		Shop? best = null;
+		foreach ( var s in Shop.Stalls )
+			if ( s.NeedsCleaning && InRange( s.Position ) && (best == null || s.Filth > best.Filth) )
+				best = s;
+		return best;
 	}
 
 	private Litter? NearestLitter()

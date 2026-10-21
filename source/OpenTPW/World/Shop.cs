@@ -39,6 +39,27 @@ public sealed class Shop : ModelEntity
 	/// <summary>What this stall sells (which need it satisfies).</summary>
 	public ShopKind Kind { get; }
 
+	/// <summary>How filthy a toilet is (0 clean … 100): each visit dirties it, a handyman cleans it. At
+	/// <see cref="DirtyFilth"/> it upsets and sickens its users (Standard.sam RegionFX "Dirty Toilet": illness) and the
+	/// advisor complains (Advisor.sam FeaturesDirtyToilets*.FilthierThan 60 / 90).</summary>
+	public float Filth { get; set; }
+
+	public const float FilthPerVisit = 1f, DirtyFilth = 60f, FilthyFilth = 90f;
+
+	/// <summary>Whether a handyman should come and clean this toilet.</summary>
+	public bool NeedsCleaning => Kind == ShopKind.Toilet && Filth >= CleanAtFilth;
+	private const float CleanAtFilth = 30f;
+
+	/// <summary>The park's toilets' average cleanliness, 0–100 (100 with no toilets) — challenge type 24.</summary>
+	public static float ToiletCleanliness()
+	{
+		float sum = 0f;
+		int n = 0;
+		foreach ( var s in Stalls )
+			if ( s.Kind == ShopKind.Toilet ) { sum += 100f - s.Filth; n++; }
+		return n == 0 ? 100f : sum / n;
+	}
+
 	/// <summary>A free facility (toilet, litter bin): nothing to sell, so no price.</summary>
 	public bool IsFree => Kind is ShopKind.Toilet or ShopKind.Bin;
 

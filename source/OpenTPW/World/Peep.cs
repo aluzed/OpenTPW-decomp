@@ -463,8 +463,16 @@ public sealed class Peep : ModelEntity
 				}
 				if ( shopTarget.Kind == ShopKind.Toilet )
 				{
+					// A dirty toilet is a nasty experience and can turn the stomach (RegionFX "Dirty Toilet").
+					if ( shopTarget.Filth >= Shop.DirtyFilth )
+					{
+						happiness = MathF.Max( 0f, happiness - 5f ); // SmallHappinessChange
+						illness += shopTarget.Filth >= Shop.FilthyFilth ? 30f : 15f;
+					}
+					shopTarget.Filth = MathF.Min( 100f, shopTarget.Filth + Shop.FilthPerVisit );
 					bladder = 0f; // toilets are free facilities — no income
-					illness = 0f; // a sick visitor who made it to a toilet leaves no puddle
+					if ( shopTarget.Filth < Shop.DirtyFilth )
+						illness = 0f; // a sick visitor who made it to a clean toilet leaves no puddle
 					ToiletVisits++;
 				}
 				else

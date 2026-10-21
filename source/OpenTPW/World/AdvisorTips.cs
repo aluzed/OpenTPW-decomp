@@ -37,6 +37,10 @@ public static class AdvisorTips
 		["ShopsBuildShops"] = "You haven't built any shops yet.",
 		["SideshowsBuildSideshows"] = "Your park has no sideshows yet.",
 		["FeaturesNoToilets"] = "Your park needs some toilets.",
+		["FeaturesDirtyToilets1"] = "Your toilets are getting dirty and you have no cleaners.",
+		["FeaturesDirtyToilets2"] = "Your toilets are getting dirty — make sure a cleaner patrols them.",
+		["FeaturesDirtyToilets3"] = "Your toilets are filthy — hire some cleaners!",
+		["FeaturesDirtyToilets4"] = "Your toilets are so filthy they're making people sick.",
 		["PricingTicketTooExpensive"] = "Visitors think your ticket price is too high.",
 		["PricingTicketTooCheap"] = "Visitors think your ticket price is cheap — you could raise it.",
 		["PricingFoodTooExpensive"] = "Your food is too expensive.",
@@ -75,6 +79,10 @@ public static class AdvisorTips
 		["ShopsBuildShops"] = 77,
 		["SideshowsBuildSideshows"] = 81,
 		["FeaturesNoToilets"] = 86,
+		["FeaturesDirtyToilets1"] = 89, // "…getting dirty and you have no cleaners…"
+		["FeaturesDirtyToilets2"] = 90, // "…getting dirty. Make sure a cleaner is patrolling them."
+		["FeaturesDirtyToilets3"] = 91, // "People are complaining that your toilets are dirty. You should hire some cleaners!"
+		["FeaturesDirtyToilets4"] = 92, // "…so filthy they are making people sick…"
 		["PricingTicketTooExpensive"] = 94,
 		["PricingTicketTooCheap"] = 95,
 		["PricingFoodTooExpensive"] = 96,

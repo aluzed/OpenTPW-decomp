@@ -28,7 +28,7 @@ public readonly record struct ParkSnapshot(
 public readonly record struct ParkFacilities(
 	int Mechanics, int Handymen, int Guards, int Entertainers,
 	int Rides, int WornRides, int BrokenRides, int Shops, int Sideshows, int Toilets,
-	int Litter, int Visitors, int NeedingToilet, int Misbehaving, int Days, int WaitingAtGate = 0 );
+	int Litter, int Visitors, int NeedingToilet, int Misbehaving, int Days, int WaitingAtGate = 0, float WorstToiletFilth = 0f );
 
 /// <summary>
 /// Maps the live park state to advisor message candidates — <c>(id, group, score)</c> for the
@@ -163,6 +163,15 @@ public static class AdvisorAdvice
 		float busy = P( "StaffHireEntertainers1", "AtLeastThisBusy", 35f );
 		if ( f.Entertainers == 0 && f.Visitors >= busy )
 			Add( "StaffHireEntertainers1", MathF.Min( FacilityScoreCap, P( "StaffHireEntertainers1", "ScorePerExtraBusyPoint", 3f ) * (f.Visitors - busy + 1) ) );
+
+		// Dirty toilets (FeaturesDirtyToilets1–4): dirty (> 60) / filthy (> 90), with or without cleaners.
+		if ( f.Toilets > 0 && f.WorstToiletFilth > P( "FeaturesDirtyToilets1", "FilthierThan", 60f ) )
+		{
+			bool filthy = f.WorstToiletFilth > P( "FeaturesDirtyToilets3", "FilthierThan", 90f );
+			string id = filthy ? (f.Handymen == 0 ? "FeaturesDirtyToilets3" : "FeaturesDirtyToilets4")
+				: (f.Handymen == 0 ? "FeaturesDirtyToilets1" : "FeaturesDirtyToilets2");
+			Add( id, P( id, "PointsPerFilthPct", filthy ? 2f : 1f ) * f.WorstToiletFilth );
+		}
 
 		// People want to come in but the gates are shut.
 		if ( f.WaitingAtGate > 0 )
