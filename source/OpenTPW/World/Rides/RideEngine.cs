@@ -118,7 +118,7 @@ public sealed class RideEngine : IRideEngine
 		// −1 for "the ride" — as the sound.)
 		var obj = new RideObject { Id = id, Type = type, Node = node, Code = code };
 		objects[id] = obj;
-		if ( type is 1 or 2 && code >= 0 && (code & 0x8000) == 0 )
+		if ( ClassifyEvent( type ) == EventKind.Sound && code >= 0 && (code & 0x8000) == 0 )
 			PlayEventSound( type, code, node );
 		Log.Trace( $"[ride] ADDOBJ type={type} node={node} code={code} id={id}" );
 	}
@@ -310,38 +310,28 @@ public sealed class RideEngine : IRideEngine
 	private const float EventDebounce = 0.5f; // ride loops re-fire EVENT each tick — don't restart too fast
 
 	// Ride event dispatch. EVENT(type, target, code) — RE'd end to end (handler FUN_00552615 → dispatch
-	// FUN_005573d0). The corrected model (T-047): the 7 "pools" (DAT_00803a20..3c) are **sound CATEGORIES**
-	// registered through the unified effect manager (DAT_00802bcc), not particle sets, so:
-	//   • types **1 & 2** = positioned SOUNDS (FUN_00521e60 / FUN_00521930) — `code` is a global sound id
-	//     resolved through the rides BANK,
-	//   • types **3 & 4** = PARTICLE effects (FUN_0051bfc0, the REPAIREFFECT/SPARK spawner) — `code` is a
-	//     `Tp2.plb` par_lib index, rendered through the decoded .PLB proxy (T-019),
-	//   • types **5-9** = positioned CATEGORY sounds — 5→rides, 6→kids, 7→staff, 8→ambient, 9→ui (each its
-	//     own cat_*BANK.map), `code` a global id within that category,
-	//   • type **10** = a per-ride custom effect; not yet RE'd, so kept on the particle path (a visible
-	//     stand-in) pending its decode.
-	// (The pre-T-047 code routed all of 3-10 to particles, which mis-played the 5-9 category sounds as
-	// silent/odd proxies — this split fixes that.) Both kinds are debounced so a per-tick ride loop doesn't
-	// restart the clip / spam proxies. Real 3D node positioning (FUN_00556b90 / T-048) remains a follow-up.
-	/// <summary>The effect kind an EVENT type selects (RE'd from FUN_005573d0, corrected in T-047): types
-	/// 1-2 & 5-9 are positioned sounds, 3-4 (and the custom type 10) are particle effects, anything else is
-	/// "RSSE: Unknown object type".</summary>
-	public enum EventKind { Unknown, Sound, Particle }
+	// FUN_005573d0, shared with ADDOBJ). Every type is a positioned SOUND at node `target` (T-047, corrected
+	// 2026-10-21): types 1 & 2 play a global ride-sound id (FUN_00521e60 / FUN_00521930), types 3-10 spawn from one
+	// of the effect manager's pools (FUN_0051bfc0), and the pools are the sound categories FUN_0051eae0 /
+	// FUN_0051ec50 register — 3 → the LEVEL's cat_rides (DAT_00803a3c), 4 → the level's cat_ambient (a38),
+	// 5 → global rides, 6 → kids, 7 → staff, 8 → global ambient, 9 → ui, 10 → the ride's own custom bank (not
+	// resolved yet, so silent). (Types 3-4 were read as Tp2.plb particles before: their codes — 73-75 the jungle
+	// lion roars, 90 lava suck, 219/220 "out of range" — are entries of the level's 306-sample ride bank.) Sounds are
+	// debounced so a per-tick ride loop doesn't restart the clip.
+	/// <summary>The effect kind an EVENT / ADDOBJ type selects (FUN_005573d0): types 1-10 are positioned sounds,
+	/// anything else is "RSSE: Unknown object type".</summary>
+	public enum EventKind { Unknown, Sound }
 
-	public static EventKind ClassifyEvent( int type ) => type switch
-	{
-		1 or 2 => EventKind.Sound,
-		3 or 4 => EventKind.Particle,
-		>= 5 and <= 9 => EventKind.Sound,
-		10 => EventKind.Particle, // custom effect — particle stand-in until its handler is RE'd
-		_ => EventKind.Unknown
-	};
+	public static EventKind ClassifyEvent( int type ) => type is >= 1 and <= 10 ? EventKind.Sound : EventKind.Unknown;
 
-	/// <summary>The sound category an EVENT type plays through (T-047): types 1-2 & 5 → rides, 6 → kids,
-	/// 7 → staff, 8 → ambient, 9 → ui. Null for non-sound types. Each maps to a <c>cat_*BANK.map</c>.</summary>
+	/// <summary>The sound category an EVENT / ADDOBJ type plays through: 1-2 & 5 → rides, 6 → kids, 7 → staff,
+	/// 8 → ambient, 9 → ui, and the level's own banks for 3 (<c>level:rides</c>) and 4 (<c>level:ambient</c>). Null
+	/// for the custom type 10 and non-sound types. Each maps to a <c>cat_*BANK.map</c>.</summary>
 	public static string? EventSoundCategory( int type ) => type switch
 	{
 		1 or 2 or 5 => "rides",
+		3 => "level:rides",
+		4 => "level:ambient",
 		6 => "kids",
 		7 => "staff",
 		8 => "ambient",
@@ -366,10 +356,6 @@ public sealed class RideEngine : IRideEngine
 		{
 			case EventKind.Sound:
 				PlayEventSound( type, p2, p1 );
-				break;
-			case EventKind.Particle:
-				if ( !EventDebounced( $"fx{type}:{p2}" ) )
-					SpawnParticleEffect( p2, p1 );
 				break;
 		}
 	}
@@ -407,11 +393,16 @@ public sealed class RideEngine : IRideEngine
 	private static readonly Dictionary<string, RideSoundBank?> categoryBanks = new();
 	private static RideSoundBank? CategoryBank( string category )
 	{
-		if ( !categoryBanks.TryGetValue( category, out var bank ) )
+		// A "level:" category lives with the park world's own sounds (levels/<theme>/Sound), the rest globally.
+		bool level = category.StartsWith( "level:" );
+		var theme = Level.Current?.Name ?? LevelTheme.Default;
+		var key = level ? $"{theme}/{category}" : category;
+		if ( !categoryBanks.TryGetValue( key, out var bank ) )
 		{
-			bank = RideSoundBank.FromBankCatalog(
-				Path.Join( GameDir.GamePath, "data", "global", "sound", $"cat_{category}BANK.map" ) );
-			categoryBanks[category] = bank;
+			bank = level
+				? RideSoundBank.FromBankCatalog( Path.Join( GameDir.GamePath, "data", "levels", theme, "Sound", $"cat_{category["level:".Length..]}BANK.map" ) )
+				: RideSoundBank.FromBankCatalog( Path.Join( GameDir.GamePath, "data", "global", "sound", $"cat_{category}BANK.map" ) );
+			categoryBanks[key] = bank;
 		}
 		return bank;
 	}

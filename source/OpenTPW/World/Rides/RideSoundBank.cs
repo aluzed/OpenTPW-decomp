@@ -18,10 +18,15 @@ namespace OpenTPW;
 public sealed class RideSoundBank
 {
 	private readonly string[] bankFiles;        // .sdt stems, in catalog order (e.g. "RideHD")
+	private readonly string directory;          // where the banks live: beside their catalog
 	private readonly List<MP2File> tracks = new(); // concatenated samples loaded so far
 	private int loadedBanks;
 
-	private RideSoundBank( string[] bankFiles ) => this.bankFiles = bankFiles;
+	private RideSoundBank( string[] bankFiles, string directory )
+	{
+		this.bankFiles = bankFiles;
+		this.directory = directory;
+	}
 
 	/// <summary>
 	/// Builds the registry from a BANK catalog (e.g. <c>data/global/sound/cat_ridesBANK.map</c>): its
@@ -40,7 +45,7 @@ public sealed class RideSoundBank
 			var banks = map.Entries
 				.Select( e => e.Split( '\\', '/' )[^1] + "HD" )
 				.ToArray();
-			return banks.Length > 0 ? new RideSoundBank( banks ) : null;
+			return banks.Length > 0 ? new RideSoundBank( banks, Path.GetDirectoryName( catalogPath ) ?? "" ) : null;
 		}
 		catch
 		{
@@ -59,7 +64,7 @@ public sealed class RideSoundBank
 
 		while ( soundId >= tracks.Count && loadedBanks < bankFiles.Length )
 		{
-			var path = Path.Join( GameDir.GamePath, "data", "global", "sound", bankFiles[loadedBanks] + ".sdt" );
+			var path = Path.Join( directory, bankFiles[loadedBanks] + ".sdt" );
 			loadedBanks++;
 			if ( File.Exists( path ) )
 			{

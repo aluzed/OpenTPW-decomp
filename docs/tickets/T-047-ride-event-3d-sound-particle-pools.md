@@ -157,3 +157,18 @@ category `.sam` declares — `Info.CreateParticleEffect` / `DestroyParticleEffec
 `P_EFFECT_Create1..4` / `Destroy1..4` / `Upgrade`. These are continuous emitters (`BurstCount` 0, 4.5–8.5 s) that
 the proxy releases at once as a 14-mote cloud, with the authored emission speed capped so it stays in view.
 
+
+## 2026-10-21 (night) — EVENT / ADDOBJ types 3-4 are the level's sounds, not particles
+
+`FUN_005573d0` (the dispatch EVENT and ADDOBJ share) hands types 3-10 to `FUN_0051bfc0` with a pool, and the pools
+are the sound categories `FUN_0051eae0` / `FUN_0051ec50` register: **3 → the level's `cat_rides`** (`DAT_00803a3c`,
+`levels/<theme>/Sound/cat_ridesBANK.map` → `RideHD` + `sRideHD` + `xRideHD`, 306 samples in the jungle), **4 → the
+level's `cat_ambient`** (`a38`), 5 → global rides, 6 → kids, 7 → staff, 8 → global ambient, 9 → ui, 10 → the ride's
+own custom bank (`FUN_004145e0`, "Tried to trigger a custom e…" when absent; not resolved yet, silent). The codes the
+shipped scripts send on 3 are exactly those level samples — 73 / 74 / 75 the lion roars (Crazy Ape), 90 the lava
+suck (volcano), 62 metal clank, 8 whoosh, 78 water, 143 crackle, and the "out-of-range" 219 / 220 are the fountain
+sounds `fou002` / `fou003`. Read as `Tp2.plb` particles they were demolition clouds and message tags. `RideEngine`
+now plays every type 1-9 as a positioned sound through its category bank (`RideSoundBank` finds the banks beside
+their catalog, so a level catalog reads the level's `.sdt`s); `ClassifyEvent` no longer has a particle kind.
+ADDOBJ sound objects (types 1-9) play the same way. Verified in game (trace: `EVENT t3 cat=level:rides code=75 ->
+lion5.mp2`…), no exceptions.

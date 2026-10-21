@@ -291,11 +291,11 @@ public class RideEngineTests
 		// (and the custom type 10) are Particle; the rest are "unknown object type".
 		Assert.AreEqual( RideEngine.EventKind.Sound, RideEngine.ClassifyEvent( 1 ) );
 		Assert.AreEqual( RideEngine.EventKind.Sound, RideEngine.ClassifyEvent( 2 ) );
-		Assert.AreEqual( RideEngine.EventKind.Particle, RideEngine.ClassifyEvent( 3 ) );
-		Assert.AreEqual( RideEngine.EventKind.Particle, RideEngine.ClassifyEvent( 4 ) );
+		Assert.AreEqual( RideEngine.EventKind.Sound, RideEngine.ClassifyEvent( 3 ) ); // the level's ride sounds
+		Assert.AreEqual( RideEngine.EventKind.Sound, RideEngine.ClassifyEvent( 4 ) ); // the level's ambience
 		foreach ( var t in new[] { 5, 6, 7, 8, 9 } )
 			Assert.AreEqual( RideEngine.EventKind.Sound, RideEngine.ClassifyEvent( t ), $"type {t}" );
-		Assert.AreEqual( RideEngine.EventKind.Particle, RideEngine.ClassifyEvent( 10 ) );
+		Assert.AreEqual( RideEngine.EventKind.Sound, RideEngine.ClassifyEvent( 10 ) ); // the ride's custom bank
 		Assert.AreEqual( RideEngine.EventKind.Unknown, RideEngine.ClassifyEvent( 0 ) );
 		Assert.AreEqual( RideEngine.EventKind.Unknown, RideEngine.ClassifyEvent( 11 ) );
 	}
@@ -312,8 +312,9 @@ public class RideEngineTests
 		Assert.AreEqual( "staff", RideEngine.EventSoundCategory( 7 ) );
 		Assert.AreEqual( "ambient", RideEngine.EventSoundCategory( 8 ) );
 		Assert.AreEqual( "ui", RideEngine.EventSoundCategory( 9 ) );
-		Assert.IsNull( RideEngine.EventSoundCategory( 3 ) );  // particle, no category
-		Assert.IsNull( RideEngine.EventSoundCategory( 10 ) ); // custom, no category
+		Assert.AreEqual( "level:rides", RideEngine.EventSoundCategory( 3 ) );   // the level's cat_rides (DAT_00803a3c)
+		Assert.AreEqual( "level:ambient", RideEngine.EventSoundCategory( 4 ) ); // the level's cat_ambient (a38)
+		Assert.IsNull( RideEngine.EventSoundCategory( 10 ) ); // the ride's custom bank, not resolved yet
 	}
 
 	[TestMethod]
