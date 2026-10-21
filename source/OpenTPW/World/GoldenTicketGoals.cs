@@ -10,9 +10,10 @@ public sealed class GoldenTicketGoals
 	/// <summary>The active level's goals (HUD reads this); null before a level loads.</summary>
 	public static GoldenTicketGoals? Current { get; set; }
 
-	// Happiness above this counts a visitor as "happy" for the AtLeastThisManyHappyPeople goal (approx — the
-	// original's exact "happy" threshold isn't decoded yet).
-	private const float HappyThreshold = 50f;
+	// Happiness above this counts a visitor as "happy" for the AtLeastThisManyHappyPeople goal: the game's own
+	// happy band — its park-happiness gauge (FUN_004a52a0) shows the share of visitors over 66 (FUN_004c9670( 0x42 ))
+	// against the share under 33 (FUN_004c9750( 0x21 )).
+	public const float HappyThreshold = 66f;
 
 	private readonly GoldenTicketTargets targets;
 

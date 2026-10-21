@@ -11,7 +11,7 @@
   the `RecentVisitorMonths` window; `GoldenTicket.Evaluate` scores it as a 6th goal. **Award advisor
   congratulation now wired**: the advisor edge-triggers a one-shot `CongratGoldenTicket` tip the tick the ticket
   is won (via `AdvisorAdvice` + a new readable line) — likewise a `CongratChallengeWon` / `ChallengeFailed`
-  reaction for challenges (T-054). **Remaining (polish)**: the exact "happy" threshold (approx 50), and the
+  reaction for challenges (T-054). **Remaining (polish)**: the
   award **particle effect** (the advisor speaks, but no fireworks yet); Global/Secret tiers aren't in the
   jungle `.sam`.
 - **Needs**: [T-053](T-053-ingame-clock.md) (months for the "recent visitors" window). **Related**:
@@ -60,4 +60,4 @@ OpenTPW reads them.
 
 Winning the golden ticket now makes every ride launch a firework (`Ride.Celebrate()` → `P_EFFECT_FW1explosion`,
 rendered by the new particle sprites, T-066). Not seen in-game yet: a 200 s autoplace run met 4/6 goals (the
-15 000/year profit is far off). The exact "happy" threshold is still the approximate 50.
+15 000/year profit is far off). A visitor counts as "happy" over **66**: the game's own happy band, reversed from its park-happiness gauge (`FUN_004a52a0` shows `FUN_004c9670(0x42)` — the % of visitors over 66 — against `FUN_004c9750(0x21)`, the % under 33). It was an approximate 50.
