@@ -12,7 +12,22 @@ public sealed class Litter : ModelEntity
 
 	private static Model? sharedModel;
 
-	public Litter( Vector3 groundPos )
+	/// <summary>The most litter the park keeps on the ground. Past this a neglected park is already as messy as it
+	/// gets; capping it keeps a long session's per-frame litter checks (every visitor scans the litter near it)
+	/// bounded instead of growing for ever.</summary>
+	public const int MaxPieces = 300;
+
+	/// <summary>Drop a piece of litter at <paramref name="groundPos"/> unless the park is already at
+	/// <see cref="MaxPieces"/>. Returns whether one was dropped.</summary>
+	public static bool TryDrop( Vector3 groundPos )
+	{
+		if ( Active.Count >= MaxPieces )
+			return false;
+		_ = new Litter( groundPos );
+		return true;
+	}
+
+	private Litter( Vector3 groundPos )
 	{
 		Model = SharedModel();
 		Position = groundPos.WithZ( groundPos.Z + 0.2f ); // just above the terrain to avoid z-fighting

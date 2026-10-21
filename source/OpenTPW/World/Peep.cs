@@ -365,7 +365,7 @@ public sealed class Peep : ModelEntity
 		// Visitors occasionally drop litter, and standing among litter sours the mood (until a handyman
 		// clears it). Both raise the chance the peep heads home unhappy. A nearby guard deters littering.
 		if ( Random.Shared.NextDouble() < LitterChancePerSec * Time.Delta && !Staff.GuardNear( Position ) )
-			_ = new Litter( Position );
+			Litter.TryDrop( Position );
 		int nearbyLitter = CountNearbyLitter();
 		amidLitter = nearbyLitter >= 2;
 		if ( nearbyLitter > 0 )
@@ -705,10 +705,10 @@ public sealed class Peep : ModelEntity
 	// clean), venting a little of its frustration so it doesn't immediately do it again.
 	private void Vandalise()
 	{
-		_ = new Litter( Position );
+		Litter.TryDrop( Position );
 		var off = new Vector3( ((float)Random.Shared.NextDouble() - 0.5f) * LitterRadius,
 			((float)Random.Shared.NextDouble() - 0.5f) * LitterRadius, 0 );
-		_ = new Litter( Position + off );
+		Litter.TryDrop( Position + off );
 		happiness = Math.Min( 100f, happiness + 6f );
 	}
 

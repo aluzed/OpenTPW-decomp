@@ -21,3 +21,12 @@ on first draw, see `Material.Set( "ObjectUniformBuffer", … )` and the resource
 
 1. Confirm with a counter of live Veldrid resources (or `VK_LAYER` stats) before/after a few thousand arrivals.
 2. Give `Entity` removal a dispose path for per-entity GPU state (or pool peep entities instead of re-creating).
+
+## Findings (2026-10-21, later)
+
+- GPU assets are **stable** (`Asset.All` ≈ 6 960 textures/models/materials over 140 s) — nothing is re-created per
+  frame or per visitor.
+- Entities grew from 550 to 1 440 with the crowd capped at 250: the growth was **litter** (one handyman can't keep
+  up with 250 visitors; 200+ pieces in two minutes), and every visitor scans nearby litter each frame. Litter is now
+  capped at `Litter.MaxPieces` (300) — past that the park is as messy as it gets; entity count then holds ~1 300.
+- The remaining slow working-set growth is unexplained (could be driver-side); keep this open.
