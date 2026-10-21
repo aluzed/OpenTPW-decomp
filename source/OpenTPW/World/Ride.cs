@@ -620,10 +620,14 @@ public class Ride : Entity
 		Log.Info( $"[ride] model {md2Path}: {modelFile.Meshes.Count} mesh(es), {modelFile.Nodes.Count} node(s) ({CarNodeCount} car/seat)" );
 
 		var parts = new List<ModelEntity>();
+		Texture? sign = null;
 		foreach ( var mesh in modelFile.Meshes )
 		{
 			// One texture per material (any count — see MaterialSlots); LoadRideTexture is shared with the car meshes.
-			var textures = mesh.Materials.Select( m => LoadRideTexture( rideArchive, m.Name ) ).ToList();
+			// The placeholder sign textures (sign1/sign2) get the ride's own name painted on (RideSign).
+			var textures = mesh.Materials.Select( m => RideSign.IsSignMaterial( m.Name )
+				? (sign ??= RideSign.For( Name ))
+				: LoadRideTexture( rideArchive, m.Name ) ).ToList();
 
 			var vertices = new List<Vertex>();
 			for ( int i = 0; i < mesh.Vertices.Length; ++i )
