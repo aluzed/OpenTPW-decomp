@@ -269,6 +269,9 @@ public class Ride : Entity
 	public int SideshowPrice { get; private set; }
 	public int SideshowCostOfGoods { get; private set; }
 	public int SideshowChanceOfLoosing { get; private set; }
+	/// <summary>A firework over the ride (P_EFFECT_FW1explosion) — the park-wide golden-ticket celebration (T-055).</summary>
+	public void Celebrate() => engine.SpawnParticleEffect( 60 );
+
 	private int sideshowWinEffect = 80; // Info.CreateParticleEffect — the burst when a peep wins (T-058)
 	private readonly Random sideshowRng = new();
 

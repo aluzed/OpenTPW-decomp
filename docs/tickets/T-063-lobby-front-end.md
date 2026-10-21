@@ -22,8 +22,10 @@ original front-end never showed. Commits `4482bfd` + `4d7c0ea` restored it and m
 
 ## Remaining
 
-- The `PurpleButton`s ("Create New Player", "Quit Game") only play a click sound — no player profiles, and
-  Quit does nothing (→ [T-068](T-068-quit-game-button.md)).
+- ~~The `PurpleButton`s only play a click sound~~ — Quit works (T-068) and, since 2026-10-21, **player profiles**: an
+  empty "Create New Player" button creates `save/users/<slot>Player n` and selects it (marked `*`), an existing
+  player's button selects it, and a selected player's save slots live in its folder (`PlayerProfile`,
+  `SaveGame.SlotPath`); without a profile, saves stay in `.opentpw/`. Remaining: typing a name (it is "Player n").
 - World labels overlap the button column (→ [T-070](T-070-lobby-label-overlap.md)).
 - ~~The Space island model fails to load~~ — fixed in T-073 (Space Zone is now offered).
 

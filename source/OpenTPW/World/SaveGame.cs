@@ -131,7 +131,8 @@ public sealed class SaveGame
 	public const int SlotCount = 3;
 
 	/// <summary>The file path for save slot <paramref name="slot"/> (1..<see cref="SlotCount"/>, clamped).</summary>
-	public static string SlotPath( int slot ) => Path.Combine( ".opentpw", $"save{Math.Clamp( slot, 1, SlotCount )}.json" );
+	public static string SlotPath( int slot ) =>
+		Path.Combine( PlayerProfile.FolderPath ?? ".opentpw", $"save{Math.Clamp( slot, 1, SlotCount )}.json" ); // a selected player's own saves (T-063)
 
 	/// <summary>True if slot <paramref name="slot"/> holds a save on disk (for the slot UI).</summary>
 	public static bool SlotExists( int slot ) => File.Exists( SlotPath( slot ) );
