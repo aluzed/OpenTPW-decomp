@@ -41,6 +41,7 @@ internal sealed class ParkListWindow : GameWindow
 		}
 		tab = which;
 		scroll = 0;
+		filter = -1;
 		IsOpen = true;
 	}
 
@@ -61,6 +62,26 @@ internal sealed class ParkListWindow : GameWindow
 
 	// A row: what it shows, and the value column as a number to sort by.
 	private readonly record struct Entry( Entity Entity, string Name, string State, string Value, double Amount );
+
+	// Filters beside the tabs (UIHELPTEXT 101–104, 114–118): one kind of item or of staff; a second click shows all.
+	private int filter = -1;
+	private static readonly (string Icon, int Hint)[] ItemFilters =
+		{ ("b_srides", 101), ("b_sshops", 102), ("b_sshows", 103), ("b_sfeature", 104) };
+	private static readonly (string Icon, int Hint, StaffRole Role)[] StaffFilters =
+	{
+		("b_shandy", 114, StaffRole.Handyman), ("b_smech", 115, StaffRole.Mechanic), ("b_senter", 116, StaffRole.Entertainer),
+		("b_sguard", 117, StaffRole.Guard), ("b_sresrcher", 118, StaffRole.Researcher),
+	};
+	private int FilterCount => tab switch { Tab.Items => ItemFilters.Length, Tab.Staff => StaffFilters.Length, _ => 0 };
+	private static Rectangle FilterRect( int i ) => At( 340f + i * 46f, 80f, 38f, 38f );
+
+	private bool Passes( Entity e ) => filter < 0 || e switch
+	{
+		Ride r => filter == (r.IsFeature ? 3 : r.IsSideshow ? 2 : 0),
+		Shop => filter == 1,
+		Staff s => StaffFilters[filter].Role == s.Role,
+		_ => true,
+	};
 
 	// Sorting: a click on a column's heading sorts by it; a second click turns the order round.
 	private int sortColumn = -1;
@@ -92,6 +113,7 @@ internal sealed class ParkListWindow : GameWindow
 			_ => Entity.All.OfType<Peep>().Select( p => new Entry( p, p.PersonalName, CrowdThoughts.Text( p.Thought ), $"{p.Happiness:0} %",
 				p.Happiness ) ).ToList(),
 		};
+		entries = entries.Where( e => Passes( e.Entity ) ).ToList();
 		IEnumerable<Entry> sorted = sortColumn switch
 		{
 			0 => entries.OrderBy( e => e.Name, StringComparer.CurrentCultureIgnoreCase ),
@@ -120,6 +142,14 @@ internal sealed class ParkListWindow : GameWindow
 				tab = Tabs[t].Tab;
 				scroll = 0;
 				sortColumn = -1;
+				filter = -1;
+				return;
+			}
+		for ( int f = 0; f < FilterCount; f++ )
+			if ( Contains( FilterRect( f ), m ) )
+			{
+				filter = filter == f ? -1 : f;
+				scroll = 0;
 				return;
 			}
 		for ( int c = 0; c < 3; c++ )
@@ -159,6 +189,11 @@ internal sealed class ParkListWindow : GameWindow
 		DrawHeading( Tabs[ti].Title, 470f, 0f, 46f );
 		for ( int t = 0; t < Tabs.Length; t++ )
 			RoundButton( TabRect( t ), Tabs[t].Icon, Tabs[t].Tab == tab, hint: Tabs[t].Hint );
+		for ( int f = 0; f < FilterCount; f++ )
+		{
+			var (icon, hint) = tab == Tab.Items ? ItemFilters[f] : (StaffFilters[f].Icon, StaffFilters[f].Hint);
+			RoundButton( FilterRect( f ), icon, filter == f, hint: hint );
+		}
 
 		DrawInset( List );
 		Fill( At( 146f, 134f, 608f, 30f ), Header );
