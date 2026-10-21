@@ -206,6 +206,10 @@ public sealed class Advisor : Entity
 		bool speaking = startTime >= 0f && Time.Now - startTime <= ClipLength;
 		if ( speaking )
 			return;
+		// The park snapshot walks every entity several times: weigh the advice twice a second, not every frame.
+		if ( Time.Now < nextConsider )
+			return;
+		nextConsider = Time.Now + ConsiderEvery;
 
 		// A say-once welcome opens; then real park-state advice (each scored from the .sam params).
 		messages.Submit( "WelcomeTutorial", config.Group( AdvisorAdvice.GroupTutorial ), 100f );
@@ -224,6 +228,8 @@ public sealed class Advisor : Entity
 	private bool prevTicketAwarded;
 	private int prevChallengesWon, prevChallengesLost;
 	private readonly float[] complaintTally = new float[5], bargainTally = new float[5];
+	private float nextConsider, lastTally = -1f;
+	private const float ConsiderEvery = 0.5f;
 	private const float PriceVerdictMemory = 30f; // seconds for a price verdict to fade (e-folding)
 
 	private ParkSnapshot BuildSnapshot()
@@ -234,7 +240,9 @@ public sealed class Advisor : Entity
 
 		// Stall-price verdicts: a running tally that fades over ~30 s, so a pricing problem builds up to advice.
 		var (newComplaints, newBargains) = Peep.TakePriceVerdicts();
-		float keep = MathF.Exp( -Time.Delta / PriceVerdictMemory );
+		float elapsed = lastTally < 0f ? 0f : Time.Now - lastTally;
+		lastTally = Time.Now;
+		float keep = MathF.Exp( -elapsed / PriceVerdictMemory );
 		var complaints = new int[newComplaints.Length];
 		var bargains = new int[newBargains.Length];
 		for ( int g = 0; g < complaints.Length; g++ )
