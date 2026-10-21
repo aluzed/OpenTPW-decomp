@@ -20,7 +20,7 @@ public class RideEngineTests
 		public List<string> Screams = new(); // scream opcode trace
 		public bool Animating; // controls IsAnimating / AnyAnimating
 
-		public void SpawnObject( int type, int parameter, int id, int slot ) => Spawns.Add( (type, parameter, id, slot) );
+		public void SpawnObject( int type, int node, int code, int id ) => Spawns.Add( (type, node, code, id) );
 		public void PlaySound( string name ) => Sounds.Add( name );
 		public void KillObject( int id ) => Kills.Add( id );
 		public void SetObjectParam( int id, int param, int value ) => Params.Add( (id, param, value) );
@@ -218,24 +218,19 @@ public class RideEngineTests
 		CollectionAssert.AreEqual( new[] { 51, 1 }, fake.ParticleEffects );
 	}
 
-	// ADDOBJ_EXT (the 5-operand extended ADDOBJ) registers the object like ADDOBJ, and for particle types
-	// (3-10) also fires the .PLB effect with the `code` operand. Sound types (1-2) only register. T-007.
+	// ADDOBJ_EXT (the 5-operand extended ADDOBJ) forwards (type, node, code) like ADDOBJ, with its 5th operand as the
+	// handle (the 4th is a volume); the engine then makes the sound / particle. T-007, T-047.
 	[TestMethod]
-	public void AddObjExtRegistersAndSpawnsParticleForParticleTypes()
+	public void AddObjExtForwardsTypeNodeCodeAndHandle()
 	{
 		var vm = NewVm();
 		var fake = new FakeEngine();
 		vm.Engine = fake;
 
-		// Particle type 4: registers (type,node,code,volume) + spawns particle effect `code`.
 		vm.CallOpcodeHandler( Opcode.ADDOBJ_EXT, Lit( vm, 4 ), Lit( vm, 2 ), Lit( vm, 11 ), Lit( vm, 100 ), Lit( vm, 7 ) );
-		Assert.AreEqual( (4, 2, 11, 100), fake.Spawns[^1] );
-		CollectionAssert.AreEqual( new[] { 11 }, fake.ParticleEffects );
-
-		// Sound type 1: registers only (no particle; sound deferred like ADDOBJ).
-		vm.CallOpcodeHandler( Opcode.ADDOBJ_EXT, Lit( vm, 1 ), Lit( vm, 0 ), Lit( vm, 5 ), Lit( vm, 50 ), Lit( vm, 0 ) );
-		Assert.AreEqual( (1, 0, 5, 50), fake.Spawns[^1] );
-		CollectionAssert.AreEqual( new[] { 11 }, fake.ParticleEffects ); // unchanged — no particle for a sound type
+		Assert.AreEqual( (4, 2, 11, 7), fake.Spawns[^1] );
+		vm.CallOpcodeHandler( Opcode.ADDOBJ_EXT, Lit( vm, 1 ), Lit( vm, 0 ), Lit( vm, 5 ), Lit( vm, 50 ), Lit( vm, 3 ) );
+		Assert.AreEqual( (1, 0, 5, 3), fake.Spawns[^1] );
 	}
 
 	[TestMethod]

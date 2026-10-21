@@ -15,6 +15,10 @@ public sealed class RideObject
 	/// <summary>The audio cache key for sound objects (null otherwise).</summary>
 	public string? SoundKey { get; set; }
 
+	/// <summary>An effect object's node (where it sits on the ride) and effect code (ADDOBJ's 2nd / 3rd operands).</summary>
+	public int Node { get; init; } = -1;
+	public int Code { get; init; }
+
 	/// <summary>Script-set parameters (SETOBJPARAM), by parameter index.</summary>
 	public Dictionary<int, int> Params { get; } = new();
 

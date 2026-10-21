@@ -10,7 +10,10 @@ namespace OpenTPW;
 public interface IRideEngine
 {
 	/// <summary>ADDOBJ — register an object (sound / particle / …) under the script's handle + slot.</summary>
-	void SpawnObject( int type, int parameter, int id, int slot );
+	/// <summary>ADDOBJ (reversed, op_8 → FUN_00557970 → FUN_005573d0): an effect object of <paramref name="type"/>
+	/// (1–2 a positioned sound, 3–10 a particle effect) at model node <paramref name="node"/> (−1 the ride), playing
+	/// <paramref name="code"/>, addressed afterwards (KILLOBJ / SETOBJPARAM) by <paramref name="id"/>.</summary>
+	void SpawnObject( int type, int node, int code, int id );
 
 	/// <summary>SPAWNSOUND — play (or set up) a sound named by the script. The operand is a string: a
 	/// sound file name, or a sound-event-map script (e.g. <c>EventMap.rse</c>).</summary>

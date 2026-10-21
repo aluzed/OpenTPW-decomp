@@ -108,19 +108,21 @@ public sealed class RideEngine : IRideEngine
 		StartAnim( body, (int)loopAnim, loop: true );
 	}
 
-	public void SpawnObject( int type, int parameter, int id, int slot )
+	public void SpawnObject( int type, int node, int code, int id )
 	{
-		var obj = new RideObject { Id = id, Slot = slot, Type = type };
+		// FUN_005573d0: types 1–2 are a positioned sound (the same global ride-sound id an EVENT plays; 0x8000 marks a
+		// ride-local id, whose remap isn't reversed — skipped), types 3–10 a particle effect from one of the engine's
+		// effect pools (FUN_0051bfc0 with DAT_00803a3c / 38 / 28 / 24…). Those pools aren't Tp2.plb — read as Tp2 the
+		// shipped scripts' codes give demolition clouds and message tags on loop — so particle objects are registered
+		// but not drawn until the pools are reversed (T-037). (The old "explosions" came from reading op 2, the node —
+		// −1 for "the ride" — as the sound.)
+		var obj = new RideObject { Id = id, Type = type, Node = node, Code = code };
 		objects[id] = obj;
-
-		// An ADDOBJ sound object's `parameter` is NOT a direct RideHD index — e.g. param -1 is a sentinel,
-		// and the real code→asset binding is the ride's EventMap / .MAP catalog (deferred — T-032/T-016).
-		// Playing RideHD[param%N] here produced wrong clips spammed every cycle (param -1 → Crunch.mp2,
-		// the "explosions"), so we register the object (for KILLOBJ) but don't play the approximate clip.
-		// Real rider screams still play correctly via the scream opcodes (KidsHD).
-		Log.Trace( $"[ride] ADDOBJ type={type} param={parameter} id={id} slot={slot}"
-			+ ( IsSoundType( type ) ? " (sound binding deferred)" : " (kind deferred)" ) );
+		if ( type is 1 or 2 && code >= 0 && (code & 0x8000) == 0 )
+			PlayEventSound( type, code, node );
+		Log.Trace( $"[ride] ADDOBJ type={type} node={node} code={code} id={id}" );
 	}
+
 
 	public void PlaySound( string name )
 	{
@@ -1138,13 +1140,4 @@ public sealed class RideEngine : IRideEngine
 	// produces visible motion (stage 1). Once parts get their own models this resolves them directly.
 	private RideObject? Resolve( int id ) =>
 		objects.TryGetValue( id, out var obj ) ? obj : objects.GetValueOrDefault( SelfId );
-
-	private static bool IsSoundType( int type ) => type is
-		(int)ScriptDefs.Effects.OBJ_SOUND_LOC_RID
-		or (int)ScriptDefs.Effects.OBJ_SOUND_GLO_RID
-		or (int)ScriptDefs.Effects.OBJ_SOUND_GLO_KID
-		or (int)ScriptDefs.Effects.OBJ_SOUND_GLO_STA
-		or (int)ScriptDefs.Effects.OBJ_SOUND_GLO_AMB
-		or (int)ScriptDefs.Effects.OBJ_SOUND_GLO_UI
-		or (int)ScriptDefs.Effects.OBJ_SOUND_GLO_BMP;
 }

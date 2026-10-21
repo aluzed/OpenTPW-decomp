@@ -117,9 +117,16 @@ existing physics:
 
 ## Remaining
 
-1. **`ADDOBJ` sound residue**: the object-sound binding of `ADDOBJ` types 1–2 stays deferred — the operand roles
-   don't agree across scripts (`bus.RSE`'s `ADDOBJ 8,1,6,1` then `SETOBJPARAM 1,20,vol` addresses the object by
-   its *second* operand), and guessing would bring back the wrong-clip bugs T-037 fixed. (`COAST` has no sound
+1. **`ADDOBJ`** — operand roles now reversed (2026-10-21): the executor (op_8, `0x551f60`) fills the object record
+   with the type (op 1, `+0x8`) and the **node** (op 2, `+0x10`), calls `FUN_00557970(vm, record, code = op 3,
+   1000, op 4)`, and `FUN_005573d0` makes the effect — types 1–2 a positioned sound at the node (`FUN_00521e60` /
+   `FUN_00521930`, the same global ride-sound ids EVENT plays; bit 0x8000 = a ride-local id, remapped by
+   `FUN_004145d0`), types 3–10 a particle from one of the engine's effect pools (`FUN_0051bfc0` with
+   `DAT_00803a3c / 38 / 28 / 24…`); **op 4 is the handle** later used by `KILLOBJ` / `SETOBJPARAM` (we keyed objects by
+   the code before, so those addressed the wrong object). The sound types now play (ride-local ids still skipped);
+   the particle types stay undrawn: the shipped scripts' codes (73, 74, 75, 90…) are not `Tp2.plb` entries (read as
+   such they loop demolition clouds and message tags), so the pools' libraries remain to be found. The old
+   "explosions" came from reading op 2 (the node, −1) as the sound. (`COAST` has no sound
    trigger: its decoded sub-commands are load / can-load / wants-off / state / mode / capacity / worn / init.)
 2. A finer pass on the 3-4-vs-5-9 split's *audible* character (e.g. per-category gain/reverb buses). (The scream now
    comes from the moving train / car — `RideEngine.RiderPosition`, the lead car of a coaster train or a car ride's
