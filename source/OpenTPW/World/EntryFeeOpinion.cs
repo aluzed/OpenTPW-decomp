@@ -37,6 +37,24 @@ public readonly record struct EntryFeeSettings(
 /// </summary>
 public static class EntryFeeOpinion
 {
+	/// <summary>How a visitor takes a stall's price against its authored one (<c>UsageInfo.InitPricePerUse</c>), on the
+	/// same <c>PeepInfo.*PriceMultiplier</c> bands as the entry fee: at or above <c>Expensive ×</c> it won't buy
+	/// (<see cref="float.NaN"/>); above <c>Average ×</c> it buys grudgingly (−5, <c>SmallHappinessChange</c>); at or below
+	/// <c>Cheap ×</c> it's pleased (+5); otherwise no change. Pure.</summary>
+	public static float StallPriceMood( float price, float authoredPrice, EntryFeeSettings s )
+	{
+		if ( authoredPrice <= 0f )
+			return 0f;
+		float ratio = price / authoredPrice;
+		if ( ratio >= s.ExpensiveMultiplier )
+			return float.NaN;
+		if ( ratio > s.AverageMultiplier )
+			return -StallPriceMoodStep;
+		return ratio <= s.CheapMultiplier ? StallPriceMoodStep : 0f;
+	}
+
+	private const float StallPriceMoodStep = 5f; // Standard.sam PeepInfo.SmallHappinessChange
+
 	public static EntryFeeSettings Settings { get; set; } = EntryFeeSettings.Defaults;
 
 	/// <summary>The fee a park "deserves": its total ride excitement ÷ <c>ExcitementToCostDivisor</c>.</summary>

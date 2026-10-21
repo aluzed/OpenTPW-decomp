@@ -67,4 +67,15 @@ public class ShopStatsTests
 		Assert.AreEqual( 99f, ice.Happiness, 1e-3f );
 		Assert.AreEqual( 100f, ice.Energy, 1e-3f );
 	}
+
+	[TestMethod]
+	public void VisitorsWeighAStallsPriceAgainstItsAuthoredOne()
+	{
+		var s = EntryFeeSettings.Defaults; // cheap ≤ 0.75×, OK ≤ 1.25×, refused ≥ 2×
+		Assert.AreEqual( 5f, EntryFeeOpinion.StallPriceMood( 20f, 30f, s ), "a bargain pleases" );
+		Assert.AreEqual( 0f, EntryFeeOpinion.StallPriceMood( 30f, 30f, s ), "the usual price" );
+		Assert.AreEqual( -5f, EntryFeeOpinion.StallPriceMood( 45f, 30f, s ), "pricey: bought grudgingly" );
+		Assert.IsTrue( float.IsNaN( EntryFeeOpinion.StallPriceMood( 60f, 30f, s ) ), "twice the price: refused" );
+		Assert.AreEqual( 0f, EntryFeeOpinion.StallPriceMood( 60f, 0f, s ), "no authored price: no opinion" );
+	}
 }

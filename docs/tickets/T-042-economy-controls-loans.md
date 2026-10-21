@@ -89,3 +89,12 @@ Each stall reads its `.sam` (`ShopBuilding.StatsFor`): name (`Info.Name`, e.g. "
 (`UsageInfo.InitPricePerUse`, burger 30), cost of goods (`UsageInfo.InitCostOfGoods`, 20 — deducted from each sale;
 `ParkFinances.ShopProfit` = takings − goods, used by challenge type 12) and build cost (`Upgrades[0].CostOfUpgrade`:
 food 800, drink 650, toilet 100 — were invented 500/450/400). Toilets stay free to use. Unit-tested.
+
+## Update (2026-10-21) — visitors weigh stall prices
+
+A stall's player-set price is now judged against its authored `UsageInfo.InitPricePerUse` on the same
+`PeepInfo.*PriceMultiplier` bands as the entry fee (`EntryFeeOpinion.StallPriceMood`, unit-tested): ≤ 0.75× pleases
+(+5), > 1.25× is bought grudgingly (−5), ≥ 2× is refused (−15, and the visitor won't go back to that stall this
+visit — it stays hungry/thirsty). Verified with a burger stall at 3× its price: 241 refusals (one per visitor), no
+loop, ride throughput unaffected.
+

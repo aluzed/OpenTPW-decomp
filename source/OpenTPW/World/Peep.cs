@@ -97,6 +97,9 @@ public sealed class Peep : ModelEntity
 	/// signal they're used.</summary>
 	public static int ToiletVisits { get; private set; }
 
+	/// <summary>Purchases refused because the stall's price was far above its authored one.</summary>
+	public static int StallsRefused { get; private set; }
+
 	/// <summary>Visitors who were sick on the ground (<see cref="VomitCapacity"/> reached away from a toilet).</summary>
 	public static int VomitCount { get; private set; }
 
@@ -266,6 +269,8 @@ public sealed class Peep : ModelEntity
 
 	// Impulse items bought this visit (one of each: a visitor with a balloon doesn't buy another).
 	private readonly HashSet<SaleCategory> bought = new();
+	// Stalls this visitor found far too dear this visit (it won't walk back to them).
+	private readonly HashSet<Shop> refusedStalls = new();
 	private float impulseTimer = ImpulseCheckSeconds * (float)Random.Shared.NextDouble();
 	// A snack's wrapper/cup, dropped a little after eating (the stall's LitterEffect is the chance), seconds left.
 	private float wrapperTimer = -1f;
@@ -393,6 +398,20 @@ public sealed class Peep : ModelEntity
 		{
 			if ( MoveTo( shopTarget.Position ) )
 			{
+				// Far too dear for what it is: the visitor walks off without buying, annoyed.
+				float priceMood = shopTarget.Stats is { } authored && !shopTarget.IsFree
+					? EntryFeeOpinion.StallPriceMood( shopTarget.Price, authored.Price, EntryFeeOpinion.Settings ) : 0f;
+				if ( float.IsNaN( priceMood ) )
+				{
+					happiness = MathF.Max( 0f, happiness - 15f ); // MediumHappinessChange
+					StallsRefused++;
+					refusedStalls.Add( shopTarget ); // not going back there this visit
+					shopTarget = null;
+					ResetPath();
+					PickRoute();
+					return;
+				}
+				happiness = Math.Clamp( happiness + priceMood, 0f, 100f );
 				// No money for it: an unmet need sends the visitor home; a souvenir they can't afford is just skipped.
 				if ( shopTarget.Kind != ShopKind.Toilet && !TrySpend( shopTarget.Price ) )
 				{
@@ -728,6 +747,7 @@ public sealed class Peep : ModelEntity
 		bladder = 0f;
 		illness = 0f;
 		bought.Clear();
+		refusedStalls.Clear();
 		DropSouvenirs();
 		wrapperTimer = -1f;
 		lastRoute = null;
@@ -922,7 +942,7 @@ public sealed class Peep : ModelEntity
 		float bestD2 = ImpulseRadius * ImpulseRadius;
 		foreach ( var s in Shop.Stalls )
 		{
-			if ( s.Kind != ShopKind.Item || bought.Contains( s.Category ) || Cash < s.Price )
+			if ( s.Kind != ShopKind.Item || bought.Contains( s.Category ) || Cash < s.Price || refusedStalls.Contains( s ) )
 				continue;
 			float d2 = (s.Position - Position).LengthSquared;
 			if ( d2 < bestD2 )
@@ -954,7 +974,7 @@ public sealed class Peep : ModelEntity
 			if ( urgency < 1f )
 				continue;
 			foreach ( var stall in Shop.Stalls )
-				if ( stall.Kind == kind )
+				if ( stall.Kind == kind && !refusedStalls.Contains( stall ) )
 				{
 					candidates.Add( (kind, urgency, (stall.Position - Position).Length) );
 					stalls.Add( stall );
