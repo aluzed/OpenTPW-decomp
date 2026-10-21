@@ -296,10 +296,10 @@ internal sealed class ParkHud : HudPanel
 		if ( BuildMode.Current is not { } build || build.HoveredTile is not { } tile )
 			return null;
 		if ( build.Selected >= 0 )
-			return $"{build.Catalog[build.Selected].Label}: {UiHelp.Text( UiHelp.BuildItem, "Left-click to build the item", firstLineOnly: true )}";
+			return $"{build.Catalog[build.Selected].Label}: {UiHelp.Text( UiHelp.BuildItem, "Left-click to build the item" )}";
 		var name = Entity.All.OfType<Ride>().FirstOrDefault( r => r.Covers( tile.X, tile.Y ) )?.Name
 			?? Shop.Stalls.FirstOrDefault( s => s.Covers( tile.X, tile.Y ) )?.Name;
-		return name != null ? $"{name}: {UiHelp.Text( UiHelp.ItemDetails, "Left-click to view/edit this item's details", firstLineOnly: true )}" : null;
+		return name != null ? $"{name}: {UiHelp.Text( UiHelp.ItemDetails, "Left-click to view/edit this item's details" )}" : null;
 	}
 
 	// The translucent strip at the bottom centre; a long line wraps onto more rows and the strip grows with it.

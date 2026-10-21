@@ -447,6 +447,20 @@ public sealed class BuildMode : Entity
 				return;
 			}
 
+			// Ctrl-click on a ride or stall buys another of it (the original's "Hold CTRL and click to buy another").
+			if ( Input.Keyboard.KeysDown.Contains( Key.ControlLeft ) || Input.Keyboard.KeysDown.Contains( Key.ControlRight ) )
+			{
+				int another = Entity.All.OfType<Ride>().FirstOrDefault( r => r.Covers( tx, ty ) ) is { } likeRide
+					? Catalog.ToList().FindIndex( ci => ci.RidePath != null && Path.GetFileName( ci.RidePath ) == Path.GetFileName( likeRide.Archive ) )
+					: Shop.Stalls.FirstOrDefault( s => s.Covers( tx, ty ) ) is { } likeShop
+						? Catalog.ToList().FindIndex( ci => ci.Name == likeShop.CatalogKey ) : -1;
+				if ( another >= 0 && IsBuildable( another ) )
+				{
+					Selected = another;
+					return;
+				}
+			}
+
 			SelectedRide = Entity.All.OfType<Ride>().FirstOrDefault( r => r.Covers( tx, ty ) );
 			SelectedShop = SelectedRide == null ? Shop.Stalls.FirstOrDefault( s => s.Covers( tx, ty ) ) : null;
 			// Staff have no footprint, so pick the nearest one to the clicked point (T-049). A ride/shop
@@ -522,7 +536,12 @@ public sealed class BuildMode : Entity
 			return;
 		}
 		if ( Input.MouseLeftPressed && ok && commit( item, tx, ty, Rotation ) )
+		{
 			Log.Info( $"[build] placed {item.Name} at ({tx},{ty}) rot {Rotation} for ${item.Cost:0}" );
+			// As the original: one placement per pick, Ctrl held to build more than one.
+			if ( !Input.Keyboard.KeysDown.Contains( Key.ControlLeft ) && !Input.Keyboard.KeysDown.Contains( Key.ControlRight ) )
+				Selected = -1;
+		}
 	}
 
 	/// <summary>The current placement rotation in 90° clockwise steps (0–3), for the manage UI hint.</summary>
