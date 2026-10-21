@@ -29,8 +29,14 @@ All format/VM decoding and the core gameplay loop are done. Open work falls into
 - **Active feature tails**: remaining items are all low-value/blocked — **T-047** COAST/ADDOBJ residue (needs
   the `.MAP` code→asset catalog), **T-048** car-waypoint positions (runtime-bound, no file data), per-message
   advisor clips (not shipped). The headline tails (T-046/47/48/52) are otherwise done.
-- **Bugs found in the 2026-10-21 play check** (T-068–T-071): Quit Game unwired, segfault on SIGTERM,
-  lobby label overlap, blue park tint. T-063–T-067 are retro-tickets for already-landed commits.
+- **2026-10-21 pass** (T-063–T-074 + polish): the play check's bugs are fixed (Quit, SIGTERM, lobby labels); the
+  park floor (`base.lnd`) renders; the placement grid has the true 10-unit scale (T-072); no more magenta rides
+  (T-073); visitors arrive in groups / judge the fee / leave, behind OPEN PARK (T-074); per-world music, ambience,
+  fog and sky colour; particles as sprites; ride name signs; the level's loans + opening budget; player profiles;
+  a "CROWD:" thoughts line; 12 → 60 fps and a 19 → 12 s load. **Next candidates**: the original 3D-widget UI
+  (T-065, needs UI RE), the arrival bus (T-074, its road path isn't in its files), exact formulas behind the
+  data-driven approximations (arrivals, fee opinion, ground blend), staff hire cost/wages from
+  `StaffPoolInfo`/`PerGradeStaffConsts` (units unknown), coaster loops/curves (T-045/T-052).
 - **Blocked / deferred** (need an external sample or have no consumer): **T-017** (`SAD_*` save stream —
   no sample), **T-022** (EA-ADPCM mono waveform — no sample), **T-021** (`.TQI` exact dequant — decoder
   already renders correctly). *(T-019 `.PLB` field labels — now **done**: the spawn path reads the record
