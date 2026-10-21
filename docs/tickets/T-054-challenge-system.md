@@ -11,8 +11,11 @@
   visitors**, **13 = sideshow profit**, **20 = peeps using a ride** — six types now tracked + offered (was 1/2/3,
   and Type 1 had been mis-mapped to *visitors* — the real visitors challenge is Type 11). Fries+burgers share the
   single `FoodSold` counter and the "use the Minecart ride" goal is approximated by total `RidesRidden` (no
-  per-ride counter). Unit-tested (`ChallengeMetricsTests`). Still-opaque types (6 balloons, 18/19 build-a-ride,
-  24 toilet-cleanliness) stay skipped until a counter exists. A dedicated clickable panel + advisor-delivered
+  per-ride counter). Unit-tested (`ChallengeMetricsTests`). **2026-10-21: +3 types** — 12 (profit from
+  all shops = concession takings), 16 (research N rides ≈ ride research completed) and 18 (build a coaster ≈ any
+  track ride placed); `TargetObj` (the specific ride, e.g. 1180 = Minecart) is not mapped yet. Still-opaque
+  types (balloons 6/9, costumes 7/10, loops 19, toilet cleanliness 24, staff happiness/skill, specific-ride
+  builds/upgrades) stay skipped until a counter exists. A dedicated clickable panel + advisor-delivered
   offers remain (polish).
 - **Needs**: [T-053](T-053-ingame-clock.md) (in-game days). **Related**: [T-055](T-055-golden-ticket-goals.md),
   [T-046](T-046-advisor-character.md) (advisor delivers challenge offers).

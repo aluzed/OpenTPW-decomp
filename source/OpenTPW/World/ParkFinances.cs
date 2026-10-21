@@ -165,6 +165,16 @@ public sealed class ParkFinances
 	public int DrinkSold { get; private set; }
 	public int VisitorsTotal { get; private set; }
 
+	/// <summary>Track rides (coasters) built and ride research completed — challenge types 18 and 16.</summary>
+	public int CoastersBuilt { get; private set; }
+	public int ResearchCompleted { get; private set; }
+
+	/// <summary>A track ride (coaster) was placed.</summary>
+	public void NoteCoasterBuilt() => CoastersBuilt++;
+
+	/// <summary>A ride finished researching its next level.</summary>
+	public void NoteResearchCompleted() => ResearchCompleted++;
+
 	/// <summary>A peep pays to board a ride.</summary>
 	public void TakeRideTicket( float price )
 	{

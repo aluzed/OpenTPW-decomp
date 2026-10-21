@@ -742,6 +742,8 @@ public class Level
 			return false;
 		}
 		if ( charge ) fin?.PayBuild( item.Cost );
+		if ( item.RidePath != null && Entity.All.OfType<Ride>().LastOrDefault() is { Shape.HasTrack: true } )
+			fin?.NoteCoasterBuilt(); // challenge type 18 (T-054)
 		return true;
 	}
 

@@ -75,6 +75,7 @@ public class Ride : Entity
 			ResearchedLevel = UpgradeLevel + 1;
 			researching = false;
 			researchProgress = 0f;
+			ParkFinances.Current?.NoteResearchCompleted(); // challenge type 16 (T-054)
 			ResearchQueue.Dequeue( this ); // done → the next queued ride becomes the active one
 		}
 	}
