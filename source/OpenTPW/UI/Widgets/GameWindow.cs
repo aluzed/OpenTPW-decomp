@@ -108,6 +108,34 @@ internal abstract class GameWindow : HudPanel
 		return enabled && over && Input.MouseLeftPressed;
 	}
 
+	/// <summary>
+	/// The original's message box (<c>w_dialog</c>): the frame in <paramref name="r"/>, the title in yellow, the text
+	/// wrapped to the panel. Returns the ✓ button's rectangle (on the frame's right-hand column).
+	/// </summary>
+	protected static Rectangle DrawDialog( Rectangle r, string? title, IEnumerable<string> paragraphs )
+	{
+		UiModel.Load( "w_dialog" )?.Draw( r );
+		// The text sits inside the black screen, clear of the bezel.
+		float left = r.X + r.Width * 0.1f, width = r.Width * 0.66f, y = r.Y + r.Height * 0.84f;
+		const float LineHeight = 19f;
+		float scale = 15f / MathF.Max( 1f, Medium.Atlas.LineHeight );
+		if ( title != null )
+		{
+			Graphics.DrawText( Medium, title, left + width / 2f, y, TitleInk, TextAlign.Center, 17f / MathF.Max( 1f, Medium.Atlas.LineHeight ) );
+			y -= 26f;
+		}
+		foreach ( var paragraph in paragraphs )
+		{
+			foreach ( var line in ParkHud.Wrap( Medium, paragraph, width / scale ) )
+			{
+				Graphics.DrawText( Medium, line, left, y, default, TextAlign.Left, scale );
+				y -= LineHeight;
+			}
+			y -= 6f;
+		}
+		return new Rectangle( r.X + r.Width * 0.84f, r.Y + r.Height * 0.12f, 42f, 42f );
+	}
+
 	/// <summary>The window's title (yellow, centred at the top) and the balance at the top right (none when
 	/// <paramref name="right"/> is 0).</summary>
 	protected static void DrawHeading( string title, float centreX, float right, float top )

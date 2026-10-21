@@ -1,18 +1,24 @@
 namespace OpenTPW;
 
 /// <summary>
-/// The golden-ticket announcement (T-055): each ticket won shows the game's own banner for a few seconds —
-/// "YOU'VE WON A GOLDEN TICKET!" and its sentence (TAG_SYSTEM 180–190) — while the rides fire their fireworks.
+/// The golden-ticket announcement (T-055): each ticket won shows the game's own words — "YOU'VE WON A GOLDEN
+/// TICKET!" and its sentence (TAG_SYSTEM 180–190) — in the original's message box for a few seconds (or until its
+/// ✓), while the rides fire their fireworks.
 /// </summary>
-internal sealed class GoldenTicketPanel : HudPanel
+internal sealed class GoldenTicketPanel : GameWindow
 {
 	private const float ShowSeconds = 9f;
 
-	private static Texture? bg, gold;
-	private static Texture Bg => bg ??= Solid( 40, 26, 6, 230 );
-	private static Texture Gold => gold ??= Solid( 240, 200, 60, 255 );
+	protected override Rectangle Frame => At( 270f, 170f, 420f, 247f );
 
 	private readonly Queue<(string Headline, string Sentence)> pending = new();
+
+	public GoldenTicketPanel()
+	{
+		// Dev aid: OPENTPW_UI_OPEN=dialog shows a sample announcement, to look at the message box.
+		if ( Environment.GetEnvironmentVariable( "OPENTPW_UI_OPEN" ) == "dialog" )
+			pending.Enqueue( ("YOU'VE WON A GOLDEN TICKET!", "Congratulations! You've won a golden ticket for having a high level of visitor happiness.") );
+	}
 	private (string Headline, string Sentence)? showing;
 	private float showUntil;
 	private GoldenTicketGoals? subscribed;
@@ -36,16 +42,14 @@ internal sealed class GoldenTicketPanel : HudPanel
 
 	protected override void OnRender()
 	{
+		IsOpen = showing != null;
 		if ( showing is not { } s )
 			return;
-		var b = new Rectangle( 340f, 330f, 600f, 90f );
-		var mat = Material.UI;
-		mat.Set( "Color", Gold );
-		Graphics.Quad( new Rectangle( b.X - 3f, b.Y - 3f, b.Width + 6f, b.Height + 6f ), mat );
-		mat.Set( "Color", Bg );
-		Graphics.Quad( b, mat );
-		Graphics.DrawText( Font, s.Headline, b.X + b.Width / 2f, b.Y + b.Height - 26f, TextAlign.Center, 1.6f );
-		float scale = MathF.Min( 1.2f, (b.Width - 24f) / MathF.Max( 1f, Font.Atlas.Measure( s.Sentence ) ) );
-		Graphics.DrawText( Font, s.Sentence, b.X + b.Width / 2f, b.Y + 26f, TextAlign.Center, scale );
+		// The original's message box, with the ticket itself beside the words; the ✓ dismisses it.
+		var ok = DrawDialog( Frame, s.Headline, new[] { s.Sentence } );
+		if ( UiTexture( "gticket" ) is { } ticket )
+			Fill( new Rectangle( ok.X - 4f, ok.Y + 60f, 52f, 52f ), ticket );
+		if ( RoundButton( ok, "b_okay" ) )
+			showUntil = Time.Now;
 	}
 }
