@@ -15,7 +15,7 @@ public static class UiHelp
 	private static string[]? entries;
 
 	/// <summary>Entry <paramref name="index"/> with its lines joined, else <paramref name="fallback"/>.</summary>
-	public static string Text( int index, string fallback )
+	public static string Text( int index, string fallback, bool firstLineOnly = false )
 	{
 		if ( entries == null )
 		{
@@ -24,6 +24,8 @@ public static class UiHelp
 		}
 		if ( index < 0 || index >= entries.Length || string.IsNullOrWhiteSpace( entries[index] ) )
 			return fallback;
-		return string.Join( "  ", entries[index].Split( '|', '\n' ).Select( l => l.Trim() ).Where( l => l.Length > 0 ) );
+		var lines = entries[index].Split( '|', '\n' ).Select( l => l.Trim() ).Where( l => l.Length > 0 ).ToList();
+		// The second line is often a modifier we don't offer (Ctrl-click to build more).
+		return firstLineOnly && lines.Count > 0 ? lines[0] : string.Join( "  ", lines );
 	}
 }

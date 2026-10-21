@@ -22,7 +22,7 @@ internal sealed class ParkHud : HudPanel
 
 	private static Font? cashFont, dateFont, hintFont;
 	private static Font CashFont => cashFont ??= new Font( GameLanguage.File( "CASHBIG.bf4" ) );
-	private static Font DateFont => dateFont ??= new Font( GameLanguage.File( "DATESMALL.bf4" ) );
+	private static Font DateFont => dateFont ??= new Font( GameLanguage.File( "DATEMED.bf4" ) );
 	private static Font HintFont => hintFont ??= new Font( GameLanguage.File( "GAME8.bf4" ) );
 
 	private static readonly System.Numerics.Vector3 LcdInk = new( 0.06f, 0.24f, 0.06f );
@@ -37,7 +37,7 @@ internal sealed class ParkHud : HudPanel
 	// The handheld (ui.wad mainpanel.MD2 and friends), measured on the original.
 	private static readonly Rectangle Beacon = FromTop( 41f, 420f, 38f, 64f );
 	private static readonly Rectangle Body = FromTop( 30f, 484f, 182f, 220f );
-	private static readonly Rectangle Lcd = FromTop( 78f, 491f, 106f, 24f );
+	private static readonly Rectangle Lcd = FromTop( 72f, 484f, 120f, 30f );
 	private static readonly Rectangle Gauge = FromTop( 34f, 507f, 41f, 131f );
 	private const float ButtonSize = 70f; // the b_*.wct disc fills ~¾ of its texture: a ~52-px gold button
 
@@ -232,9 +232,9 @@ internal sealed class ParkHud : HudPanel
 		if ( GameClock.Current is { } clock )
 		{
 			var d = clock.Date;
-			float scale = MathF.Max( 1f, MathF.Round( 17f / MathF.Max( 1f, DateFont.Atlas.LineHeight ) ) ); // whole: point-sampled
-			Graphics.DrawText( DateFont, $"{d.Day}.{d.Month}.{d.Year}", Lcd.X + Lcd.Width / 2f, Lcd.Y + Lcd.Height - 4f,
-				LcdInk, TextAlign.Center, scale );
+			// DATEMED at its own size (15 px) fills the LCD glass as the original's date does.
+			Graphics.DrawText( DateFont, $"{d.Day}.{d.Month}.{d.Year}", Lcd.X + Lcd.Width / 2f,
+				MathF.Round( Lcd.Y + (Lcd.Height + DateFont.Atlas.LineHeight) / 2f ) + 1f, LcdInk, TextAlign.Center, 1f );
 		}
 
 		// The thermometer: its rim, the black capsule with the smileys, then the orange gradient filled up to the
@@ -296,10 +296,10 @@ internal sealed class ParkHud : HudPanel
 		if ( BuildMode.Current is not { } build || build.HoveredTile is not { } tile )
 			return null;
 		if ( build.Selected >= 0 )
-			return $"{build.Catalog[build.Selected].Label}: {UiHelp.Text( UiHelp.BuildItem, "Left-click to build the item" )}";
+			return $"{build.Catalog[build.Selected].Label}: {UiHelp.Text( UiHelp.BuildItem, "Left-click to build the item", firstLineOnly: true )}";
 		var name = Entity.All.OfType<Ride>().FirstOrDefault( r => r.Covers( tile.X, tile.Y ) )?.Name
 			?? Shop.Stalls.FirstOrDefault( s => s.Covers( tile.X, tile.Y ) )?.Name;
-		return name != null ? $"{name}: {UiHelp.Text( UiHelp.ItemDetails, "Left-click to view/edit this item's details" )}" : null;
+		return name != null ? $"{name}: {UiHelp.Text( UiHelp.ItemDetails, "Left-click to view/edit this item's details", firstLineOnly: true )}" : null;
 	}
 
 	// The translucent strip at the bottom centre; a long line wraps onto more rows and the strip grows with it.
