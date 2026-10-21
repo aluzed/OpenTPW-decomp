@@ -59,3 +59,8 @@ reuses the verified `HudPanel` click/hit-test path.
 `source/OpenTPW/UI/Widgets/ManagePanel.cs`, `source/OpenTPW/UI/Widgets/ParkStatsPanel.cs`,
 `source/OpenTPW/UI/Widgets/HudPanel.cs`, `source/OpenTPW/World/Level.cs`,
 `source/OpenTPW.Tests/ManagementDepthTests.cs` (new).
+
+## Update (2026-10-21) — selection arrow
+
+The selected ride / stall / member of staff is marked by the game's own bobbing selection arrow
+(`esprites/Generic/Thoughts/SPR_TC` frames 3–6; blue = ride, yellow = stall, green = staff) — `SelectionArrow`.

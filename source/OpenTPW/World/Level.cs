@@ -273,6 +273,7 @@ public class Level
 			( item, tx, ty, rot ) => CommitPlacement( item, grid, terrain, tx, ty, rot ),
 			ride => DemolishRide( ride, grid ),
 			shop => DemolishShop( shop, grid ) );
+		_ = new SelectionArrow(); // marks the selected ride / stall / staff member
 
 		// Diagnostic: deterministically exercise the placement pipeline (the same path a click commits).
 		if ( Environment.GetEnvironmentVariable( "OPENTPW_AUTOPLACE" ) != null )
