@@ -11,19 +11,20 @@ namespace OpenTPW;
 /// consumed byte-exactly (see docs/tickets/T-071).
 ///
 /// <code>
-///   0x00 : 11 bytes   header (first byte 3; the rest varies per theme — not yet interpreted)
+///   0x00 : 11 bytes   header: version 3, then 5 (centre, width) ramp pairs for the blend (see ParkGround.Compose)
 ///   image             blend map: 384×344, 4 bytes/pixel, ARGB
 ///   × 3 detail levels (LOD 0..2):
 ///     u32 tileSize    (64, 32, 16)
 ///     u8  index       (0, 1, 2)
 ///     image × 6       ground textures, ARGB (alpha unused, 0): dirt ×2, grass ×2, foliage ×2
-///     image × 7       single-channel masks (1 byte/pixel)
+///     image × 7       single-channel masks (1 byte/pixel): M0–M2 the dirt/grass/foliage variant masks,
+///                     M3–M4 the grass cover masks, M5–M6 the foliage cover masks
 ///
 ///   image = u32 width, u32 height, u32 bytesPerPixel, width×height×bytesPerPixel pixel bytes (row-major)
 /// </code>
 /// The blend map covers the park interior at 4 pixels per tile (row 0 = the far, max-Y edge): alpha is 0 where
-/// the scenery meshes take over (river, lake, entrance) and 255 where ground is drawn; R/G/B weight the dirt,
-/// grass and foliage texture families.
+/// the scenery meshes take over (river, lake, entrance) and 255 where ground is drawn; R is the variation between
+/// each family's two textures, G the grass cover and B the foliage cover over the dirt.
 /// </summary>
 public sealed class LndFile : BaseFormat
 {
@@ -32,10 +33,10 @@ public sealed class LndFile : BaseFormat
 	public const int TexturesPerLevel = 6;
 	public const int MasksPerLevel = 7;
 
-	/// <summary>The 11 header bytes, kept raw (only the first byte, 3, is constant).</summary>
+	/// <summary>The 11 header bytes: version 3, then the blend ramps' (centre, width) pairs.</summary>
 	public byte[] Header { get; private set; } = Array.Empty<byte>();
 
-	/// <summary>Per-pixel ground mask (A) + dirt/grass/foliage weights (R/G/B).</summary>
+	/// <summary>Per-pixel ground mask (A), variation (R), grass cover (G), foliage cover (B).</summary>
 	public LndImage BlendMap { get; private set; } = null!;
 
 	/// <summary>The detail levels, most detailed first.</summary>
@@ -115,7 +116,7 @@ public sealed class LndLevel
 	/// <summary>Dirt ×2, grass ×2, foliage ×2 (ARGB, 4 bytes/pixel).</summary>
 	public List<LndImage> Textures { get; } = new();
 
-	/// <summary>Single-channel masks (role not yet decoded).</summary>
+	/// <summary>Single-channel masks: variants M0–M2, grass cover M3–M4, foliage cover M5–M6.</summary>
 	public List<LndImage> Masks { get; } = new();
 }
 

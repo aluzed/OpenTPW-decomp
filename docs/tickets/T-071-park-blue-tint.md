@@ -2,7 +2,7 @@
 
 - **Priority**: 🟡 Medium (visual)
 - **Type**: Engine / rendering
-- **Status**: ⚠️ Mostly done — two root causes, neither the night wash:
+- **Status**: ✅ Done — two root causes, neither the night wash; the ground blend is now the original's:
   1. **The park floor was never rendered.** It is not in `base.MD2` (scenery only: river, lake, entrance, hills,
      fence) but in `terrain.wad/base.lnd`, which nothing read — the blue was the `Sky` cube seen through the
      ground (confirmed: the terrain's first commit `0a964bc` already showed it). `.LND` is now decoded
@@ -31,9 +31,7 @@ overlay (`DayNightOverlay`) — or a missing terrain texture.
 - ~~Cyan gaps~~ — fixed in T-072: holes with no mesh over them are filled with ground
   (`ParkGround.FillUncoveredHoles`), and the long "cyan strips" were queue paths fogged by `3d.shader` (full fog
   at 30 units). A few pixel-size slivers remain at the river banks.
-- The **exact blend** is approximated (linear weights, each family = the average of its 2 textures); the 7
-  masks per LOD (probably height/sharpness maps for a height-based blend) and the 11 header bytes are not
-  interpreted. LOD 1/2 are unused.
+- ~~The exact blend~~ — reversed and implemented (see "Exact blend" below).
 - The day/night wash was not the cause and is unchanged.
 
 ## Original scope (kept for reference)
@@ -62,3 +60,22 @@ horizon.) `water.shader` is unchanged (its `Water` entity is unused and has its 
 (`FUN_00572110`: 16-byte ring entries, tile size 16/32/64 picked from the video memory — the three LODs) whose tiles
 are generated on demand; the per-pixel blend lives below `FUN_00590a80` (tile init) and wasn't reached. The blend
 stays approximated.
+
+## Exact blend (2026-10-21)
+
+The tile generator is `FUN_0055f780` (called from the tile cache `FUN_00572440`); `FUN_0055eaa0` / `FUN_0055ee10` are
+its plain-C 3- and 2-family blends, `FUN_00560ff0` loads the file and `FUN_0055f470` maps the 13 images of a level to
+their slots. Per pixel of a tile (blend map upsampled bilinearly by `FUN_0055e780`, a map pixel on its corner):
+
+- family colour = `T_b + (T_a − T_b) · ramp_f[(M_f · R) >> 8] >> 8` — dirt T0/T1 by M0, grass T2/T3 by M1, foliage
+  T4/T5 by M2: **R is a variation channel**, not a dirt weight;
+- grass cover `wG = max(rampG[(M3 · G) >> 8], rampG[(G · M4) >> 8])`, foliage cover `wF` the same with B, M5, M6;
+- ground = `lerp(lerp(dirt, grass, wG), foliage, wF)`;
+- the 5 ramps are `FUN_0055e710(centre, width)` (0 below `centre − ⌈w/2⌉`, 255 above `centre + ⌈w/2⌉`, linear over
+  w + 1) from the **header** pairs: bytes 1–2 dirt, 3–4 grass, 5–6 grass cover, 7–8 foliage, 9–10 foliage cover;
+- tile (x, y) reads each image from texel `(TileSize · x) mod (size − TileSize)` — images of different sizes
+  (192/212/222/242…) so the repetition never lines up.
+
+`ParkGround.Compose` does exactly this at LOD 1 (32 px per tile, a 3072×2752 texture; LOD 0 would be 135 MB).
+Verified in game on jungle, Halloween and space; unit-tested (`LndFileTests`). The original greys out tiles whose
+centre isn't fully ground (`0x7f7f7f`) — we keep alpha holes + `FillUncoveredHoles` instead.

@@ -15,11 +15,9 @@ public sealed class ParkGround
 	/// <summary>World units per blend-map pixel.</summary>
 	public const float UnitsPerMapPixel = 2.5f;
 
-	/// <summary>Ground texture pixels per world unit: a 192-px texture repeats every 64 units (the LOD 0 tile size).</summary>
-	public const float TexelsPerUnit = 3f;
-
-	/// <summary>Resolution of the composed ground texture.</summary>
-	public const float OutputPixelsPerUnit = 2f;
+	/// <summary>The <c>.lnd</c> detail level composed: LOD 1, 32 pixels per tile (3072×2752 for a 960×860 park) —
+	/// LOD 0's 64 would need a 135 MB texture.</summary>
+	public const int DetailLevel = 1;
 
 	/// <summary>World Z of the park floor — the level of the fence feet and paths.</summary>
 	public const float SurfaceZ = 0f;
@@ -54,8 +52,8 @@ public sealed class ParkGround
 		Width = lnd.BlendMap.Width * UnitsPerMapPixel;
 		Depth = lnd.BlendMap.Height * UnitsPerMapPixel;
 
-		int w = (int)(Width * OutputPixelsPerUnit), h = (int)(Depth * OutputPixelsPerUnit);
-		var texture = new Texture( Compose( blendMap, lnd.Levels[0], w, h ), w, h );
+		var rgba = Compose( lnd.Header, blendMap, lnd.Levels[DetailLevel], out int w, out int h );
+		var texture = new Texture( rgba, w, h );
 		Log.Info( $"[ground] {terrainPath}/base.lnd: {Width:0}×{Depth:0} units, composed {w}×{h}" );
 
 		var material = new Material<ObjectUniformBuffer>( "content/shaders/test.shader", MaterialFlags.DoubleSided );
@@ -82,67 +80,106 @@ public sealed class ParkGround
 	}
 
 	/// <summary>
-	/// Composes the ground into a <paramref name="width"/>×<paramref name="height"/> RGBA image covering the whole
-	/// blend map (row 0 = the far edge). Each pixel mixes the dirt, grass and foliage families by the map's R/G/B
-	/// weights (bilinear), each family the average of its two LOD 0 textures tiled at <see cref="TexelsPerUnit"/>;
-	/// alpha is the map's ground mask, so the scenery holes stay transparent.
-	/// The exact original blend (it also has 7 masks, not used here) is still to be reversed.
+	/// Composes the ground into an RGBA image covering the whole blend map (row 0 = the far edge), at
+	/// <paramref name="level"/>'s resolution: one <see cref="LndLevel.TileSize"/>-pixel square per 10-unit tile.
+	/// This is the original's tile generator (<c>FUN_0055f780</c>, blends <c>FUN_0055eaa0</c>/<c>FUN_0055ee10</c>,
+	/// ramps <c>FUN_0055e710</c>, loader <c>FUN_00560ff0</c>):
+	/// <list type="bullet">
+	/// <item>The blend map is upsampled bilinearly, a map pixel sitting on its top-left corner (<c>FUN_0055e780</c>).</item>
+	/// <item>Each family mixes its two textures by <c>ramp_f[(mask_f · R) &gt;&gt; 8]</c>: dirt = T0/T1 by M0,
+	/// grass = T2/T3 by M1, foliage = T4/T5 by M2 — R is the "variation" channel.</item>
+	/// <item>Grass covers dirt by <c>max(ramp_g[(M3 · G) &gt;&gt; 8], ramp_g[(M4 · G) &gt;&gt; 8])</c>, foliage covers both
+	/// by the same with B, M5 and M6 — the masks break the edges into clumps.</item>
+	/// <item>The five ramps are the header's (centre, width) byte pairs 1–2 (dirt), 3–4 (grass), 5–6 (grass cover),
+	/// 7–8 (foliage), 9–10 (foliage cover); see <see cref="Ramp"/>.</item>
+	/// <item>Tile (x, y) reads every image from texel <c>(TileSize · x) mod (size − TileSize)</c>, so the images of
+	/// different sizes never repeat together.</item>
+	/// </list>
+	/// Alpha is the map's ground mask, so the scenery holes stay transparent (the original greys those tiles out).
 	/// </summary>
-	public static byte[] Compose( LndFile lnd, int width, int height ) => Compose( lnd.BlendMap, lnd.Levels[0], width, height );
+	public static byte[] Compose( LndFile lnd, int level, out int width, out int height ) =>
+		Compose( lnd.Header, lnd.BlendMap, lnd.Levels[level], out width, out height );
 
-	/// <inheritdoc cref="Compose(LndFile, int, int)"/>
-	public static byte[] Compose( LndImage map, LndLevel level, int width, int height )
+	/// <inheritdoc cref="Compose(LndFile, int, out int, out int)"/>
+	public static byte[] Compose( byte[] header, LndImage map, LndLevel level, out int width, out int height )
 	{
+		int tile = level.TileSize;
+		int tilesX = map.Width / MapPixelsPerTile, tilesY = map.Height / MapPixelsPerTile;
+		int w = width = tilesX * tile, h = height = tilesY * tile;
+		var rgba = new byte[w * h * 4];
+
+		byte H( int i ) => i < header.Length ? header[i] : (byte)0;
+		var dirtRamp = Ramp( H( 1 ), H( 2 ) );
+		var grassRamp = Ramp( H( 3 ), H( 4 ) );
+		var grassCover = Ramp( H( 5 ), H( 6 ) );
+		var foliageRamp = Ramp( H( 7 ), H( 8 ) );
+		var foliageCover = Ramp( H( 9 ), H( 10 ) );
 		var tex = level.Textures;
-		float worldW = map.Width * UnitsPerMapPixel, worldH = map.Height * UnitsPerMapPixel;
-		var rgba = new byte[width * height * 4];
+		var mask = level.Masks;
 
-		// Rows are independent: compose them in parallel (~2 s of the park load single-threaded).
-		Parallel.For( 0, height, oy =>
+		// Rows are independent: compose them in parallel.
+		Parallel.For( 0, h, oy =>
 		{
-			Span<float> weight = stackalloc float[4];
-			float wy = (oy + 0.5f) * worldH / height; // world units from the far edge
-			float my = wy / UnitsPerMapPixel - 0.5f;
-
-			for ( int ox = 0; ox < width; ox++ )
+			int ty = oy / tile, ly = oy % tile;
+			float my = ty * MapPixelsPerTile + ly * (float)MapPixelsPerTile / tile;
+			for ( int ox = 0; ox < w; ox++ )
 			{
-				float wx = (ox + 0.5f) * worldW / width;
-				float mx = wx / UnitsPerMapPixel - 0.5f;
-				SampleMap( map, mx, my, weight );
+				int tx = ox / tile, lx = ox % tile;
+				float mx = tx * MapPixelsPerTile + lx * (float)MapPixelsPerTile / tile;
+				int alpha = SampleMap( map, mx, my, 0 );
+				int variation = SampleMap( map, mx, my, 1 );
+				int grass = SampleMap( map, mx, my, 2 );
+				int foliage = SampleMap( map, mx, my, 3 );
 
-				float sum = weight[1] + weight[2] + weight[3];
-				if ( sum <= 0f )
+				int M( int i ) => Texel( mask[i], tile, tx, ty, lx, ly, 0 );
+				int wGrass = Math.Max( grassCover[(M( 3 ) * grass) >> 8], grassCover[(grass * M( 4 )) >> 8] );
+				int wFoliage = Math.Max( foliageCover[(foliage * M( 6 )) >> 8], foliageCover[(M( 5 ) * foliage) >> 8] );
+				int tDirt = dirtRamp[(M( 0 ) * variation) >> 8];
+				int tGrass = grassRamp[(M( 1 ) * variation) >> 8];
+				int tFoliage = foliageRamp[(M( 2 ) * variation) >> 8];
+
+				int o = (oy * w + ox) * 4;
+				for ( int c = 0; c < 3; c++ )
 				{
-					weight[2] = 1f; // unweighted ground: plain grass
-					sum = 1f;
+					int Mix( int a, int b, int t ) => b + (((a - b) * t) >> 8);
+					int T( int i ) => Texel( tex[i], tile, tx, ty, lx, ly, 1 + c );
+					int dirt = Mix( T( 0 ), T( 1 ), tDirt );
+					int grassColour = Mix( T( 2 ), T( 3 ), tGrass );
+					int foliageColour = Mix( T( 4 ), T( 5 ), tFoliage );
+					int ground = Mix( foliageColour, Mix( grassColour, dirt, wGrass ), wFoliage );
+					rgba[o + c] = (byte)Math.Clamp( ground, 0, 255 );
 				}
-
-				float r = 0f, g = 0f, b = 0f;
-				for ( int family = 0; family < 3; family++ )
-				{
-					float k = weight[1 + family] / sum * 0.5f;
-					if ( k <= 0f )
-						continue;
-					for ( int variant = 0; variant < 2; variant++ )
-					{
-						var t = tex[family * 2 + variant];
-						int tx = Wrap( (int)(wx * TexelsPerUnit), t.Width );
-						int ty = Wrap( (int)(wy * TexelsPerUnit), t.Height );
-						r += k * t.At( tx, ty, 1 );
-						g += k * t.At( tx, ty, 2 );
-						b += k * t.At( tx, ty, 3 );
-					}
-				}
-
-				int o = (oy * width + ox) * 4;
-				rgba[o] = (byte)Math.Clamp( r, 0f, 255f );
-				rgba[o + 1] = (byte)Math.Clamp( g, 0f, 255f );
-				rgba[o + 2] = (byte)Math.Clamp( b, 0f, 255f );
-				rgba[o + 3] = (byte)Math.Clamp( weight[0], 0f, 255f );
+				rgba[o + 3] = (byte)alpha;
 			}
 		} );
 
 		return rgba;
+	}
+
+	/// <summary>Blend-map pixels per 10-unit tile.</summary>
+	public const int MapPixelsPerTile = 4;
+
+	/// <summary>
+	/// The original's 256-entry ramp (<c>FUN_0055e710</c>): 0 below <c>centre − ⌈width/2⌉</c>, 255 above
+	/// <c>centre + ⌈width/2⌉</c>, linear in between (over width + 1 steps).
+	/// </summary>
+	public static byte[] Ramp( int centre, int width )
+	{
+		int half = (width + 1) >> 1, lo = centre - half, hi = centre + half;
+		var ramp = new byte[256];
+		for ( int i = 0; i < 256; i++ )
+			ramp[i] = i < lo ? (byte)0 : i > hi ? (byte)255 : (byte)Math.Clamp( 255 * (i - lo) / (width + 1), 0, 255 );
+		return ramp;
+	}
+
+	// Byte `channel` of `image` for pixel (lx, ly) of tile (tx, ty): each tile starts at (tile · t) mod (size − tile).
+	private static int Texel( LndImage image, int tile, int tx, int ty, int lx, int ly, int channel )
+	{
+		int px = image.Width > tile ? image.Width - tile : image.Width;
+		int py = image.Height > tile ? image.Height - tile : image.Height;
+		int x = (tile * tx % px + lx) % image.Width;
+		int y = (tile * ty % py + ly) % image.Height;
+		return image.At( x, y, channel );
 	}
 
 	/// <summary>
@@ -186,20 +223,15 @@ public sealed class ParkGround
 		return !(neg && pos);
 	}
 
-	private static int Wrap( int v, int n ) => ((v % n) + n) % n;
-
-	// Bilinear ARGB sample of the blend map at a continuous pixel position (clamped at the edges).
-	private static void SampleMap( LndImage map, float x, float y, Span<float> argb )
+	// Bilinear sample of one blend-map channel, map pixels on integer positions (clamped at the edges).
+	private static int SampleMap( LndImage map, float x, float y, int channel )
 	{
 		int x0 = (int)MathF.Floor( x ), y0 = (int)MathF.Floor( y );
 		float fx = x - x0, fy = y - y0;
 		int xa = Math.Clamp( x0, 0, map.Width - 1 ), xb = Math.Clamp( x0 + 1, 0, map.Width - 1 );
 		int ya = Math.Clamp( y0, 0, map.Height - 1 ), yb = Math.Clamp( y0 + 1, 0, map.Height - 1 );
-		for ( int c = 0; c < 4; c++ )
-		{
-			float top = map.At( xa, ya, c ) * (1 - fx) + map.At( xb, ya, c ) * fx;
-			float bottom = map.At( xa, yb, c ) * (1 - fx) + map.At( xb, yb, c ) * fx;
-			argb[c] = top * (1 - fy) + bottom * fy;
-		}
+		float top = map.At( xa, ya, channel ) * (1 - fx) + map.At( xb, ya, channel ) * fx;
+		float bottom = map.At( xa, yb, channel ) * (1 - fx) + map.At( xb, yb, channel ) * fx;
+		return (int)(top * (1 - fy) + bottom * fy);
 	}
 }

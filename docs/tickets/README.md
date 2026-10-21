@@ -43,8 +43,8 @@ All format/VM decoding and the core gameplay loop are done. Open work falls into
   (T-044); kart / water tracks from the rides' pieces and coaster loops (T-045); every challenge type tracked with a
   challenge window (T-054); a golden ticket per goal (T-055); toilet queues; EVENT / ADDOBJ types 3-4 are the level's
   own ride sounds (T-047); the game's lip-sync viseme choice (T-020); a bankrupt end screen (T-042); the original's
-  icons on the HUD (T-065); faster loads (T-030); no memory leak in a 15-minute soak (T-075). **Next candidates**:
-  the original 3D-widget UI (T-065, needs the UI camera), the exact ground blend (T-071).
+  icons on the HUD (T-065); faster loads (T-030); no memory leak in a 15-minute soak (T-075); the original's exact ground blend (T-071).
+  **Next candidate**: the original 3D-widget UI (T-065, needs the UI camera).
 - **Blocked / deferred** (need an external sample or have no consumer): **T-017** (`SAD_*` save stream —
   no sample), **T-022** (EA-ADPCM mono waveform — no sample), **T-021** (`.TQI` exact dequant — decoder
   already renders correctly). *(T-019 `.PLB` field labels — now **done**: the spawn path reads the record
@@ -124,7 +124,7 @@ All format/VM decoding and the core gameplay loop are done. Open work falls into
 | [T-068](T-068-quit-game-button.md) | 🟠 Medium | ✅ Done | **Bug**: lobby "Quit Game" now quits (`PurpleButton.OnClick` → `Renderer.RequestQuit`); quick clicks no longer dropped by `Input` |
 | [T-069](T-069-sigterm-segfault.md) | 🟡 Low | ✅ Done | **Bug**: SIGTERM / SIGINT segfaulted (exit 139); now handled → clean window-close shutdown (exit 0) |
 | [T-070](T-070-lobby-label-overlap.md) | 🟢 Low | ✅ Done | **Bug**: lobby world names slid under the button column — camera reframed left + no label/click behind the buttons |
-| [T-071](T-071-park-blue-tint.md) | 🟡 Medium | ⚠️ Mostly done | **Bug**: park read uniformly blue — the **ground layer (`base.lnd`) was never rendered** (now decoded: `LndFile` + `ParkGround`, all 4 themes) and the terrain fog went full at ~370 units (now ~920). Some cyan gaps + exact blend remain |
+| [T-071](T-071-park-blue-tint.md) | 🟡 Medium | ✅ Done | **Bug**: park read uniformly blue — the **ground layer (`base.lnd`) was never rendered** (now decoded: `LndFile` + `ParkGround`, all 4 themes) and the terrain fog went full at ~370 units (now ~920). The ground blend is now the original's (`FUN_0055f780`: variation, cover masks, header ramps) |
 | [T-072](T-072-placement-grid-scale.md) | 🟠 Medium | ✅ Done | **Bug**: grid was 16-unit tiles on the terrain centroid → now **10-unit tiles from (0,0)** (measured), rides re-centred on their footprint, river/lake = water + walkable forecourt from the `.lnd` mask, autoplace on the biggest open lawn, `3d.shader` fog fixed |
 | [T-073](T-073-magenta-materials.md) | 🟠 Medium | ✅ Done | **Bug**: magenta faces on hallow/fantasy/space rides (>16 materials per mesh → `MaterialSlots`; shared textures → `sharetex.wad` fallback), coaster track texture read from `coaster.sam`, and the **Space lobby island now loads** |
 | [T-074](T-074-visitor-arrivals.md) | 🟠 Medium | ✅ Done | **Visitor arrivals**: groups sized by park rating from `Arrival.*`, brought by the theme's **bus** along the forecourt road (out of the tunnel, under the arrival shelter, away under the departure shelter), stays from `PeepInfo.ExitLevel`, departures leave for good; a bus every `TimeBetweenArrivals` s carrying (NewParkBonus + attraction points) × 0.8/1.2 ÷ PointsPerVisitor (the original's formula, reversed); the bus route is hand-traced |

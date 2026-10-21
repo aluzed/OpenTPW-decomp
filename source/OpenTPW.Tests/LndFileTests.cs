@@ -66,33 +66,63 @@ public class LndFileTests
 		Assert.ThrowsExactly<InvalidDataException>( () => new LndFile( new MemoryStream( trailing ) ) );
 	}
 
-	[TestMethod]
-	public void ComposeMixesFamiliesByWeightAndKeepsTheMask()
+	// A 4×4 map (one tile) of a single ARGB value, and a level of flat textures (R = 10n) and flat masks.
+	private static byte[] ComposeFlat( byte a, byte r, byte g, byte b, byte maskValue = 255 )
 	{
-		// Left half of the map: opaque, pure grass (G). Right half: alpha 0 (a scenery hole).
-		var lnd = new LndFile( new MemoryStream( BuildLnd( i =>
+		var map = new LndImage( 4, 4, 4, Enumerable.Range( 0, 64 ).Select( i => (i % 4) switch { 0 => a, 1 => r, 2 => g, _ => b } ).ToArray() );
+		var level = new LndLevel( 2, 1 );
+		for ( int t = 0; t < LndFile.TexturesPerLevel; t++ )
 		{
-			int px = i / 4 % 4, c = i % 4;
-			return c switch { 0 => (byte)(px < 2 ? 255 : 0), 2 => 255, _ => 0 };
-		} ) ) );
-
-		var rgba = ParkGround.Compose( lnd, 4, 2 );
-
-		// Grass = average of textures 2 and 3: R = (20 + 30) / 2, G = (22 + 23) / 2, B = (32 + 33) / 2.
-		Assert.AreEqual( 25, rgba[0] );
-		Assert.AreEqual( 22, rgba[1] );
-		Assert.AreEqual( 32, rgba[2] );
-		Assert.AreEqual( 255, rgba[3] );
-		Assert.AreEqual( 0, rgba[3 * 4 + 3], "the right-most pixel is a scenery hole" );
+			int n = t;
+			level.Textures.Add( new LndImage( 4, 4, 4, Enumerable.Range( 0, 64 ).Select( i => (byte)(i % 4 == 1 ? 10 * n : 0) ).ToArray() ) );
+		}
+		for ( int m = 0; m < LndFile.MasksPerLevel; m++ )
+			level.Masks.Add( new LndImage( 3, 3, 1, Enumerable.Repeat( maskValue, 9 ).ToArray() ) );
+		// Every ramp centred on 100, 10 wide: 0 below 95, 255 above 105.
+		var header = new byte[] { 3, 100, 10, 100, 10, 100, 10, 100, 10, 100, 10 };
+		var rgba = ParkGround.Compose( header, map, level, out int w, out int h );
+		Assert.AreEqual( 2, w, "one 2-pixel tile per 4×4 map pixels" );
+		Assert.AreEqual( 2, h );
+		return rgba;
 	}
 
 	[TestMethod]
-	public void ComposeFallsBackToGrassWhenUnweighted()
+	public void RampIsTheOriginalLinearStep()
 	{
-		var lnd = new LndFile( new MemoryStream( BuildLnd( i => (byte)(i % 4 == 0 ? 255 : 0) ) ) );
-		var rgba = ParkGround.Compose( lnd, 2, 1 );
-		Assert.AreEqual( 25, rgba[0] );
+		var ramp = ParkGround.Ramp( 1, 2 ); // 0 below -1+… : lo 0, hi 2, step 255 / 3
+		CollectionAssert.AreEqual( new byte[] { 0, 85, 170, 255, 255 }, ramp[..5] );
+		var wide = ParkGround.Ramp( 100, 10 );
+		Assert.AreEqual( 0, wide[94] );
+		Assert.AreEqual( 255, wide[106] );
+	}
+
+	[TestMethod]
+	public void UnweightedGroundIsTheSecondDirtTexture()
+	{
+		var rgba = ComposeFlat( 255, 0, 0, 0 );
+		Assert.AreEqual( 10, rgba[0], "dirt T1 (no variation → the family's second texture)" );
 		Assert.AreEqual( 255, rgba[3] );
+	}
+
+	[TestMethod]
+	public void GreenCoversDirtWithGrassAndRedSwapsTheVariant()
+	{
+		Assert.AreEqual( 30, ComposeFlat( 255, 0, 255, 0 )[0], 1, "grass T3" );
+		Assert.AreEqual( 20, ComposeFlat( 255, 255, 255, 0 )[0], 1, "variation → grass T2" );
+		Assert.AreEqual( 50, ComposeFlat( 255, 0, 255, 255 )[0], 1, "blue: foliage T5 over everything" );
+	}
+
+	[TestMethod]
+	public void TheMasksGateTheCoverage()
+	{
+		// Mask 0: (0 · G) >> 8 = 0 → below the cover ramp, so the grass doesn't show.
+		Assert.AreEqual( 10, ComposeFlat( 255, 0, 255, 0, maskValue: 0 )[0] );
+	}
+
+	[TestMethod]
+	public void HolesKeepZeroAlpha()
+	{
+		Assert.AreEqual( 0, ComposeFlat( 0, 0, 255, 0 )[3] );
 	}
 
 	// Optional validation against a real terrain.wad/base.lnd. Set TPW_LND_SAMPLE to run.
