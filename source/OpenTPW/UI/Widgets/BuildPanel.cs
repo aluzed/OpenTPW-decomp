@@ -21,21 +21,23 @@ internal sealed class BuildPanel : HudPanel
 	private const float TopY = 690f;
 	private const float RowH = 30f;
 	private const float RowGap = 4f;
-	private const float TabH = 24f;
-	private const float TabY = TopY - 34f;                // bottom of the tab row
+	private const float TabH = 44f;
+	private const float TabY = TopY - 54f;                // bottom of the tab row
 	private const float FirstRowTop = TabY - 8f;
 
 	private static BuildCategory tab = BuildCategory.Rides;
-	private static readonly (BuildCategory Category, string Label)[] Tabs =
+	// Each tab shows the original's build-menu icon (ui.wad b_s*: its "d" look when selected), or a word without one.
+	private static readonly (BuildCategory Category, string Label, string Icon)[] Tabs =
 	{
-		(BuildCategory.Rides, "RIDES"), (BuildCategory.Sideshows, "GAMES"), (BuildCategory.Shops, "SHOPS"),
-		(BuildCategory.Features, "SCENERY"), (BuildCategory.Staff, "STAFF"),
+		(BuildCategory.Rides, "RIDES", "b_srides"), (BuildCategory.Sideshows, "GAMES", "b_sshows"),
+		(BuildCategory.Shops, "SHOPS", "b_sshops"), (BuildCategory.Features, "SCENERY", "b_sfeature"),
+		(BuildCategory.Staff, "STAFF", "b_shandy"),
 	};
 
 	private static Rectangle TabRect( int i )
 	{
 		float w = PanelW / Tabs.Length;
-		return new Rectangle( Left + i * w, TabY, w - 2f, TabH );
+		return new Rectangle( Left + i * w + (w - TabH) / 2f, TabY, TabH, TabH );
 	}
 
 	// The catalog indices shown under the current tab.
@@ -125,7 +127,20 @@ internal sealed class BuildPanel : HudPanel
 		Graphics.DrawText( Font, "BUILD", Left + 8f, TopY + 20f, TextAlign.Left, LabelScale );
 
 		for ( var t = 0; t < Tabs.Length; t++ )
-			DrawButton( TabRect( t ), Tabs[t].Label, Tabs[t].Category == tab ? Selected : Normal, 1.0f );
+		{
+			bool on = Tabs[t].Category == tab;
+			if ( (Icon( on ? Tabs[t].Icon + "d" : Tabs[t].Icon ) ?? Icon( Tabs[t].Icon )) is { } icon )
+			{
+				if ( on )
+				{
+					mat.Set( "Color", Selected );
+					Graphics.Quad( TabRect( t ), mat );
+				}
+				DrawIcon( TabRect( t ), icon );
+			}
+			else
+				DrawButton( TabRect( t ), Tabs[t].Label, on ? Selected : Normal, 1.0f );
+		}
 
 		var visible = Visible();
 		for ( var i = 0; i < visible.Count; i++ )

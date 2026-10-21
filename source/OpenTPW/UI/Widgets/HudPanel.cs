@@ -52,6 +52,49 @@ internal abstract class HudPanel : Panel
 		Graphics.DrawText( Font, label, rect.X + 8f, rect.Y + rect.Height - 7f * scale / LabelScale, TextAlign.Left, scale );
 	}
 
+	// The original's button icons (ui.wad stexture/b_*.wct, 51×51 with alpha: b_plus, b_loan, b_srides…; a "d" suffix
+	// is the pressed look, "l" lit, "g" greyed). Cached; null when the game files lack one.
+	private static readonly Dictionary<string, Texture?> icons = new( StringComparer.OrdinalIgnoreCase );
+
+	protected static Texture? Icon( string name )
+	{
+		if ( icons.TryGetValue( name, out var t ) )
+			return t;
+		try { t = new Texture( $"ui/stexture/{name}.wct" ); }
+		catch { t = null; }
+		icons[name] = t;
+		return t;
+	}
+
+	// Draw an icon into a square at the left of rect (the icon fills the rect's height).
+	protected static void DrawIcon( Rectangle rect, Texture icon )
+	{
+		var mat = Material.UI;
+		mat.Set( "Color", icon );
+		Graphics.Quad( new Rectangle( rect.X, rect.Y, rect.Height, rect.Height ), mat );
+	}
+
+	// A button with the original's icon before its label (falls back to a plain button without the icon).
+	protected static void DrawIconButton( Rectangle rect, string? iconName, string label, Texture fill, float scale = LabelScale )
+	{
+		if ( iconName == null || Icon( iconName ) is not { } icon )
+		{
+			DrawButton( rect, label, fill, scale );
+			return;
+		}
+		var mat = Material.UI;
+		mat.Set( "Color", fill );
+		Graphics.Quad( rect, mat );
+		DrawIcon( rect, icon );
+		if ( label.Length == 0 )
+			return;
+		int textWidth = Font.Atlas.Measure( label );
+		float room = rect.Width - rect.Height - 10f;
+		if ( textWidth > 0 )
+			scale = MathF.Min( scale, room / textWidth );
+		Graphics.DrawText( Font, label, rect.X + rect.Height + 4f, rect.Y + rect.Height - 7f * scale / LabelScale, TextAlign.Left, scale );
+	}
+
 	// Draw a horizontal progress/gauge bar: background track + a fill clamped to [0,1] of the width.
 	protected static void DrawBar( Rectangle rect, float fraction, Texture fill, Texture track )
 	{

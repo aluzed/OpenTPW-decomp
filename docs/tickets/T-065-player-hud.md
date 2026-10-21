@@ -29,3 +29,12 @@ end caps, `b_money` a 118×118 button with `disabled`/`hilite`/`hidown`/`helddow
 `w_small`/`w_big` window frames, `res_panel` the research bar. They live in a 3D "UI world" seen by a fixed UI camera;
 with that camera's parameters (in `tp.exe`, still to find) the original HUD could be rendered from these models
 directly. The HUD is otherwise localized now (UITEXT labels follow `GameLanguage`).
+
+## 2026-10-21 — the original's icons on the HUD buttons
+
+The HUD now uses the game's own button art from `ui.wad` (`stexture/b_*.wct`, 51×51 with alpha; a `d` suffix is the
+pressed look, `l` lit, `g` greyed — `HudPanel.Icon`/`DrawIconButton`): the build menu's tabs are the original
+category icons (`b_srides`, `b_sshows`, `b_sshops`, `b_sfeature`, `b_shandy`; the selected one in its `d` look),
+and the manage bar's buttons carry theirs (`b_minus`/`b_plus` for prices and the fee, `b_loan`, `b_open` for the
+gates, `b_fire`, `b_move`, `b_resrch`, `b_upgrade`, `b_delete_login` — the bomb — for selling, `b_staffcost` for
+training). The 3D widget panels themselves (and their UI camera) remain to do.

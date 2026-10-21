@@ -29,7 +29,7 @@ internal sealed class ManagePanel : HudPanel
 	private static Texture Research => research ??= Solid( 80, 140, 210, 235 );
 
 	// Progress ≥ 0 renders the button as a progress bar (used for the live research gauge).
-	private readonly record struct Btn( Rectangle Rect, string Label, bool Enabled, System.Action Act, bool Warned = false, float Progress = -1f );
+	private readonly record struct Btn( Rectangle Rect, string Label, bool Enabled, System.Action Act, bool Warned = false, float Progress = -1f, string? Icon = null );
 
 	public ManagePanel() => Current = this;
 
@@ -52,14 +52,14 @@ internal sealed class ManagePanel : HudPanel
 			return list;
 
 		// Park economy row.
-		list.Add( new Btn( new Rectangle( 16f, EconY, 64f, BtnH ), $"FEE-", fin.EntryFee > 0,
-			() => fin.EntryFee = System.Math.Max( 0f, fin.EntryFee - 1f ) ) );
-		list.Add( new Btn( new Rectangle( 84f, EconY, 64f, BtnH ), $"FEE+ {fin.EntryFee:0}", true,
-			() => fin.EntryFee += 1f ) );
+		list.Add( new Btn( new Rectangle( 16f, EconY, 64f, BtnH ), $"FEE", fin.EntryFee > 0,
+			() => fin.EntryFee = System.Math.Max( 0f, fin.EntryFee - 1f ), Icon: "b_minus" ) );
+		list.Add( new Btn( new Rectangle( 84f, EconY, 64f, BtnH ), $"{fin.EntryFee:0}", true,
+			() => fin.EntryFee += 1f, Icon: "b_plus" ) );
 		// The bank (T-042): the level's loan offers live in the LoanPanel list (they don't fit as one button each).
 		list.Add( new Btn( new Rectangle( 152f, EconY, 160f, BtnH ),
 			fin.Debt > 0 ? $"{LoansLabel} (${fin.Debt / 1000f:0.0}k)" : LoansLabel, true,
-			() => LoanPanel.Current?.Toggle(), Warned: fin.Debt > 0 ) );
+			() => LoanPanel.Current?.Toggle(), Warned: fin.Debt > 0, Icon: "b_loan" ) );
 
 		// Selected-ride row (only when a ride is selected via the Default tool).
 		if ( BuildMode.Current?.SelectedRide is { } ride )
@@ -67,29 +67,29 @@ internal sealed class ManagePanel : HudPanel
 			// Only sideshows charge (the price of a game); rides are free in TPW.
 			if ( ride.IsSideshow )
 			{
-				list.Add( new Btn( new Rectangle( 16f, RideY, 64f, BtnH ), $"{PriceLabel} -", ride.TicketPrice > 1f,
-					() => ride.TicketPrice = System.Math.Max( 1f, ride.TicketPrice - 1f ) ) );
-				list.Add( new Btn( new Rectangle( 84f, RideY, 88f, BtnH ), $"{PriceLabel} + {ride.TicketPrice:0}", true,
-					() => ride.TicketPrice += 1f ) );
+				list.Add( new Btn( new Rectangle( 16f, RideY, 64f, BtnH ), PriceLabel, ride.TicketPrice > 1f,
+					() => ride.TicketPrice = System.Math.Max( 1f, ride.TicketPrice - 1f ), Icon: "b_minus" ) );
+				list.Add( new Btn( new Rectangle( 84f, RideY, 88f, BtnH ), $"{ride.TicketPrice:0}", true,
+					() => ride.TicketPrice += 1f, Icon: "b_plus" ) );
 			}
 			list.Add( ResearchButton( fin, ride ) );
 			list.Add( new Btn( new Rectangle( 350f, RideY, 116f, BtnH ),
 				$"SELL ${ride.BuildCost * Ride.SellRefundFraction:0}", true,
-				() => BuildMode.Current?.SellSelected(), Warned: true ) );
+				() => BuildMode.Current?.SellSelected(), Warned: true, Icon: "b_delete_login" ) );
 		}
 		// Selected-shop row: a food/drink stall's price is adjustable (a toilet is free); plus sell.
 		else if ( BuildMode.Current?.SelectedShop is { } shop )
 		{
 			if ( !shop.IsFree )
 			{
-				list.Add( new Btn( new Rectangle( 16f, RideY, 64f, BtnH ), $"{PriceLabel} -", shop.Price > 1f,
-					() => shop.Price = System.Math.Max( 1f, shop.Price - 1f ) ) );
-				list.Add( new Btn( new Rectangle( 84f, RideY, 88f, BtnH ), $"{PriceLabel} + {shop.Price:0}", true,
-					() => shop.Price += 1f ) );
+				list.Add( new Btn( new Rectangle( 16f, RideY, 64f, BtnH ), PriceLabel, shop.Price > 1f,
+					() => shop.Price = System.Math.Max( 1f, shop.Price - 1f ), Icon: "b_minus" ) );
+				list.Add( new Btn( new Rectangle( 84f, RideY, 88f, BtnH ), $"{shop.Price:0}", true,
+					() => shop.Price += 1f, Icon: "b_plus" ) );
 			}
 			list.Add( new Btn( new Rectangle( 192f, RideY, 230f, BtnH ),
 				$"SELL {shop.Name} ${shop.BuildCost * Ride.SellRefundFraction:0}", true,
-				() => BuildMode.Current?.SellSelected(), Warned: true ) );
+				() => BuildMode.Current?.SellSelected(), Warned: true, Icon: "b_delete_login" ) );
 		}
 		// Selected-staff row (T-049): dismiss the staffer + bound their patrol zone; training sits on the economy row.
 		else if ( BuildMode.Current?.SelectedStaff is { } staff )
@@ -97,15 +97,15 @@ internal sealed class ManagePanel : HudPanel
 			float cost = staff.TrainingCost( TrainingStep );
 			list.Add( new Btn( new Rectangle( 316f, EconY, 140f, BtnH ),
 				staff.CanTrain ? $"TRAIN ${cost:0}" : "MAX GRADE", staff.CanTrain && fin.CanAfford( cost ),
-				() => { fin.PayBuild( cost ); staff.Train( TrainingStep ); } ) );
+				() => { fin.PayBuild( cost ); staff.Train( TrainingStep ); }, Icon: "b_staffcost" ) );
 			bool zoned = staff.HasPatrolZone;
 			float radius = staff.Zone?.Radius ?? 0f;
 			bool moving = BuildMode.Current?.IsMovingStaff == true;
 			list.Add( new Btn( new Rectangle( 16f, RideY, 52f, BtnH ), "FIRE", true,
-				() => BuildMode.Current?.FireSelectedStaff(), Warned: true ) );
+				() => BuildMode.Current?.FireSelectedStaff(), Warned: true, Icon: "b_fire" ) );
 			// MOVE picks the staffer up; while armed it reads CLICK and the next tile click drops them (T-043).
 			list.Add( new Btn( new Rectangle( 72f, RideY, 70f, BtnH ), moving ? "DROP" : "MOVE", true,
-				() => BuildMode.Current?.BeginMoveSelectedStaff() ) );
+				() => BuildMode.Current?.BeginMoveSelectedStaff(), Icon: "b_move" ) );
 			list.Add( new Btn( new Rectangle( 146f, RideY, 48f, BtnH ), "ZONE-", zoned,
 				() => BuildMode.Current?.AdjustSelectedStaffZone( -1 ) ) );
 			list.Add( new Btn( new Rectangle( 198f, RideY, 116f, BtnH ),
@@ -120,7 +120,7 @@ internal sealed class ManagePanel : HudPanel
 		else
 		{
 			list.Add( new Btn( new Rectangle( 16f, RideY, 130f, BtnH ), Level.GatesOpen ? "CLOSE PARK" : "OPEN PARK", true,
-				Level.ToggleGates, Warned: !Level.GatesOpen ) );
+				Level.ToggleGates, Warned: !Level.GatesOpen, Icon: "b_open" ) );
 		}
 		return list;
 	}
@@ -135,10 +135,10 @@ internal sealed class ManagePanel : HudPanel
 				: new Btn( rect, $"QUEUED #{ride.ResearchQueuePosition}", false, () => { } ); // waiting behind another ride
 		if ( ride.NextResearched )
 			return new Btn( rect, $"UPGRADE ${ride.NextUpgradeCost:0}", fin.CanAfford( ride.NextUpgradeCost ),
-				() => { fin.PayBuild( ride.NextUpgradeCost ); ride.ApplyUpgrade(); }, Warned: true );
+				() => { fin.PayBuild( ride.NextUpgradeCost ); ride.ApplyUpgrade(); }, Warned: true, Icon: "b_upgrade" );
 		if ( ride.HasNextLevel )
 			return new Btn( rect, $"RESEARCH ${ride.NextResearchCost:0}", fin.CanAfford( ride.NextResearchCost ),
-				() => { fin.PayBuild( ride.NextResearchCost ); ride.StartResearch(); } );
+				() => { fin.PayBuild( ride.NextResearchCost ); ride.StartResearch(); }, Icon: "b_resrch" );
 		return new Btn( rect, "MAX LEVEL", false, () => { } );
 	}
 
@@ -176,7 +176,7 @@ internal sealed class ManagePanel : HudPanel
 			}
 			else
 			{
-				DrawButton( b.Rect, b.Label, !b.Enabled ? Disabled : b.Warned ? Warn : Normal );
+				DrawIconButton( b.Rect, b.Icon, b.Label, !b.Enabled ? Disabled : b.Warned ? Warn : Normal );
 			}
 		}
 	}
