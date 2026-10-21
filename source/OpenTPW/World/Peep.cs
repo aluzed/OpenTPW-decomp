@@ -194,6 +194,31 @@ public sealed class Peep : ModelEntity
 	private float energy = MaxEnergy;
 	private float energyDrainPerSec = MaxEnergy / 120f; // set per visitor from the ExitLevel stay
 	private bool amidLitter; // standing among litter (≥ 2 pieces near) — "Too messy"
+	private int peepType;
+
+	/// <summary>The visitor's money ("Cash remaining" in the original's visitor window): the type's StartingCash ±
+	/// StartingCashVarPc on arrival, spent at the gate, the stalls and the sideshows. Someone who can't afford what
+	/// they came for goes home.</summary>
+	public float Cash { get; private set; }
+
+	// Spend `price` if the visitor has it; false (and nothing spent) otherwise.
+	private bool TrySpend( float price )
+	{
+		if ( price <= 0f )
+			return true;
+		if ( Cash < price )
+			return false;
+		Cash -= price;
+		return true;
+	}
+
+	// A fresh arrival's purse, minus the admission it pays at the gate.
+	private void ArriveWithCash()
+	{
+		Cash = PeepTypes.CashFor( peepType, Random.Shared.NextDouble() );
+		var fee = ParkFinances.Current?.EntryFee ?? 0f;
+		Cash = MathF.Max( 0f, Cash - fee );
+	}
 
 	/// <summary>What this visitor is thinking (a <see cref="CrowdThoughts"/> / THOUGHTS.str index).</summary>
 	public int Thought => CrowdThoughts.For( hunger / HungerThreshold, thirst / ThirstThreshold, bladder / BladderThreshold,
@@ -243,7 +268,8 @@ public sealed class Peep : ModelEntity
 
 		// Ride taste (T-060): a random peep type, whose authored PreferredExcitement steers ride choice toward
 		// rides near that intensity (a timid peep favours gentle rides, a thrill-seeker intense ones).
-		preferredExcitement = PeepTypes.PreferredFor( Random.Shared.Next( PeepTypes.Count ) );
+		peepType = Random.Shared.Next( PeepTypes.Count );
+		preferredExcitement = PeepTypes.PreferredFor( peepType );
 
 		// Prefer a real decoded peep sprite (per-frame models, directional walk cycles), a random kid for
 		// crowd variety; fall back to a flat-colour billboard if it can't load.
@@ -268,6 +294,7 @@ public sealed class Peep : ModelEntity
 		// ~0.7 of a 10-unit tile across (it was sized for the old 16-unit grid and read as a dark square — T-072).
 		shadow = new ModelEntity { Model = ShadowModel(), Scale = new Vector3( spriteHeight * 0.22f, spriteHeight * 0.22f, 1f ) };
 		ParkFinances.Current?.TakeEntryFee(); // pays the gate on arrival
+		ArriveWithCash();
 		happiness = EntryFeeOpinion.ArrivalHappinessNow(); // how the fee compares with what the park offers
 		energyDrainPerSec = DrainForStay();
 		PickRoute();
@@ -328,6 +355,13 @@ public sealed class Peep : ModelEntity
 		{
 			if ( MoveTo( shopTarget.Position ) )
 			{
+				// No money for it: the need stays unmet — head home.
+				if ( shopTarget.Kind != ShopKind.Toilet && !TrySpend( shopTarget.Price ) )
+				{
+					shopTarget = null;
+					BeginLeaving();
+					return;
+				}
 				switch ( shopTarget.Kind )
 				{
 					case ShopKind.Drink:
@@ -443,6 +477,11 @@ public sealed class Peep : ModelEntity
 			// A sideshow is pay-to-play with a chance of winning a prize (T-058); a normal ride takes a flat ticket.
 			if ( route.Ride.IsSideshow )
 			{
+				if ( !TrySpend( route.Ride.TicketPrice ) ) // can't pay for a game → give up and go home
+				{
+					BeginLeaving();
+					return;
+				}
 				var (net, won) = route.Ride.PlaySideshow();
 				ParkFinances.Current?.TakeSideshowTakings( net, won );
 			}
@@ -539,6 +578,7 @@ public sealed class Peep : ModelEntity
 		bladder = 0f;
 		lastRoute = null;
 		ParkFinances.Current?.TakeEntryFee(); // a fresh visitor pays the gate
+		ArriveWithCash();
 		PickRoute();
 		if ( Environment.GetEnvironmentVariable( "OPENTPW_PEEP_DEBUG" ) != null )
 			Log.Trace( $"[peep] recycled (total {recycles})" );

@@ -87,3 +87,10 @@ code drives the bus through `VAR_TRIGGER` and reads `VAR_STATUS` (2 = at the sto
 The keyframe files don't carry the drive: `Busm1` (80 ticks) and `Busm3` (60) only **rotate** surfaces (the
 wheels), `Busm2` is empty, and the body mesh sits at (-183, 0, -285) — the road path comes from elsewhere (engine
 waypoints / object 5's track), still to find.
+
+## Visitors' money (2026-10-21)
+
+Each visitor arrives with its type's `StartingCash` (the second column of the columnar
+`PeepTypes[i].PreferredExcitement.StartingCash.BoredomThreshold` key — 300–750) ± `PeepInfo.StartingCashVarPc` (15%),
+pays the admission from it, and spends it at stalls and sideshows; one who can't afford what it came for goes home.
+`SettingsPair` now keeps the rest of a `.sam` line (`Rest`) so later columns are readable. Unit-tested.

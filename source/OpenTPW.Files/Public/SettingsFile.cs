@@ -2,7 +2,12 @@
 
 namespace OpenTPW;
 
-public record struct SettingsPair( string Key, string Value );
+public record struct SettingsPair( string Key, string Value )
+{
+	/// <summary>The rest of the line after the value (further columns, a trailing comment), trimmed. Columnar keys
+	/// like <c>PeepTypes[0].PreferredExcitement.StartingCash.BoredomThreshold 80 300 40</c> keep their later columns here.</summary>
+	public string Rest { get; init; } = "";
+}
 
 public sealed class SettingsFile : BaseFormat
 {

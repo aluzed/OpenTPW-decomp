@@ -182,6 +182,41 @@ public static class PeepTypes
 		return p[((type % p.Count) + p.Count) % p.Count];
 	}
 
+	// The shipped jungle StartingCash per type (the second column), used until a level is loaded.
+	private static readonly float[] DefaultCash = { 300f, 500f, 600f, 700f, 750f, 600f, 400f, 500f };
+
+	/// <summary>Per-type starting cash (the <c>.StartingCash</c> column); defaults until <see cref="LoadCash"/>.</summary>
+	public static IReadOnlyList<float> StartingCash { get; set; } = DefaultCash;
+
+	/// <summary>± percentage applied to a visitor's starting cash (<c>PeepInfo.StartingCashVarPc</c>, 15).</summary>
+	public static float StartingCashVarPc { get; set; } = 15f;
+
+	/// <summary>The starting cash for type <paramref name="type"/> with the authored variance; <paramref name="roll01"/> in [0,1).</summary>
+	public static float CashFor( int type, double roll01 )
+	{
+		var c = StartingCash.Count > 0 ? StartingCash : DefaultCash;
+		float baseCash = c[((type % c.Count) + c.Count) % c.Count];
+		return baseCash * (1f + (float)(roll01 * 2.0 - 1.0) * StartingCashVarPc / 100f);
+	}
+
+	/// <summary>Read each type's <c>StartingCash</c> — the second column of the columnar <c>PeepTypes[i]…</c> key.</summary>
+	public static List<float> LoadCash( SettingsFile sam )
+	{
+		var result = new List<float>();
+		for ( int i = 0; ; i++ )
+		{
+			string prefix = $"PeepTypes[{i}].PreferredExcitement";
+			var pair = sam.Entries.FirstOrDefault( e => e.Key.StartsWith( prefix, StringComparison.OrdinalIgnoreCase ) );
+			if ( pair.Key == null )
+				break;
+			var columns = (pair.Rest ?? "").Split( (char[]?)null, StringSplitOptions.RemoveEmptyEntries );
+			if ( columns.Length == 0 || !float.TryParse( columns[0], NumberStyles.Float, CultureInfo.InvariantCulture, out var cash ) )
+				break;
+			result.Add( MathF.Max( 0f, cash ) );
+		}
+		return result.Count > 0 ? result : DefaultCash.ToList();
+	}
+
 	/// <summary>Read <c>PeepTypes[i].PreferredExcitement</c> for each defined type from a level settings file,
 	/// stopping at the first gap. Falls back to <see cref="DefaultPreferences"/> when none are present.</summary>
 	public static List<float> Load( SettingsFile sam )

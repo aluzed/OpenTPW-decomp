@@ -171,6 +171,9 @@ public class Level
 			arrivalSettings = ArrivalSettings.Load( peepSam );
 			EntryFeeOpinion.Settings = EntryFeeSettings.Load( peepSam );
 			PeepTypes.Preferences = PeepTypes.Load( peepSam );
+			PeepTypes.StartingCash = PeepTypes.LoadCash( peepSam ); // visitors' money (T-074)
+			if ( float.TryParse( peepSam["PeepInfo.StartingCashVarPc"], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var cashVar ) )
+				PeepTypes.StartingCashVarPc = cashVar;
 		}
 		catch ( Exception e ) { Log.Warning( $"[peep] decision weights load failed: {e.Message}" ); }
 
