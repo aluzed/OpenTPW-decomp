@@ -159,6 +159,13 @@ public sealed class ItemResearch
 	/// <summary>How much faster than normal the scientists tire at the work rate.</summary>
 	public float RateTiringFactor => RateTiring[Math.Clamp( WorkRate, 0, MaxRate )];
 
+	// The last few items researched (the buy window marks them as new, UIHELPTEXT 146).
+	private const int RecentCount = 5;
+	private readonly List<string> recent = new();
+
+	/// <summary>Whether <paramref name="key"/> is one of the last few items researched.</summary>
+	public bool IsRecent( string key ) => recent.Contains( key, StringComparer.OrdinalIgnoreCase );
+
 	/// <summary>Whether any category has something left to research.</summary>
 	public bool Busy => effort.Keys.Any( c => Target( c ) != null );
 
@@ -180,6 +187,9 @@ public sealed class ItemResearch
 			if ( p >= target.Cost )
 			{
 				unlocked.Add( target.Key );
+				recent.Add( target.Key );
+				if ( recent.Count > RecentCount )
+					recent.RemoveAt( 0 );
 				p = 0f;
 				Researched?.Invoke( target );
 			}

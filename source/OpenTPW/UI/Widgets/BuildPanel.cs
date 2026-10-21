@@ -48,6 +48,20 @@ internal sealed class BuildPanel : GameWindow
 	protected override Rectangle Frame => At( 95f, 18f, 850f, 448f );
 
 	private static BuildCategory tab = BuildCategory.Rides;
+
+	// Sorting (UIHELPTEXT 144–146; 159–160 for the hire list): a heading's click sorts by it, a second turns it round.
+	private static int sortColumn = -1;
+	private static bool descending;
+	private static Rectangle ColumnRect( int c ) => c switch
+	{
+		0 => At( 482f, HeaderTop, 196f, HeaderHeight ), 1 => At( 682f, HeaderTop, 98f, HeaderHeight ), _ => At( 784f, HeaderTop, 57f, HeaderHeight ),
+	};
+	private static int SortHint( int c ) => tab == BuildCategory.Staff ? (c == 0 ? 159 : c == 1 ? 160 : -1) : 144 + c;
+
+	/// <summary>How many of an item the park has (the buy window's third column).</summary>
+	private static int Owned( BuildCatalogItem item ) => item.Staff is { } role ? Entity.All.OfType<Staff>().Count( s => s.Role == role )
+		: item.RidePath != null ? Entity.All.OfType<Ride>().Count( r => Path.GetFileName( r.Archive ) == Path.GetFileName( item.RidePath ) )
+		: Shop.Stalls.Count( s => s.CatalogKey == item.Name );
 	private int scroll;
 
 	// The original's four tabs (ui.wad b_s*), plus staff (the original hires from its own window).
@@ -80,6 +94,7 @@ internal sealed class BuildPanel : GameWindow
 	private static List<Row> Items( BuildMode build )
 	{
 		var list = new List<Row>();
+		var items = new List<Row>();
 		for ( int i = 0; i < build.Catalog.Count; i++ )
 		{
 			if ( build.Catalog[i].Category != tab )
@@ -87,12 +102,29 @@ internal sealed class BuildPanel : GameWindow
 			if ( build.Catalog[i].Staff is { } role )
 			{
 				list.Add( new Row( i, Heading: true ) );
-				foreach ( var c in StaffCandidates.For( role ) )
-					list.Add( new Row( i, c ) );
+				IEnumerable<StaffCandidates.Candidate> people = StaffCandidates.For( role );
+				if ( sortColumn is 0 or 1 )
+					people = sortColumn == 0 ? people.OrderBy( c => c.Name ) : people.OrderBy( c => c.MonthlyWage );
+				if ( sortColumn is 0 or 1 && descending )
+					people = people.Reverse();
+				list.AddRange( people.Select( c => new Row( i, c ) ) );
 			}
 			else
-				list.Add( new Row( i ) );
+				items.Add( new Row( i ) );
 		}
+		if ( sortColumn >= 0 && items.Count > 0 )
+		{
+			var catalog = build.Catalog;
+			items = (sortColumn switch
+			{
+				0 => items.OrderBy( r => catalog[r.Catalog].Label, StringComparer.CurrentCultureIgnoreCase ),
+				1 => items.OrderBy( r => catalog[r.Catalog].Cost ),
+				_ => items.OrderBy( r => Owned( catalog[r.Catalog] ) + (ItemResearch.Current?.IsRecent( catalog[r.Catalog].Name ) == true ? 0.5f : 0f) ),
+			}).ToList();
+			if ( descending )
+				items.Reverse();
+		}
+		list.AddRange( items );
 		return list;
 	}
 
@@ -121,6 +153,16 @@ internal sealed class BuildPanel : GameWindow
 			{
 				tab = Tabs[t].Category;
 				scroll = 0;
+				sortColumn = -1;
+				return;
+			}
+		for ( int c = 0; c < 3; c++ )
+			if ( SortHint( c ) >= 0 && Contains( ColumnRect( c ), m ) )
+			{
+				descending = sortColumn == c ? !descending : c > 0;
+				sortColumn = c;
+				scroll = 0;
+				UiSounds.Play( UiSounds.Button );
 				return;
 			}
 		if ( Contains( CloseButton, m ) )
@@ -168,6 +210,13 @@ internal sealed class BuildPanel : GameWindow
 		bool hiring = tab == BuildCategory.Staff;
 		Text( Small, hiring ? Localization.Get( UIStrings.CandidateName, "Candidate Name" ) : Localization.Get( UIStrings.Name, "Name" ), 580f, HeaderTop + 16f, 13f, HeaderInk, TextAlign.Center );
 		Text( Small, hiring ? "Monthly Wage" : Localization.Get( UIStrings.Price, "Price" ), 731f, HeaderTop + 16f, 13f, HeaderInk, TextAlign.Center );
+		if ( !hiring )
+			Text( Small, "Owned", 812f, HeaderTop + 16f, 11f, HeaderInk, TextAlign.Center );
+		if ( sortColumn >= 0 && SortHint( sortColumn ) >= 0 )
+			Text( Small, descending ? "v" : "^", sortColumn == 0 ? 670f : sortColumn == 1 ? 772f : 834f, HeaderTop + 4f, 11f, HeaderInk );
+		for ( int c = 0; c < 3; c++ )
+			if ( SortHint( c ) >= 0 && Contains( ColumnRect( c ), MouseBase() ) )
+				Hint( SortHint( c ) );
 
 		var fin = ParkFinances.Current;
 		var items = Items( build );
@@ -205,6 +254,11 @@ internal sealed class BuildPanel : GameWindow
 			}
 			Text( Small, name, 487f, top + 1f, 11f, ink );
 			Text( Small, $"$ {item.Cost:0}", 776f, top + 1f, 11f, ink, TextAlign.Right );
+			int owned = Owned( item );
+			if ( owned > 0 )
+				Text( Small, $"{owned}", 812f, top + 1f, 11f, ink, TextAlign.Center );
+			else if ( ItemResearch.Current?.IsRecent( item.Name ) == true )
+				Text( Small, "new", 812f, top + 1f, 11f, TitleInk, TextAlign.Center );
 		}
 
 		if ( hoveredRow != null )

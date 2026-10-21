@@ -449,15 +449,14 @@ public sealed class BuildMode : Entity
 			if ( Hit( Key.C ) && !ctrlDown ) CamcorderCameraMode.Start();
 			// V lists the visitors (the original's A / S lists are the camera's keys here: they open from park information);
 			// Ctrl-V / Ctrl-S locate the visitors / the staff.
-			bool ctrl = down.Contains( Key.ControlLeft ) || down.Contains( Key.ControlRight );
 			if ( Hit( Key.V ) )
 			{
-				if ( ctrl )
+				if ( ctrlDown )
 					LocateMarkers.Toggle( LocateMarkers.Target.Visitors );
 				else
 					ParkListWindow.Current?.Toggle( ParkListWindow.Tab.Visitors );
 			}
-			if ( Hit( Key.S ) && ctrl ) LocateMarkers.Toggle( LocateMarkers.Target.Staff );
+			if ( Hit( Key.S ) && ctrlDown ) LocateMarkers.Toggle( LocateMarkers.Target.Staff );
 		}
 		if ( track is CoasterTrack coasterTrack )
 		{
