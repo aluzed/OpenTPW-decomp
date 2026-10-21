@@ -168,7 +168,10 @@ internal sealed class ItemInfoWindow : GameWindow
 		}
 		else
 		{
-			SettingBox( 0, $"Capacity : {ride.Capacity}", maxCapacity > 0 ? (float)ride.Capacity / maxCapacity : 1f );
+			// Fewer seats, shorter waits to fill a cycle (the original's capacity box); up to the upgrade's capacity.
+			SettingBox( 0, $"Capacity : {ride.Capacity} / {ride.MaxCapacity}", maxCapacity > 0 ? (float)ride.Capacity / maxCapacity : 1f,
+				ride.Capacity > 1 ? () => ride.SeatLimit = ride.Capacity - 1 : null,
+				ride.Capacity < ride.MaxCapacity ? () => ride.SeatLimit = ride.Capacity + 1 >= ride.MaxCapacity ? null : ride.Capacity + 1 : null );
 			// Longer rides, fewer riders an hour (the original's duration box).
 			SettingBox( 1, $"Duration : {ride.RideDuration:0} secs", (ride.DurationScale - 0.5f) / 2.5f,
 				() => ride.DurationScale -= 0.25f, () => ride.DurationScale += 0.25f );

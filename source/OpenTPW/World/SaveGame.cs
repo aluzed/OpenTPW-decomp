@@ -70,6 +70,8 @@ public sealed class SaveGame
 		public float DurationScale { get; set; } = 1f;
 		/// <summary>The name the player gave a ride or stall (null: its own).</summary>
 		public string? Title { get; set; }
+		/// <summary>The seats the player lets visitors use on a ride (null: all).</summary>
+		public int? Seats { get; set; }
 		/// <summary>A ride's queue path cells from the entrance out, as x, y pairs (null: the default straight run).</summary>
 		public List<int>? Queue { get; set; }
 		public int? ChanceOfLosing { get; set; }

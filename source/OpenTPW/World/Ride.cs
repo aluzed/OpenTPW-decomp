@@ -30,9 +30,15 @@ public class Ride : Entity
 	private int maxCapacity = 8;
 	private readonly List<UpgradeLevelInfo> upgrades = new();
 
-	/// <summary>How many peeps the ride holds at once — the current upgrade level's capacity
+	/// <summary>The most the ride holds at once — the current upgrade level's capacity
 	/// (<c>Upgrades[level].InitCapacity</c>), falling back to <c>UsageInfo.MaxCapacity</c>.</summary>
-	public int Capacity => upgrades.Count > 0 ? upgrades[Math.Min( UpgradeLevel, upgrades.Count - 1 )].Capacity : maxCapacity;
+	public int MaxCapacity => upgrades.Count > 0 ? upgrades[Math.Min( UpgradeLevel, upgrades.Count - 1 )].Capacity : maxCapacity;
+
+	/// <summary>The seats the player lets visitors use (the ride window's capacity box); null: all of them.</summary>
+	public int? SeatLimit { get; set; }
+
+	/// <summary>How many peeps the ride takes at once: its <see cref="MaxCapacity"/>, or fewer if the player says so.</summary>
+	public int Capacity => SeatLimit is { } seats ? Math.Clamp( seats, 1, MaxCapacity ) : MaxCapacity;
 
 	/// <summary>The ride's available upgrade levels (level 0 = as built).</summary>
 	public IReadOnlyList<UpgradeLevelInfo> Upgrades => upgrades;

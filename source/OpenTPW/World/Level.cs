@@ -699,6 +699,7 @@ public class Level
 				ResearchQueuePos = ResearchQueue.Position( r ),
 				Reliability = r.Reliability, Broken = r.IsBroken, Closed = r.IsClosed,
 				Queue = r.QueuePath?.Cells.SelectMany( c => new[] { c.X, c.Y } ).ToList(),
+				Seats = r.SeatLimit,
 				DurationScale = r.DurationScale, PrizeCost = r.IsSideshow ? r.SideshowCostOfGoods : null, ChanceOfLosing = r.IsSideshow ? r.SideshowChanceOfLoosing : null,
 			} );
 		foreach ( var sh in Shop.Stalls )
@@ -814,6 +815,7 @@ public class Level
 					if ( p.Closed )
 						ride.SetClosed( true );
 					ride.DurationScale = p.DurationScale;
+					ride.SeatLimit = p.Seats;
 					if ( p.Title is { } title )
 					{
 						ride.Name = title;
@@ -1233,7 +1235,7 @@ public class Level
 
 	/// <summary>A ride picked up to be moved (the ride window's move button): what it was, to rebuild it as it was.</summary>
 	public sealed record MovedRide( string Archive, int UpgradeLevel, int ResearchedLevel, float Reliability, bool Closed,
-		float TicketPrice, float BuildCost, int FromX, int FromY, int FromRotation, int PrizeCost, int ChanceOfLosing, string? Title = null );
+		float TicketPrice, float BuildCost, int FromX, int FromY, int FromRotation, int PrizeCost, int ChanceOfLosing, string? Title = null, int? Seats = null );
 
 	/// <summary>Pick <paramref name="ride"/> up to move it: it leaves the park (no refund) and comes back free where it's
 	/// put down. Rides with a laid track can't be moved (the track would be lost).</summary>
@@ -1243,7 +1245,7 @@ public class Level
 			return null;
 		var moved = new MovedRide( ride.Archive, ride.UpgradeLevel, ride.ResearchedLevel, ride.Reliability, ride.IsClosed,
 			ride.TicketPrice, ride.BuildCost, ride.TileX, ride.TileY, ride.Rotation, ride.SideshowCostOfGoods, ride.SideshowChanceOfLoosing,
-			ride.Renamed ? ride.Name : null );
+			ride.Renamed ? ride.Name : null, ride.SeatLimit );
 		DemolishRide( ride, grid, refundIt: false );
 		return moved;
 	}
@@ -1265,6 +1267,7 @@ public class Level
 				ride.Name = title;
 				ride.Renamed = true;
 			}
+			ride.SeatLimit = moved.Seats;
 			if ( moved.Closed )
 				ride.SetClosed( true );
 		}
