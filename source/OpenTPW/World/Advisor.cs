@@ -471,7 +471,7 @@ public sealed class Advisor : Entity
 			* Quaternion.CreateFromAxisAngle( System.Numerics.Vector3.UnitX, -LeanBack );
 
 		// He steps out of view while the player rides a ride (the scenery is close and would cut through him).
-		bool hidden = RideItCameraMode.Target != null;
+		bool hidden = RideItCameraMode.Target != null || CamcorderCameraMode.Active;
 		foreach ( var part in parts )
 		{
 			// Only the active viseme's mouth is visible.

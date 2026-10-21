@@ -49,7 +49,7 @@ internal sealed class ParkHud : HudPanel
 		("b_money", 102f, 600f, UiHelp.Finance, () => FinancePanel.Current?.Toggle()),
 		("b_resrch", 157f, 600f, UiHelp.Research, () => ResearchWindow.Current?.Toggle()),
 		("b_map", 66f, 655f, UiHelp.Map, () => MinimapPanel.Current?.Toggle()),
-		("b_camera", 122f, 655f, UiHelp.Camera, null),
+		("b_camera", 122f, 655f, UiHelp.Camera, () => CamcorderCameraMode.Start()),
 	};
 
 	private static Rectangle ButtonRect( int i ) => FromTop( Buttons[i].X - ButtonSize / 2f, Buttons[i].Y - ButtonSize / 2f, ButtonSize, ButtonSize );
@@ -123,8 +123,15 @@ internal sealed class ParkHud : HudPanel
 	private const float SpentSeconds = 2.5f;
 	private static readonly System.Numerics.Vector3 SpentInk = new( 1f, 0.85f, 0.1f );
 
+	private bool devCamcorder = Environment.GetEnvironmentVariable( "OPENTPW_UI_OPEN" ) == "camcorder";
+
 	protected override void OnUpdate()
 	{
+		if ( devCamcorder && BuildMode.Current != null )
+		{
+			devCamcorder = false; // dev aid: start in the camcorder
+			CamcorderCameraMode.Start();
+		}
 		if ( ParkFinances.Current is { } f && f != hooked )
 		{
 			hooked = f;
@@ -162,6 +169,11 @@ internal sealed class ParkHud : HudPanel
 		{
 			// Riding: only the way back.
 			DrawStrip( "Right-click or press Esc to get off the ride" );
+			return;
+		}
+		if ( CamcorderCameraMode.Active )
+		{
+			DrawStrip( "Camcorder: WASD to walk, hold the right button to look, Esc to stop" );
 			return;
 		}
 

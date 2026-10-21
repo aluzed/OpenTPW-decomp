@@ -45,6 +45,9 @@ public sealed class BuildMode : Entity
 
 	private readonly PlacementGrid grid;
 	private readonly ParkTerrain terrain;
+
+	/// <summary>The park's ground (for cameras that walk on it).</summary>
+	public ParkTerrain Terrain => terrain;
 	private readonly Func<BuildCatalogItem, int, int, int, bool> commit;
 	private readonly Action<Ride> demolish;
 	private readonly Action<Shop> demolishShop;
