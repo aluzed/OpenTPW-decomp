@@ -142,7 +142,9 @@ fragment {
 
         // Calculate fog using view space depth
         float viewSpaceDepth = length(vs_out.vWorldPosition);
-        float fogFactor = exp(viewSpaceDepth * 0.01) * 0.025;
+        // Full fog at ~920 units: the park camera reaches 700 (BuildCameraMode.MaxDist); at 0.01 the whole
+        // park was fogged to the sky colour beyond ~370 units (T-071).
+        float fogFactor = exp(viewSpaceDepth * 0.004) * 0.025;
         fogFactor = clamp( fogFactor, 0, 1 );
         
         // Mix with fog

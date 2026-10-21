@@ -110,7 +110,8 @@ All format/VM decoding and the core gameplay loop are done. Open work falls into
 | [T-068](T-068-quit-game-button.md) | 🟠 Medium | ✅ Done | **Bug**: lobby "Quit Game" now quits (`PurpleButton.OnClick` → `Renderer.RequestQuit`); quick clicks no longer dropped by `Input` |
 | [T-069](T-069-sigterm-segfault.md) | 🟡 Low | ✅ Done | **Bug**: SIGTERM / SIGINT segfaulted (exit 139); now handled → clean window-close shutdown (exit 0) |
 | [T-070](T-070-lobby-label-overlap.md) | 🟢 Low | ✅ Done | **Bug**: lobby world names slid under the button column — camera reframed left + no label/click behind the buttons |
-| [T-071](T-071-park-blue-tint.md) | 🟡 Medium | ☐ To do | **Bug?**: park reads uniformly blue (night wash too strong, or a missing terrain texture) |
+| [T-071](T-071-park-blue-tint.md) | 🟡 Medium | ⚠️ Mostly done | **Bug**: park read uniformly blue — the **ground layer (`base.lnd`) was never rendered** (now decoded: `LndFile` + `ParkGround`, all 4 themes) and the terrain fog went full at ~370 units (now ~920). Some cyan gaps + exact blend remain |
+| [T-072](T-072-placement-grid-scale.md) | 🟠 Medium | ☐ To do | **Bug**: the placement grid uses 16-unit tiles centred on the terrain centroid; the real park grid is **10-unit tiles from (0,0)** (960×860) — rides/peeps/water tiles are misplaced vs the terrain |
 
 Priority legend: 🔴 blocking · 🟠 important · 🟡 desirable/feature · ⚪ technical debt/polish.
 Status legend: ✅ done · ⚠️ partial · ☐ to do · 🗂️ split into focused tickets · ⏸️ deferred.

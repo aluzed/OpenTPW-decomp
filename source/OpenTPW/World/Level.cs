@@ -98,6 +98,11 @@ public class Level
 		LoadProgress.Report( "Loading park terrain...", 0.5f );
 		var terrain = new ParkTerrain( $"levels/{Current.Name}/terrain" );
 
+		// The park floor (T-071) lives in base.lnd, not in the terrain mesh. Best-effort: without it the scenery
+		// still loads, only the ground is missing.
+		try { _ = new ParkGround( $"levels/{Current.Name}/terrain" ); }
+		catch ( Exception e ) { Log.Warning( $"[ground] {e.Message}" ); }
+
 		// The park starts with a budget; peeps pay a gate fee + ride tickets, rides cost upkeep (see Ride / Peep).
 		ParkFinances.Current = new ParkFinances( starting: 30000f, entryFee: 10f );
 		ResearchQueue.Reset(); // fresh park-wide research queue for this level (T-044)

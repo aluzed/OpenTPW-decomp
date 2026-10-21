@@ -54,7 +54,8 @@ fragment {
 
     // Calculate fog using view space depth
     float viewSpaceDepth = length(vs_out.vPositionVs);
-    float fogFactor = exp(viewSpaceDepth * 0.01) * 0.025;
+    // Full fog at ~920 units (see test.shader, T-071).
+    float fogFactor = exp(viewSpaceDepth * 0.004) * 0.025;
     fogFactor = clamp( fogFactor, 0, 1 );
     
     // Mix with fog

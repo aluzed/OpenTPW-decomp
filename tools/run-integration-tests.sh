@@ -49,6 +49,9 @@ WADTOOL="$REPO_ROOT/source/OpenTPW.WadTool/bin/Debug/net8.0/wadtool"
 if [ ! -f "$SAMPLES/monkey/monkeym1.MD2" ]; then
   "$WADTOOL" "$DATA/levels/jungle/rides/monkey.wad" -x "$SAMPLES/monkey" >/dev/null
 fi
+if [ ! -f "$SAMPLES/terrain/base.lnd" ]; then
+  "$WADTOOL" "$DATA/levels/jungle/terrain.wad" -x "$SAMPLES/terrain" >/dev/null
+fi
 
 # --- Samples outside Data/ on the disc: .MTR files live in the language folders ---
 SEVENZIP="$(command -v 7zz || command -v 7z || true)"
@@ -73,6 +76,7 @@ sample TPW_LIP_SAMPLE      "$DATA/levels/jungle/Speech/lips/sp_001.LIP"
 sample TPW_HMP_WAD         "$DATA/levels/jungle/rides/coaster1.wad"
 sample TPW_KEYFRAME_SAMPLE "$SAMPLES/monkey/monkeym1.MD2"
 sample TPW_MTR_SAMPLE      "$SAMPLES/English/Meshes/English/bankrupt.mtr"
+sample TPW_LND_SAMPLE      "$SAMPLES/terrain/base.lnd"
 # TPW_SAVE_SAMPLE: no original .TPWS save ships on the disc (T-017) — stays Inconclusive.
 
 echo ">> testing against $OPENTPW_GAMEPATH"
