@@ -36,7 +36,7 @@ internal sealed class ItemInfoWindow : GameWindow
 	private static readonly System.Numerics.Vector3 LabelInk = new( 0.05f, 0.18f, 0.05f );
 
 	// Dev aid: OPENTPW_UI_OPEN=ride selects the park's first ride once, to look at the window without clicking.
-	private bool devOpened = Environment.GetEnvironmentVariable( "OPENTPW_UI_OPEN" ) is not ("ride" or "rideit" or "shop");
+	private bool devOpened = Environment.GetEnvironmentVariable( "OPENTPW_UI_OPEN" ) is not ("ride" or "rideit" or "shop" or "queue");
 
 	protected override void OnUpdate()
 	{
@@ -53,8 +53,23 @@ internal sealed class ItemInfoWindow : GameWindow
 				build.ClearSelection();
 				RideItCameraMode.Start( Entity.All.OfType<Ride>().FirstOrDefault( r => r.RiderPosition != null ) ?? first );
 			}
+			// Queue: reshape the first ride's queue with a turn each way, to look at the bends.
+			if ( Environment.GetEnvironmentVariable( "OPENTPW_UI_OPEN" ) == "queue" && first.QueuePath is { } queue )
+			{
+				build.ToggleQueueTool();
+				BuildCameraMode.Focus = first.Position.WithZ( BuildCameraMode.Focus.Z );
+				while ( queue.SegmentCount > 2 )
+					queue.Backtrack();
+				var (x, y) = queue.Cells[^1];
+				var (dx, dy) = (x - queue.Cells[0].X, y - queue.Cells[0].Y);
+				foreach ( var step in new[] { (-dy, dx), (-dy, dx), (dx, dy), (dx, dy), (dy, -dx), (dy, -dx) } )
+				{
+					(x, y) = (x + step.Item1, y + step.Item2);
+					queue.Extend( x, y );
+				}
+			}
 		}
-		IsOpen = build?.SelectedRide != null || build?.SelectedShop != null;
+		IsOpen = (build?.SelectedRide != null && !build.LayingQueue) || build?.SelectedShop != null;
 	}
 
 	protected override void OnRender()
@@ -153,7 +168,8 @@ internal sealed class ItemInfoWindow : GameWindow
 		// Move: pick the ride up and put it down elsewhere, as it is (not a ride with a laid track).
 		if ( RoundButton( Action( 217f ), "b_move", hint: 14, enabled: ride.Track == null && ride.TileTrack == null && !ride.IsResearching ) )
 			build.BeginMoveSelected();
-		RoundButton( Action( 369f ), "b_queue", enabled: false, hint: 9 );
+		if ( RoundButton( Action( 369f ), "b_queue", enabled: ride.QueuePath != null, hint: 9 ) )
+			build.ToggleQueueTool();
 		if ( RoundButton( Action( 450f ), "b_rideit", hint: 16 ) )
 		{
 			build.ClearSelection();

@@ -286,6 +286,18 @@ public sealed class BuildMode : Entity
 	/// <summary>Whether the coaster track-laying tool is active, and how many segments are laid (T-045).</summary>
 	public bool LayingTrack => track != null;
 	public int TrackSegments => track?.SegmentCount ?? 0;
+	/// <summary>Whether the queue tool is reshaping the selected ride's queue (its window hides meanwhile).</summary>
+	public bool LayingQueue => track is QueuePath;
+
+	/// <summary>Start or finish reshaping the selected ride's queue (the ride window's queue button).</summary>
+	public void ToggleQueueTool()
+	{
+		if ( track is QueuePath )
+			track = null;
+		else if ( SelectedRide?.QueuePath is { } queue )
+			track = queue;
+	}
+
 	/// <summary>Whether the track being laid forms a complete circuit (back to the station entry).</summary>
 	public bool TrackClosed => track?.IsClosed ?? false;
 
@@ -304,6 +316,8 @@ public sealed class BuildMode : Entity
 		highlight.Position = c.WithZ( terrain.SampleHeight( c.X, c.Y ) + 0.3f );
 		if ( Input.MouseLeftPressed && ok && track.Extend( tx, ty ) && track is TileTrack laid )
 			ParkFinances.Current?.PayBuild( laid.PieceCost ); // Costs.KartTrackCell / WaterTrackCell per piece
+		if ( Input.MouseLeftPressed && track is QueuePath { Cells.Count: > 0 } queue && queue.Cells[^1] == (tx, ty) )
+			queue.Backtrack(); // clicking the queue's open end takes that piece back
 	}
 
 	// Number keys pick a catalog item; Esc/0 cancels; economy keys adjust prices/fee/loans (T-042).
@@ -315,7 +329,15 @@ public sealed class BuildMode : Entity
 		for ( int i = 0; i < NumberKeys.Length && i < Catalog.Count; i++ )
 			if ( Hit( NumberKeys[i] ) && IsBuildable( i ) && putDown == null )
 				Selected = i;
-		// Esc puts down the item being placed, else closes the open windows.
+		// Esc / Enter finish the queue tool (back to the ride's window); else Esc puts down the item being placed, or
+		// closes the open windows.
+		if ( track is QueuePath && (Hit( Key.Escape ) || Hit( Key.Enter )) )
+		{
+			track = null;
+			prevDown.Clear();
+			prevDown.UnionWith( down );
+			return;
+		}
 		if ( Hit( Key.Escape ) && Selected < 0 && !CamcorderCameraMode.Active && RideItCameraMode.Target == null )
 			GameWindow.CloseOpen();
 		if ( Hit( Key.Escape ) || Hit( Key.Number0 ) )

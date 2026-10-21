@@ -67,6 +67,8 @@ public sealed class SaveGame
 		public float Ingredient { get; set; } = 50f;
 		/// <summary>A ride's length setting (1 = its own).</summary>
 		public float DurationScale { get; set; } = 1f;
+		/// <summary>A ride's queue path cells from the entrance out, as x, y pairs (null: the default straight run).</summary>
+		public List<int>? Queue { get; set; }
 		public int? ChanceOfLosing { get; set; }
 		/// <summary>The player closed the ride or shop (its gate).</summary>
 		public bool Closed { get; set; }

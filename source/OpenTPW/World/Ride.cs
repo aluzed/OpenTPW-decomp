@@ -461,6 +461,9 @@ public class Ride : Entity
 	/// <summary>The grid cells this ride's queue path reserved — freed on sell/demolish (T-041).</summary>
 	public List<(int X, int Y)> QueuePathCells { get; } = new();
 
+	/// <summary>The queue path leading to the entrance, which the queue tool reshapes (null: no entrance).</summary>
+	public QueuePath? QueuePath { get; set; }
+
 	/// <summary>Tear the ride out of the world: stop its VM, despawn its engine objects + light/particle
 	/// proxies, its markers + queue quads, its coaster track/train, and unregister it. Grid cells, the
 	/// <see cref="RideQueue"/> and the refund are handled by the caller (it owns the grid + queue list).</summary>

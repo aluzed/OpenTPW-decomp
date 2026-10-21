@@ -19,7 +19,8 @@ public class BuildCameraMode : CameraMode
 	private const float MinDist = 90f, MaxDist = 700f;
 
 	private float yaw = 45f, wishYaw = 45f;
-	private float distance = 165f;         // start zoomed in enough to actually see the rides (was 340, too far)
+	// Start zoomed in enough to actually see the rides (was 340, too far); OPENTPW_CAMERA_DIST overrides it (dev aid).
+	private float distance = float.TryParse( Environment.GetEnvironmentVariable( "OPENTPW_CAMERA_DIST" ), out var d ) ? d : 165f;
 	private Vector2 dragAnchor;
 	private bool wasRight;
 

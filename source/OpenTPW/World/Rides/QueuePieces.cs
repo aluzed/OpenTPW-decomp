@@ -3,13 +3,13 @@ namespace OpenTPW;
 /// <summary>
 /// The 3D queue-path pieces of a world's <c>queue.wad</c> (T-032 follow-up): <c>questra</c> (a straight run between
 /// two railings), <c>queend</c> (the open end where visitors join, flanked by two torches), plus the bends and a dead
-/// end. Each piece is one 10×10 tile authored corner-anchored with the path running along its +Y, its <c>base</c>
+/// end (<c>quebnd1</c> and <c>quebnd2</c> are the same bend, joining the tile's +Y and +X edges). Each piece is one 10×10 tile authored corner-anchored with the path running along its +Y, its <c>base</c>
 /// mesh being the path surface. The meshes are baked once per world (transform applied, centred on the tile) and
 /// placed rotated along a ride's queue.
 /// </summary>
 public static class QueuePieces
 {
-	public const string Straight = "questra", End = "queend";
+	public const string Straight = "questra", End = "queend", Bend = "quebnd1";
 
 	private const float PieceSize = 10f; // the authored tile
 

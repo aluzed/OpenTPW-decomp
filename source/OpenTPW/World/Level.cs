@@ -694,6 +694,7 @@ public class Level
 				Researching = r.IsResearching, ResearchFraction = r.ResearchFraction,
 				ResearchQueuePos = ResearchQueue.Position( r ),
 				Reliability = r.Reliability, Broken = r.IsBroken, Closed = r.IsClosed,
+				Queue = r.QueuePath?.Cells.SelectMany( c => new[] { c.X, c.Y } ).ToList(),
 				DurationScale = r.DurationScale, PrizeCost = r.IsSideshow ? r.SideshowCostOfGoods : null, ChanceOfLosing = r.IsSideshow ? r.SideshowChanceOfLoosing : null,
 			} );
 		foreach ( var sh in Shop.Stalls )
@@ -808,6 +809,8 @@ public class Level
 					if ( p.Closed )
 						ride.SetClosed( true );
 					ride.DurationScale = p.DurationScale;
+					if ( p.Queue is { Count: >= 2 } queue )
+						ride.QueuePath?.Restore( Enumerable.Range( 0, queue.Count / 2 ).Select( i => (queue[2 * i], queue[2 * i + 1]) ) );
 					if ( p.PrizeCost is { } prize )
 						ride.SideshowCostOfGoods = prize;
 					if ( p.ChanceOfLosing is { } lose )
@@ -1299,6 +1302,8 @@ public class Level
 					: waypoints[^1];
 				exit = exit.WithZ( terrain.SampleHeight( exit.X, exit.Y ) );
 				parkQueues.Add( new RideQueue( ride, waypoints, exit ) );
+				if ( ride.QueuePath != null )
+					ride.QueuePath.Queue = ride.Queue;
 			}
 
 			// Car rides (tour/go-karts/water/bumper — scripts use TOUR/BUMP) get a visible moving wagon (T-032).
@@ -1396,12 +1401,9 @@ public class Level
 		}
 	}
 
-	// Lays a queue path leading out from a ride's entrance cell: a strip of path tiles stepping away
-	// from the footprint edge the entrance sits on, each reserved on the grid and rendered as a flat
-	// path quad on the terrain. (The 3D queue-fence meshes — questra/quebnd in queue.wad — are a
-	// follow-up; this is the walkable path peeps queue along.)
-	// Returns the queue's walk waypoints, ordered from the outer end up to the ride entrance (so peeps
-	// can follow them), or null if the ride has no entrance.
+	// Lays a ride's queue path (QueuePath): a straight run of queue.wad pieces stepping away from the footprint
+	// edge the entrance sits on, which the player can then reshape with the queue tool. Returns the queue's walk
+	// waypoints, ordered from the outer end up to the ride entrance, or null if the ride has no entrance.
 	private static IReadOnlyList<Vector3>? SpawnQueuePath( Ride ride, PlacementGrid grid, ParkTerrain terrain, int tx, int ty, int length = 6 )
 	{
 		// Sideshow shapes mark only an exit cell (no separate entrance) — peeps queue at, play, and leave from
@@ -1417,60 +1419,11 @@ public class Level
 		else if ( e.X == ride.Shape.Width - 1 ) dx = 1;
 		else dy = -1;
 
-		var material = new Material<ObjectUniformBuffer>( "content/shaders/3d.shader" );
-		material.Set( "Color", LoadPathTexture() );
-
 		Vector3 OnGround( Vector3 w ) => w.WithZ( terrain.SampleHeight( w.X, w.Y ) );
-
-		var laid = new List<Vector3>();
-		for ( int i = 1; i <= length; i++ )
-		{
-			int cx = tx + e.X + dx * i, cy = ty + e.Y + dy * i;
-			if ( !grid.TryPlace( cx, cy, 1, 1 ) )
-				break; // ran off the grid or hit another object
-			grid.MarkPath( cx, cy ); // reserved against placement, but peeps may walk it (T-036)
-			ride.QueuePathCells.Add( (cx, cy) ); // freed on sell/demolish (T-041)
-
-			var w = OnGround( grid.TileToWorld( cx, cy ) );
-			laid.Add( w );
-		}
-
-		// The world's 3D queue pieces: railings along the run, and the torch-lit open end where visitors join
-		// (its open side facing away from the ride). Without them, a flat textured path.
-		for ( int i = 0; i < laid.Count; i++ )
-		{
-			bool outerEnd = i == laid.Count - 1;
-			var pieces = QueuePieces.Place( outerEnd ? QueuePieces.End : QueuePieces.Straight, laid[i],
-				outerEnd ? (-dx, -dy) : (dx, dy), grid.TileSize );
-			if ( pieces.Count > 0 )
-				ride.OwnedEntities.AddRange( pieces );
-			else
-				ride.OwnedEntities.Add( new ModelEntity
-				{
-					Model = Primitives.Plane.GenerateModel( material ),
-					Position = laid[i].WithZ( laid[i].Z + 0.15f ),
-					Scale = new Vector3( grid.TileSize / 2f ),
-				} );
-		}
-
-		// Walk order: outer end → inner tiles → the entrance stand point.
-		laid.Reverse();
-		laid.Add( OnGround( grid.PointToWorld( tx + e.X + ride.EntryStandPos.X, ty + e.Y + ride.EntryStandPos.Y ) ) );
-		return laid;
-	}
-
-	private static Texture LoadPathTexture()
-	{
-		// The queue/path strip textures (jpa_que1 / jpa_str1) are shared filenames across every theme's
-		// queue.wad / terrain.wad, so route the path through the active theme (T-062) — was jungle-only, which
-		// left other themes' paths untextured. Falls back through the alternates, then to Texture.Missing.
-		var theme = Current.Name;
-		foreach ( var p in new[] { $"levels/{theme}/queue/stexture/jpa_que1.wct", $"levels/{theme}/terrain/spathtex/jpa_str1.wct" } )
-		{
-			try { return new Texture( p, TextureFlags.Repeat ); }
-			catch { /* try next */ }
-		}
-		return Texture.Missing;
+		var path = new QueuePath( ride, grid, terrain, (tx + e.X, ty + e.Y), (dx, dy),
+			OnGround( grid.PointToWorld( tx + e.X + ride.EntryStandPos.X, ty + e.Y + ride.EntryStandPos.Y ) ) );
+		path.LayStraight( length );
+		return path.Waypoints();
 	}
 
 	// A flat coloured pad hugging the terrain at a ride's entrance/exit cell (green = entrance, red = exit).

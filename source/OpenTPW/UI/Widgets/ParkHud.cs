@@ -289,6 +289,8 @@ internal sealed class ParkHud : HudPanel
 			return UiHelp.Text( UiHelp.GoldenTickets, "Number of golden tickets you currently have" );
 		if ( HudPanel.PointerOverUi() )
 			return null;
+		if ( BuildMode.Current is { LayingQueue: true } queueing )
+			return $"Queue: {queueing.TrackSegments} piece(s). click next to the open end to lay a piece, on the open end to take it back, Enter when done";
 
 		if ( Advisor.Current is { } advisor && !string.IsNullOrEmpty( advisor.ClipName ) && advisor.Elapsed <= advisor.ClipLength + 2f )
 			return AdvisorTips.TextFor( advisor.ActiveMessage );

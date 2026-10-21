@@ -9,7 +9,7 @@ namespace OpenTPW;
 public sealed class RideQueue
 {
 	public Ride Ride { get; }
-	public IReadOnlyList<Vector3> Waypoints { get; }
+	public IReadOnlyList<Vector3> Waypoints { get; set; } // follows the queue path as the player reshapes it
 	public Vector3 ExitPoint { get; }
 	/// <summary>How long a ride lasts now (the ride's own, which the ride window can lengthen or shorten).</summary>
 	public float RideDuration => Ride.RideDuration;
