@@ -32,6 +32,7 @@ internal sealed class ParkInfoWindow : GameWindow
 	private static readonly Rectangle HappinessBox = At( 132f, 388f, 286f, 52f );
 	private static readonly Rectangle CountsBox = At( 440f, 388f, 328f, 52f );
 	private static readonly Rectangle Ok = At( 788f, 384f, 42f, 42f );
+	private static readonly Rectangle Gates = At( 784f, 280f, 50f, 50f );
 
 	private readonly record struct Series( string Label, byte R, byte G, byte B, Func<IReadOnlyList<ParkFinances.FinanceSample>, int, float> Value );
 
@@ -109,6 +110,10 @@ internal sealed class ParkInfoWindow : GameWindow
 		Text( Small, "Total park visitors", 450f, 418f, 11f );
 		Text( Small, $"{fin.VisitorsTotal}", 660f, 418f, 11f );
 
+		// The park gates: open / close them (in the original, a click on the gates themselves).
+		if ( RoundButton( Gates, "b_open", selected: !Level.GatesOpen ) )
+			Level.ToggleGates();
+		Text( Small, Level.GatesOpen ? "Park open" : "Park closed", 810f, 336f, 11f, Level.GatesOpen ? default : LockedInk, TextAlign.Center );
 		if ( RoundButton( Ok, "b_okay" ) )
 			IsOpen = false;
 	}

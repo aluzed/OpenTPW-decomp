@@ -141,6 +141,14 @@ public sealed class BuildMode : Entity
 		SelectedStaff = null;
 	}
 
+	/// <summary>Select <paramref name="staff"/> (opens their window).</summary>
+	public void SelectStaff( Staff staff )
+	{
+		SelectedRide = null;
+		SelectedShop = null;
+		SelectedStaff = staff;
+	}
+
 	/// <summary>Sell/demolish the selected ride or shop: refunds part of its cost and tears it out of the
 	/// park (T-041). No-op if nothing is selected. Exposed for the manage UI + the Delete shortcut.</summary>
 	public void SellSelected()
