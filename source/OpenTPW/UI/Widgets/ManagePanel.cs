@@ -1,9 +1,9 @@
 namespace OpenTPW;
 
 /// <summary>
-/// Clickable manage buttons (T-038): a bottom bar that exposes the park-economy and selected-staff actions that
-/// were keyboard-only — admission fee ±, loans, the gates, and a selected staffer's training / firing / zone. A
-/// selected ride or shop has its own window (<see cref="ItemInfoWindow"/>). Each button calls the same
+/// Clickable manage buttons (T-038): a bottom bar with the park gates and a selected staffer's training / firing /
+/// patrol zone. A selected ride or shop has its own window (<see cref="ItemInfoWindow"/>); the price of entry and
+/// the loans are in the finance window (<see cref="FinancePanel"/>). Each button calls the same
 /// <see cref="ParkFinances"/> / <see cref="Ride"/> methods the keyboard shortcuts do. Renders nothing
 /// outside a park. Shares mouse/hit-test/button helpers with <see cref="HudPanel"/>.
 /// </summary>
@@ -17,9 +17,6 @@ internal sealed class ManagePanel : HudPanel
 	private const float BtnH = 26f;
 	private const float TrainingStep = 10f; // training percent bought per click (100 = one grade)
 
-	// The game's own words where UITEXT.str has them ("Price", "Available Loans"), in the selected language.
-	private static string PriceLabel => Localization.Get( UIStrings.Price, "Price" ).ToUpperInvariant();
-	private static string LoansLabel => Localization.Get( UIStrings.GraphAvailableLoans, "Loans" );
 
 	private static Texture? bg, normal, disabled, warn, research;
 	private static Texture Bg => bg ??= Solid( 18, 18, 28, 190 );
@@ -64,15 +61,7 @@ internal sealed class ManagePanel : HudPanel
 		if ( ParkFinances.Current is not { } fin )
 			return list;
 
-		// Park economy row.
-		list.Add( new Btn( new Rectangle( 16f, EconY, 64f, BtnH ), $"FEE", fin.EntryFee > 0,
-			() => fin.EntryFee = System.Math.Max( 0f, fin.EntryFee - 1f ), Icon: "b_minus" ) );
-		list.Add( new Btn( new Rectangle( 84f, EconY, 64f, BtnH ), $"{fin.EntryFee:0}", true,
-			() => fin.EntryFee += 1f, Icon: "b_plus" ) );
-		// The bank (T-042): the level's loan offers live in the LoanPanel list (they don't fit as one button each).
-		list.Add( new Btn( new Rectangle( 152f, EconY, 160f, BtnH ),
-			fin.Debt > 0 ? $"{LoansLabel} (${fin.Debt / 1000f:0.0}k)" : LoansLabel, true,
-			() => LoanPanel.Current?.Toggle(), Warned: fin.Debt > 0, Icon: "b_loan" ) );
+		// The price of entry and the loans live in the finance window (the handheld's money button).
 
 		// A selected ride or shop is managed in its own window (ItemInfoWindow); the bar keeps the park's controls.
 		bool itemWindow = BuildMode.Current?.SelectedRide != null || BuildMode.Current?.SelectedShop != null;

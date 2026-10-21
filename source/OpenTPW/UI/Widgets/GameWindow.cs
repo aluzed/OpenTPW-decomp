@@ -1,3 +1,4 @@
+using NVector2 = System.Numerics.Vector2;
 using SVector3 = System.Numerics.Vector3;
 
 namespace OpenTPW;
@@ -110,6 +111,62 @@ internal abstract class GameWindow : HudPanel
 		else
 			UiModel.Load( texture )?.Draw( draw, null, enabled ? default : Dimmed ); // a button with no flat texture (b_upgrade)
 		return enabled && over && Input.MouseLeftPressed;
+	}
+
+	private static readonly Dictionary<int, Texture> solids = new();
+
+	/// <summary>An opaque colour as a texture (cached).</summary>
+	protected static Texture SolidOf( byte r, byte g, byte b )
+	{
+		int key = (r << 16) | (g << 8) | b;
+		if ( !solids.TryGetValue( key, out var t ) )
+			solids[key] = t = Solid( r, g, b, 255 );
+		return t;
+	}
+
+	/// <summary>The original's graph: a black box with a green grid, each series a dotted line scaled to its own
+	/// range over <paramref name="months"/> monthly slots (the newest on the right of the data).</summary>
+	protected static void DrawLineGraph( Rectangle box, int months, IReadOnlyList<(float[] Values, Texture Colour)> series )
+	{
+		DrawInset( box );
+		var grid = SolidOf( 20, 90, 30 );
+		for ( int k = 1; k < 10; k++ )
+		{
+			Fill( new Rectangle( box.X + box.Width * k / 10f, box.Y, 1f, box.Height ), grid );
+			Fill( new Rectangle( box.X, box.Y + box.Height * k / 10f, box.Width, 1f ), grid );
+		}
+		if ( series.All( s => s.Values.Length < 2 ) )
+		{
+			Graphics.DrawText( Small, "The graph fills in month by month", box.X + box.Width / 2f, box.Y + box.Height / 2f, default, TextAlign.Center, Scale( Small, 11f ) );
+			return;
+		}
+		foreach ( var (values, colour) in series )
+		{
+			if ( values.Length < 2 )
+				continue;
+			float min = MathF.Min( 0f, values.Min() ), max = MathF.Max( 1f, values.Max() * 1.1f );
+			var points = values.Select( ( v, i ) => new NVector2(
+				box.X + 6f + (box.Width - 12f) * i / MathF.Max( 1f, months - 1f ),
+				box.Y + 6f + (box.Height - 12f) * (v - min) / (max - min) ) ).ToArray();
+			for ( int i = 1; i < points.Length; i++ )
+				Line( points[i - 1], points[i], colour );
+			foreach ( var p in points )
+				Fill( new Rectangle( p.X - 2f, p.Y - 2f, 4f, 4f ), colour );
+		}
+	}
+
+	private static readonly uint[] QuadIndices = { 0, 1, 2, 2, 1, 3 };
+	private static readonly NVector2[] QuadUvs = { new( 0, 0 ), new( 1, 0 ), new( 0, 1 ), new( 1, 1 ) };
+
+	private static void Line( NVector2 a, NVector2 b, Texture colour )
+	{
+		var d = b - a;
+		if ( d.LengthSquared() < 1e-4f )
+			return;
+		var n = NVector2.Normalize( new NVector2( -d.Y, d.X ) );
+		var mat = Material.UI;
+		mat.Set( "Color", colour );
+		Graphics.Triangles( new[] { a - n, a + n, b - n, b + n }, QuadUvs, QuadIndices, mat );
 	}
 
 	/// <summary>

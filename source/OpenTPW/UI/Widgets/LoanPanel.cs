@@ -1,15 +1,20 @@
 namespace OpenTPW;
 
 /// <summary>
-/// The bank (T-042): a centred overlay listing the level's loan offers (<see cref="ParkFinances.LoadLoanOffers"/>) —
-/// lender, amount, APR, period and monthly payment — with a TAKE or REPAY button per offer. Opened with L or the
-/// LOANS button; hidden by default. Same layout pattern as <see cref="SavePanel"/>.
+/// The bank (T-042), as the original's loans window (the finance window's loan button, or L): the <c>w_park</c>
+/// frame with the level's offers (<see cref="ParkFinances.LoadLoanOffers"/>) in a list under the game's own column
+/// headings (<c>UITEXT.str</c> "Lender name", "Amount", "Interest rate", "Loan term", "Monthly repayment"), each
+/// with a round button to take it out or repay it.
 /// </summary>
-internal sealed class LoanPanel : HudPanel
+internal sealed class LoanPanel : GameWindow
 {
 	public static LoanPanel? Current { get; private set; }
 
-	public LoanPanel() => Current = this;
+	public LoanPanel()
+	{
+		Current = this;
+		IsOpen = Environment.GetEnvironmentVariable( "OPENTPW_UI_OPEN" ) == "loans"; // dev aid
+	}
 
 	protected override void OnDelete()
 	{
@@ -17,90 +22,58 @@ internal sealed class LoanPanel : HudPanel
 			Current = null;
 	}
 
-	private bool open;
+	public void Toggle() => IsOpen = !IsOpen;
 
-	public void Toggle() => open = !open;
+	protected override Rectangle Frame => At( 110f, 24f, 730f, 438f );
 
-	private const float PanelX = 300f, PanelW = 680f, RowH = 40f;
-	private const float BtnW = 110f, BtnH = 28f;
+	private static readonly Rectangle List = At( 140f, 82f, 620f, 330f );
+	private static readonly Rectangle Ok = At( 788f, 384f, 42f, 42f );
+	private const float HeaderTop = 88f, RowTop = 132f, RowHeight = 34f;
+	private static readonly float[] Columns = { 150f, 318f, 400f, 482f, 612f };
 
-	private static int Rows => Math.Max( 1, ParkFinances.Current?.Loans.Count ?? 1 );
-	private static float PanelH => 76f + Rows * RowH;
-	private static Rectangle PanelBounds() => new( PanelX, 700f - PanelH, PanelW, PanelH );
-	private static float RowY( int i ) => 700f - 62f - (i + 1) * RowH + 6f;
-
-	private static Texture? bg, take, repay, dim, row;
-	private static Texture Bg => bg ??= Solid( 18, 18, 28, 230 );
-	private static Texture TakeBtn => take ??= Solid( 70, 130, 80, 240 );
-	private static Texture RepayBtn => repay ??= Solid( 160, 110, 50, 240 );
-	private static Texture Dim => dim ??= Solid( 55, 55, 62, 235 );
-	private static Texture Row => row ??= Solid( 30, 30, 40, 180 );
-
-	private readonly record struct Btn( Rectangle Rect, string Label, Texture Fill, bool Enabled, Action Act );
-
-	/// <summary>True when the panel is open and the cursor is over it (so world tools ignore the click).</summary>
-	public bool ContainsMouse() => open && Contains( PanelBounds(), MouseBase() );
-
-	private static List<Btn> Buttons()
-	{
-		var list = new List<Btn>();
-		if ( ParkFinances.Current is not { } fin )
-			return list;
-		var loans = fin.Loans;
-		for ( int i = 0; i < loans.Count; i++ )
-		{
-			int idx = i;
-			var l = loans[i];
-			var rect = new Rectangle( PanelX + PanelW - BtnW - 16f, RowY( i ), BtnW, BtnH );
-			list.Add( l.Bought
-				? new Btn( rect, "REPAY", RepayBtn, fin.CanAfford( l.Outstanding ), () => fin.RepayLoan( idx ) )
-				: new Btn( rect, "TAKE", TakeBtn, true, () => fin.TakeLoan( idx ) ) );
-		}
-		return list;
-	}
-
-	protected override void OnUpdate()
-	{
-		if ( !open || !Input.MouseLeftPressed )
-			return;
-
-		var m = MouseBase();
-		foreach ( var b in Buttons() )
-		{
-			if ( !b.Enabled || !Contains( b.Rect, m ) )
-				continue;
-			b.Act();
-			break;
-		}
-	}
+	private static Rectangle ActionRect( int row ) => At( 704f, RowTop + row * RowHeight - 4f, 30f, 30f );
 
 	protected override void OnRender()
 	{
-		if ( !open || ParkFinances.Current is not { } fin )
+		if ( !IsOpen || ParkFinances.Current is not { } fin )
 			return;
 
-		var bounds = PanelBounds();
-		var mat = Material.UI;
-		mat.Set( "Color", Bg );
-		Graphics.Quad( bounds, mat );
-		Graphics.DrawText( Font, Localization.Get( UIStrings.GraphAvailableLoans, "Available Loans" ), bounds.X + 16f, bounds.Y + bounds.Height - 24f, TextAlign.Left, 1.5f );
+		DrawFrame( "w_park" );
+		DrawHeading( Localization.Get( UIStrings.GraphAvailableLoans, "Available Loans" ), 470f, 0f, 46f );
+
+		DrawInset( List );
+		Fill( At( 146f, HeaderTop, 608f, 32f ), Header );
+		var headings = new[]
+		{
+			Localization.Get( UIStrings.LenderName, "Lender name" ), Localization.Get( UIStrings.Amount, "Amount" ),
+			Localization.Get( UIStrings.InterestRate, "Interest rate" ), Localization.Get( UIStrings.LoanTerm, "Loan term" ),
+			Localization.Get( UIStrings.MonthlyRepayment, "Monthly repayment" ),
+		};
+		for ( int c = 0; c < headings.Length; c++ )
+			Text( Small, headings[c], Columns[c], HeaderTop + 10f, 11f, HeaderInk );
 
 		var loans = fin.Loans;
 		for ( int i = 0; i < loans.Count; i++ )
 		{
 			var l = loans[i];
-			float y = RowY( i );
-			mat.Set( "Color", Row );
-			Graphics.Quad( new Rectangle( PanelX + 12f, y - 4f, PanelW - 24f, RowH - 6f ), mat );
-			string terms = l.Bought
-				? $"{l.Name}  - owe ${l.Outstanding:0}, ${l.Monthly:0}/month"
-				: $"{l.Name}  - ${l.Principal:0}, {l.Apr:0}%, {l.Months} mo (${l.TotalRepayable / l.Months:0}/mo)";
-			Graphics.DrawText( Font, terms, PanelX + 22f, y + BtnH - 8f, TextAlign.Left, 1.1f );
+			float top = RowTop + i * RowHeight;
+			var ink = l.Bought ? TitleInk : default;
+			Text( Small, l.Name, Columns[0], top, 11f, ink );
+			Text( Small, l.Bought ? $"$ {l.Outstanding:0} owed" : $"$ {l.Principal:0}", Columns[1], top, 11f, ink );
+			Text( Small, $"{l.Apr:0} %", Columns[2], top, 11f, ink );
+			Text( Small, $"{l.Months} months", Columns[3], top, 11f, ink );
+			Text( Small, $"$ {(l.Bought ? l.Monthly : l.TotalRepayable / l.Months):0}", Columns[4], top, 11f, ink );
+			// Take it out (the tick), or repay what's owed (the bank's pay-up button) when the balance allows.
+			if ( l.Bought )
+			{
+				if ( RoundButton( ActionRect( i ), "b_spayup", enabled: fin.CanAfford( l.Outstanding ) ) )
+					fin.RepayLoan( i );
+			}
+			else if ( RoundButton( ActionRect( i ), "b_okay" ) )
+				fin.TakeLoan( i );
 		}
 
-		foreach ( var b in Buttons() )
-			DrawButton( b.Rect, b.Label, b.Enabled ? b.Fill : Dim );
-
-		Graphics.DrawText( Font, "L to close", bounds.X + 16f, bounds.Y + 8f, TextAlign.Left, 1.0f );
+		if ( RoundButton( Ok, "b_okay" ) )
+			IsOpen = false;
 	}
 }
