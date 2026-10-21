@@ -299,9 +299,22 @@ internal sealed class ParkHud : HudPanel
 			return null;
 		if ( build.Selected >= 0 )
 			return $"{build.Catalog[build.Selected].Label}: {UiHelp.Text( UiHelp.BuildItem, "Left-click to build the item" )}";
-		var name = Entity.All.OfType<Ride>().FirstOrDefault( r => r.Covers( tile.X, tile.Y ) )?.Name
-			?? Shop.Stalls.FirstOrDefault( s => s.Covers( tile.X, tile.Y ) )?.Name;
-		return name != null ? $"{name}: {UiHelp.Text( UiHelp.ItemDetails, "Left-click to view/edit this item's details" )}" : null;
+		// What's under the cursor, in the game's own words (UIHELPTEXT 436–439, 450–460).
+		if ( Entity.All.OfType<Ride>().FirstOrDefault( r => r.Covers( tile.X, tile.Y ) ) is { } ride )
+			return $"{ride.Name}: {UiHelp.Text( ride.IsFeature ? 439 : ride.IsSideshow ? 438 : 436, "Left-click to view/edit this item's details" )}";
+		if ( Shop.Stalls.FirstOrDefault( s => s.Covers( tile.X, tile.Y ) ) is { } shop )
+			return $"{shop.Name}: {UiHelp.Text( 437, "Left-click to view/edit this shop's details" )}";
+		if ( build.HoveredPoint is not { } at )
+			return null;
+		if ( BuildMode.NearestStaffTo( at ) is { } staff )
+			return $"{staff.PersonalName}: {UiHelp.Text( staff.Role switch { StaffRole.Handyman => 450, StaffRole.Entertainer => 451, StaffRole.Mechanic => 452, StaffRole.Guard => 453, _ => 454 }, "Left-click to view this staff member's details" )}";
+		if ( BuildMode.NearestPeepTo( at ) is { } peep )
+			return $"{peep.PersonalName}: {UiHelp.Text( 455, "Left-click to view this visitor's details" )}";
+		if ( Litter.Active.Any( l => (l.Position - at).WithZ( 0 ).Length <= 6f ) )
+			return UiHelp.Text( 458, "Litter - get a cleaner here to clean it up" );
+		if ( Level.IsNearGates( at ) )
+			return UiHelp.Text( 459, "Park gates - left-click to open/close the park or change the ticket price (G)" );
+		return null;
 	}
 
 	// The translucent strip at the bottom centre; a long line wraps onto more rows and the strip grows with it.

@@ -651,6 +651,12 @@ public class Level
 	}
 
 	private static (Vector3 Gate, ParkTerrain Terrain, PathGraph Paths)? visitorSpawn;
+
+	/// <summary>Where the park gates are (visitors arrive there); null outside a park.</summary>
+	public static Vector3? GatePosition => visitorSpawn?.Gate;
+
+	/// <summary>Whether a ground point is at the park gates (a click there opens their window).</summary>
+	public static bool IsNearGates( Vector3 p ) => GatePosition is { } g && (p - g).WithZ( 0 ).Length <= 2.5f * PlacementGrid.WorldTileSize;
 	private static ArrivalBus? arrivalBus; // brings each arriving group to the gate (null: they appear there)
 	private static int visitorSerial;
 

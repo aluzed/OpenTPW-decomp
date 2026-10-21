@@ -264,9 +264,11 @@ public sealed class BuildMode : Entity
 		if ( !TryPickGround( out var hit ) )
 		{
 			HoveredTile = null;
+			HoveredPoint = null;
 			highlight.Position = Offscreen;
 			return;
 		}
+		HoveredPoint = hit;
 
 		var (tx, ty) = grid.WorldToTile( hit );
 		HoveredTile = grid.InBounds( tx, ty ) ? (tx, ty) : null;
@@ -278,6 +280,9 @@ public sealed class BuildMode : Entity
 		else
 			UpdateDefault( tx, ty );
 	}
+
+	/// <summary>The ground point under the cursor (null off the park), for the hint strip's "what's here".</summary>
+	public Vector3? HoveredPoint { get; private set; }
 
 	/// <summary>The ride currently selected (clicked) in the Default tool — its price is adjustable.</summary>
 	public Ride? SelectedRide { get; private set; }
@@ -441,6 +446,7 @@ public sealed class BuildMode : Entity
 			if ( Hit( Key.I ) ) ParkInfoWindow.Current?.Toggle();
 			if ( Hit( Key.R ) && SelectedRide == null ) ResearchWindow.Current?.Toggle();
 			if ( Hit( Key.Space ) ) MinimapPanel.Current?.Toggle();
+			if ( Hit( Key.Home ) && Level.GatePosition is { } gate ) BuildCameraMode.Focus = gate.WithZ( BuildCameraMode.Focus.Z ); // back to the gates (462)
 			// G the gates window; Ctrl-O / Ctrl-C open / close the park straight away.
 			bool ctrlDown = down.Contains( Key.ControlLeft ) || down.Contains( Key.ControlRight );
 			if ( Hit( Key.G ) ) GatesWindow.Current?.Toggle();
@@ -520,6 +526,9 @@ public sealed class BuildMode : Entity
 			// under the cursor takes precedence.
 			SelectedStaff = SelectedRide == null && SelectedShop == null ? NearestStaffTo( c ) : null;
 			SelectedPeep = SelectedRide == null && SelectedShop == null && SelectedStaff == null ? NearestPeepTo( c ) : null;
+			// The park gates (UIHELPTEXT 459): their window.
+			if ( SelectedRide == null && SelectedShop == null && SelectedStaff == null && SelectedPeep == null && Level.IsNearGates( c ) )
+				GatesWindow.Current?.Toggle();
 			Log.Info( SelectedRide != null ? $"[build] selected {SelectedRide.Name} (price {SelectedRide.TicketPrice:0})"
 				: SelectedShop != null ? $"[build] selected {SelectedShop.Name}"
 				: SelectedStaff != null ? $"[build] selected {SelectedStaff.Role}"
@@ -528,12 +537,12 @@ public sealed class BuildMode : Entity
 	}
 
 	// Nearest visitor in the park (not riding) to a world point, within the pick radius.
-	private static Peep? NearestPeepTo( Vector3 p )
+	public static Peep? NearestPeepTo( Vector3 p )
 		=> Entity.All.OfType<Peep>().Where( v => (v.Position - p).WithZ( 0 ).LengthSquared <= StaffPickRadius * StaffPickRadius )
 			.OrderBy( v => (v.Position - p).WithZ( 0 ).LengthSquared ).FirstOrDefault();
 
 	// Nearest staff member to a world point, within the pick radius (XY) — null if none is close (T-049).
-	private static Staff? NearestStaffTo( Vector3 p )
+	public static Staff? NearestStaffTo( Vector3 p )
 	{
 		Staff? best = null;
 		float bestD2 = StaffPickRadius * StaffPickRadius;
