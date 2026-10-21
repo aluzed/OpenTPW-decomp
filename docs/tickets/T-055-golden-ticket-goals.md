@@ -55,3 +55,9 @@ OpenTPW reads them.
 
 `source/OpenTPW/World/GoldenTicketGoals.cs` (new), `UI/Widgets/GoalsPanel.cs` (new), hooks in `Level`/
 `AdvisorAdvice`, `source/OpenTPW.Tests/GoldenTicketTests.cs` (new).
+
+## 2026-10-21 — award effect
+
+Winning the golden ticket now makes every ride launch a firework (`Ride.Celebrate()` → `P_EFFECT_FW1explosion`,
+rendered by the new particle sprites, T-066). Not seen in-game yet: a 200 s autoplace run met 4/6 goals (the
+15 000/year profit is far off). The exact "happy" threshold is still the approximate 50.
