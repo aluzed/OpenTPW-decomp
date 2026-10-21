@@ -64,7 +64,7 @@ public sealed class Staff : ModelEntity
 	private const float CheerPerSecond = 8f;   // happiness lifted per second for visitors in range
 	private const float ReachDistance = 3f;    // how close counts as "arrived" / "picked up"
 	private const float WalkFps = 8f;          // walk-cycle frames per second
-	private const float GuardDeterRadius = 45f; // visitors within this of a guard don't litter
+	private const float GuardDeterRadius = 30f; // visitors within this of a guard don't litter: RegionFX "Guard" radius 3 cells × 10 units
 
 	// One shared billboard model per role (built once), so the crowd reads staff roles by colour.
 	private static readonly Dictionary<StaffRole, Model> roleModels = new();
