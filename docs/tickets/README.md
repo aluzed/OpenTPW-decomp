@@ -44,7 +44,7 @@ All format/VM decoding and the core gameplay loop are done. Open work falls into
   challenge window (T-054); a golden ticket per goal (T-055); toilet queues; EVENT / ADDOBJ types 3-4 are the level's
   own ride sounds (T-047); the game's lip-sync viseme choice (T-020); a bankrupt end screen (T-042); the original's
   icons on the HUD (T-065); faster loads (T-030); no memory leak in a 15-minute soak (T-075); the original's exact ground blend (T-071); the advisor's own voice per message (T-046); tour rides fly the original's flight sim (T-048).
-  **Next candidate**: the original 3D-widget UI (T-065, needs the UI camera).
+  The original in-game HUD and windows (T-065, `ui.wad` art, measured on captures of the PC version, docs/10).
 - **Blocked / deferred** (need an external sample or have no consumer): **T-017** (`SAD_*` save stream —
   no sample), **T-022** (EA-ADPCM mono waveform — no sample), **T-021** (`.TQI` exact dequant — decoder
   already renders correctly). *(T-019 `.PLB` field labels — now **done**: the spawn path reads the record

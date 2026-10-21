@@ -56,7 +56,18 @@ Rebuilt on captures of the PC version (docs/10-ui-reference.md) and `ui.wad`'s o
   bankruptcy — in `w_dialog`. The old text panels are the debug overlay only; the bottom bar is gone.
 - Text is drawn at whole pixels and whole-number scales (the point-sampled fonts lost the dot of "!").
 
-Still to do: the 3D previews in the windows' preview boxes (the original turns the item's model there), the
-advisor's gesture animations (`Advisor_<theme>m*.MD2` keyframes, a format of their own), the hire-staff window
-(staff are hired from the buy window's fifth tab), the lobby's handheld, and the exact UI camera (positions are
-measured, not read from `tp.exe`).
+## 2026-10-22 — the windows come alive
+
+- Turning 3D previews in the buy and ride / shop windows (`ItemPreview`, placed through the view-projection —
+  `ScreenSpace`); the advisor is anchored the same way, and stands in the lobby too (which now floats on its sea).
+- Ride window: call a mechanic, open / close the gate, ride it (camera on the lead car, the tour bird flies you over
+  the park), move (shops too); shop window: customers / takings / profit last month, gate, move.
+- Hire list: named candidates (`*_NAMES.str`) with grade and wage; staff windows show the name.
+- Visitor window (click a visitor): name, thought, happiness and needs, money.
+- The camcorder (handheld's camera button): walk the park at eye height.
+- The original's keys (B H F I R Space G C), Esc closes windows, the game's own UI sounds (`sfUiHD.sdt` / `UIHD.sdt`)
+  and its hints for every window button (`UIHELPTEXT.str`).
+
+Still to do: the advisor's gesture animations (`Advisor_<theme>m*.MD2` — the ride keyframe container but with extra
+record types, addressed against the global 25-mesh model; see T-046), the queue builder button, and the exact UI
+camera (positions are measured, not read from `tp.exe`).
