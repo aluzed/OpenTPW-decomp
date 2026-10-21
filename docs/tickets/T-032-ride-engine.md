@@ -156,7 +156,8 @@ is what makes a ride *do* anything, and it backs the remaining VM opcodes (T-007
    build/placement UI; and lobby-vs-park scene separation. **Queue paths** are wired: a strip of path
    tiles is laid from each ride's entrance cell (stepping out from the footprint edge it sits on),
    reserved on the grid and rendered on the terrain with the queue path texture (`queue.wad`); the 3D
-   queue-fence meshes (`questra`/`quebnd`) remain a follow-up.
+   queue-fence meshes are placed too since 2026-10-21 (`QueuePieces`: `questra` railings along the run, the
+   torch-lit `queend` at the outer end where visitors join; each world's own `queue.wad`).
 7. ☐ Sound-code→asset mapping via `.MAP` ([T-016]); fold `EVENT`/`SETREVERB`/`DIPMUSIC` into sound.
 
 ## Affected files

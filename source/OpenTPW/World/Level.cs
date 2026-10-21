@@ -1172,12 +1172,24 @@ public class Level
 
 			var w = OnGround( grid.TileToWorld( cx, cy ) );
 			laid.Add( w );
-			ride.OwnedEntities.Add( new ModelEntity
-			{
-				Model = Primitives.Plane.GenerateModel( material ),
-				Position = w.WithZ( w.Z + 0.15f ),
-				Scale = new Vector3( grid.TileSize / 2f ),
-			} );
+		}
+
+		// The world's 3D queue pieces: railings along the run, and the torch-lit open end where visitors join
+		// (its open side facing away from the ride). Without them, a flat textured path.
+		for ( int i = 0; i < laid.Count; i++ )
+		{
+			bool outerEnd = i == laid.Count - 1;
+			var pieces = QueuePieces.Place( outerEnd ? QueuePieces.End : QueuePieces.Straight, laid[i],
+				outerEnd ? (-dx, -dy) : (dx, dy), grid.TileSize );
+			if ( pieces.Count > 0 )
+				ride.OwnedEntities.AddRange( pieces );
+			else
+				ride.OwnedEntities.Add( new ModelEntity
+				{
+					Model = Primitives.Plane.GenerateModel( material ),
+					Position = laid[i].WithZ( laid[i].Z + 0.15f ),
+					Scale = new Vector3( grid.TileSize / 2f ),
+				} );
 		}
 
 		// Walk order: outer end → inner tiles → the entrance stand point.
@@ -1306,6 +1318,7 @@ public class Level
 		GoldenTicketGoals.Current = null;
 		WeatherSim.Current = null;
 		StaffStrikes.Current = null;
+		QueuePieces.Reset();
 		arrivalBus = null;
 
 		var next = new Level( theme );
