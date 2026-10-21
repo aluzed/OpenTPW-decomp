@@ -142,6 +142,11 @@ internal sealed class ParkStatsPanel : HudPanel
 				lines.Add( sel.IsSideshow
 					? $"SIDESHOW {sel.Name}  price {sel.TicketPrice:0} (,.)"
 					: $"RIDE {sel.Name} L{sel.UpgradeLevel} cap {sel.Capacity}  {Localization.Get( UIStrings.Excitement, "Excitement" )} {sel.Excitement}" );
+				// The original ride window's stats, with its own (localized) labels.
+				if ( !sel.IsSideshow )
+					lines.Add( $"  {Localization.Get( UIStrings.UsersLastMonth, "Users last month" )} {sel.UsersLastMonth}  "
+						+ $"{Localization.Get( UIStrings.Reliability, "Reliability" )} {sel.Reliability * 100f:0}%  "
+						+ $"{Localization.Get( UIStrings.Age, "Age" )} {sel.AgeDays / GameClock.DaysPerMonth}" + (sel.IsBroken ? "  !!" : "") );
 				if ( sel.IsResearching )
 					lines.Add( $"  researching... {sel.ResearchFraction * 100f:0}%" );
 				else if ( sel.NextResearched )

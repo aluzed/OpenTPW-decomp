@@ -130,6 +130,31 @@ public class Ride : Entity
 	{
 		ratingSum += Math.Clamp( satisfaction, 0f, 100f );
 		ratingCount++;
+		RollUsers();
+		usersThisMonth++;
+	}
+
+	/// <summary>Riders in the previous in-game month — the original ride window's "Users last month".</summary>
+	public int UsersLastMonth
+	{
+		get
+		{
+			RollUsers();
+			return usersLastMonth;
+		}
+	}
+
+	private int usersMonth = -1, usersThisMonth, usersLastMonth;
+
+	// Close the monthly tally when the in-game month has moved on (lazily, so no clock subscription to leak).
+	private void RollUsers()
+	{
+		int month = GameClock.Current?.TotalMonths ?? 0;
+		if ( month == usersMonth )
+			return;
+		usersLastMonth = month == usersMonth + 1 ? usersThisMonth : 0;
+		usersThisMonth = 0;
+		usersMonth = month;
 	}
 
 	// Ride age (T-060): the in-game day the ride was built, so a freshly-opened ride draws extra interest
