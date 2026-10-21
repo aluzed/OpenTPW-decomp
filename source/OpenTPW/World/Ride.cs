@@ -338,6 +338,19 @@ public class Ride : Entity
 		return true;
 	}
 
+	/// <summary>Service a running ride (a mechanic called to it from the ride window): its wear is made good.</summary>
+	public void Service()
+	{
+		if ( IsBroken )
+		{
+			Repair();
+			return;
+		}
+		Reliability = 1f;
+		engine.SpawnParticleEffect( 51 );
+		Log.Info( $"[ride] {Name} serviced" );
+	}
+
 	/// <summary>Repair a broken-down ride (a mechanic, see <see cref="Staff"/>): restore it and play the
 	/// repair particle effect at the ride.</summary>
 	public void Repair()

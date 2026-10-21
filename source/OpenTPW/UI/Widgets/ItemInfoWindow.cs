@@ -129,7 +129,10 @@ internal sealed class ItemInfoWindow : GameWindow
 		RoundButton( Action( 217f ), "b_move", enabled: false );
 		RoundButton( Action( 369f ), "b_queue", enabled: false );
 		RoundButton( Action( 450f ), "b_rideit", enabled: false );
-		RoundButton( Action( 525f ), "b_callmech", enabled: false );
+		// Call a mechanic: the nearest one comes to service the ride (lit while one is on the way).
+		bool coming = Staff.MechanicCalledTo( ride );
+		if ( RoundButton( Action( 525f ), "b_callmech", selected: coming, enabled: !coming && Entity.All.OfType<Staff>().Any( s => s.Role == StaffRole.Mechanic ) ) )
+			Staff.CallMechanic( ride );
 		// Upgrade: research the next level, then buy it (the R / U keys).
 		bool canResearch = ride.HasNextLevel && !ride.NextResearched && !ride.IsResearching && fin.CanAfford( ride.NextResearchCost );
 		bool canUpgrade = ride.NextResearched && fin.CanAfford( ride.NextUpgradeCost );

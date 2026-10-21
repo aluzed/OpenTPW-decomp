@@ -487,23 +487,46 @@ public sealed class Staff : ModelEntity
 	// Head for the nearest broken-down ride and repair it (over the grade's WorkDuration once there); wander otherwise.
 	private Ride? repairTarget;
 	private float repairTimer;
+	/// <summary>Send the nearest mechanic who isn't on strike to service <paramref name="ride"/> (the ride window's
+	/// call-mechanic button); false when there is none.</summary>
+	public static bool CallMechanic( Ride ride )
+	{
+		if ( StaffStrikes.Current?.IsStriking( StaffRole.Mechanic ) == true )
+			return false;
+		var mechanic = Entity.All.OfType<Staff>().Where( s => s.Role == StaffRole.Mechanic && !s.called )
+			.OrderBy( s => (s.Position - ride.Position).WithZ( 0 ).LengthSquared ).FirstOrDefault();
+		if ( mechanic == null )
+			return false;
+		mechanic.repairTarget = ride;
+		mechanic.called = true;
+		mechanic.repairTimer = StaffGrades.Current.RepairSeconds( mechanic.Grade );
+		return true;
+	}
+
+	private bool called; // sent to a ride by the player: service it even if it's running
+
+	/// <summary>Whether a mechanic is on the way to <paramref name="ride"/>.</summary>
+	public static bool MechanicCalledTo( Ride ride ) => Entity.All.OfType<Staff>().Any( s => s.called && s.repairTarget == ride );
+
 	private void DoMechanic()
 	{
-		if ( repairTarget is { IsBroken: true } )
+		if ( repairTarget is { IsBroken: true } || (called && repairTarget != null && Entity.All.Contains( repairTarget )) )
 		{
 			working = true;
-			if ( WalkToward( repairTarget.Position ) ) // arrived at the ride
+			if ( WalkToward( repairTarget!.Position ) ) // arrived at the ride
 			{
 				repairTimer -= Time.Delta;
 				if ( repairTimer <= 0f )
 				{
-					repairTarget.Repair();
+					repairTarget.Service();
 					repairTarget = null;
+					called = false;
 					FinishJob();
 				}
 			}
 			return;
 		}
+		called = false;
 
 		// No (valid) target: find the nearest broken ride; idle-wander if the park is all running.
 		repairTarget = NearestBrokenRide();
