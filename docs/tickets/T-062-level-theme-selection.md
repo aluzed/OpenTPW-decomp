@@ -50,10 +50,10 @@ from the data rather than a fixed name list.
   (`LevelTheme.DisplayName`: jungle = "Lost Kingdom", hallow = "Halloween World", fantasy = "Wonder Land", space
   = "Space Zone"; falls back to the folder name if the strings are unavailable) — with the active one
   highlighted; clicking one reloads into it. The loading overlay uses the same names. Verified in-game (the panel
-  reads "Lost Kingdom (current)" / "Halloween World" / …; `OPENTPW_THEME_PANEL=1` opens it). *Remaining*: a true
-  pre-park **lobby** picker (the picker is in-park today; a lobby one needs the startup flow to defer the first
-  park load), the loading overlay drawing under the HUD panels (UI batches per-texture), and the per-reload
-  GPU-resource leak.
+  reads "Lost Kingdom (current)" / "Halloween World" / …; `OPENTPW_THEME_PANEL=1` opens it). *Remaining*: ~~a true
+  pre-park **lobby** picker~~ (done by T-063: click an island in the front-end lobby; Space too since T-073), the loading overlay drawing under the HUD panels (UI batches per-texture), and ~~the per-reload
+  GPU-resource leak~~ — measured 2026-10-21 with `OPENTPW_THEME_CYCLE=1` over 5 reloads (190 s): GPU memory
+  oscillates 365–600 MiB and keeps returning to ~365 MiB, process RSS stays 1.0–1.4 GB — no unbounded leak.
 - ~~Per-theme queue/path strip textures~~ — **done**: the `jpa_que1`/`jpa_str1` filenames turned out to be
   *shared* across every theme's `queue.wad`/`terrain.wad`, so `LoadPathTexture` just routes the path through the
   active theme. (The `Terrain.cs` flat-plane class with a hardcoded jungle texture is **dead code** — the park
