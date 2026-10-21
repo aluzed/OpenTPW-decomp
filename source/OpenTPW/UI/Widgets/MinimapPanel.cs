@@ -4,16 +4,21 @@ using Veldrid;
 namespace OpenTPW;
 
 /// <summary>
-/// Corner minimap (T-057): the level's top-down <c>2dmap.tga</c> as a backdrop with a live icon per ride / shop
-/// / peep / litter at its projected world position, plus a box marking the camera's focus. Toggled with M;
-/// per-category layers toggle from the legend buttons along the bottom, and clicking the map pans the camera.
+/// The park map (T-057), in the original's map window (<c>w_map</c>; the handheld's map button, or M): the level's
+/// top-down <c>2dmap.tga</c> with a live pin per ride / shop / visitor / litter at its projected world position and a
+/// box marking the camera's focus. The layers toggle from the round buttons down the right, and clicking the map
+/// pans the camera.
 /// Projection is the pure <see cref="MinimapProjection"/> fed the live placement-grid bounds. In-park only.
 /// </summary>
-internal sealed class MinimapPanel : HudPanel
+internal sealed class MinimapPanel : GameWindow
 {
 	public static MinimapPanel? Current { get; private set; }
 
-	public MinimapPanel() => Current = this;
+	public MinimapPanel()
+	{
+		Current = this;
+		IsOpen = Environment.GetEnvironmentVariable( "OPENTPW_UI_OPEN" ) == "map"; // dev aid
+	}
 
 	protected override void OnDelete()
 	{
@@ -21,29 +26,26 @@ internal sealed class MinimapPanel : HudPanel
 			Current = null;
 	}
 
-	// Upper area of the 1280×720 base space (Y-up), tucked just left of the right-anchored BUILD column
-	// (which starts at x≈1012) so the two never overlap. The legend row sits just under the map.
-	private const float MapSize = 200f;
-	private static Rectangle MapRect() => new( 1006f - MapSize, 720f - MapSize - 16f, MapSize, MapSize );
-
-	private bool open;
+	// The original's map window (w_map), the park's own 2dmap.tga inside it, the layer buttons down the right.
+	protected override Rectangle Frame => At( 170f, 34f, 620f, 465f );
+	private static Rectangle MapRect() => At( 214f, 76f, 470f, 380f );
+	private static readonly Rectangle Ok = At( 712f, 410f, 42f, 42f );
 
 	/// <summary>Show / hide the map (the handheld's map button, or M).</summary>
-	public void Toggle() => open = !open;
+	public void Toggle() => IsOpen = !IsOpen;
 	private bool wasToggleDown;
 
 	// Per-category layer visibility (toggled from the legend).
 	private bool showRides = true, showShops = true, showPeeps = true, showLitter = true;
 
-	private static Texture? frame, camBox, ridePin, shopPin, peepPin, litterPin, legendBg, legendOn;
-	private static Texture Frame => frame ??= Solid( 230, 230, 240, 230 );
+	private static Texture? border, camBox, ridePin, shopPin, peepPin, litterPin, legendBg;
+	private static Texture Border => border ??= Solid( 20, 30, 90, 255 );
 	private static Texture CamBox => camBox ??= Solid( 255, 235, 90, 255 );
 	private static Texture RidePin => ridePin ??= Solid( 90, 170, 255, 255 );   // blue rides
 	private static Texture ShopPin => shopPin ??= Solid( 255, 150, 60, 255 );   // orange shops
 	private static Texture PeepPin => peepPin ??= Solid( 240, 240, 240, 255 );  // white peeps
 	private static Texture LitterPin => litterPin ??= Solid( 150, 110, 60, 255 ); // brown litter
 	private static Texture LegendBg => legendBg ??= Solid( 18, 18, 28, 220 );
-	private static Texture LegendOn => legendOn ??= Solid( 60, 110, 70, 230 );
 
 	private Texture? background;
 	private bool backgroundTried;
@@ -73,29 +75,13 @@ internal sealed class MinimapPanel : HudPanel
 		return new MinimapProjection( grid.Origin.X, grid.Origin.Y, grid.Width * grid.TileSize, grid.Height * grid.TileSize, MapRect() );
 	}
 
-	// Legend buttons (R/S/P/L) laid out under the map; returns each with its toggle action + on-state.
-	private IEnumerable<(Rectangle Rect, string Label, bool On, Action Toggle)> Legend()
+	// The layer buttons (rides, shops, visitors, litter) down the right.
+	private IEnumerable<(Rectangle Rect, string Icon, bool On, Action Toggle)> Legend()
 	{
-		var map = MapRect();
-		float w = (MapSize - 9f) / 4f, h = 22f, y = map.Y - h - 4f;
-		yield return (new Rectangle( map.X + 0 * (w + 3f), y, w, h ), "RIDE", showRides, () => showRides = !showRides);
-		yield return (new Rectangle( map.X + 1 * (w + 3f), y, w, h ), "SHOP", showShops, () => showShops = !showShops);
-		yield return (new Rectangle( map.X + 2 * (w + 3f), y, w, h ), "PEEP", showPeeps, () => showPeeps = !showPeeps);
-		yield return (new Rectangle( map.X + 3 * (w + 3f), y, w, h ), "LITR", showLitter, () => showLitter = !showLitter);
-	}
-
-	/// <summary>True when the cursor is over the open minimap (so world tools ignore the click).</summary>
-	public bool ContainsMouse()
-	{
-		if ( !open )
-			return false;
-		var m = MouseBase();
-		if ( Contains( MapRect(), m ) )
-			return true;
-		foreach ( var b in Legend() )
-			if ( Contains( b.Rect, m ) )
-				return true;
-		return false;
+		yield return (At( 704f, 90f, 50f, 50f ), "b_srides", showRides, () => showRides = !showRides);
+		yield return (At( 704f, 150f, 50f, 50f ), "b_sshops", showShops, () => showShops = !showShops);
+		yield return (At( 704f, 210f, 50f, 50f ), "b_svisit", showPeeps, () => showPeeps = !showPeeps);
+		yield return (At( 704f, 270f, 50f, 50f ), "b_shandy", showLitter, () => showLitter = !showLitter);
 	}
 
 	protected override void OnUpdate()
@@ -103,10 +89,10 @@ internal sealed class MinimapPanel : HudPanel
 		// M toggles the whole minimap (edge-detected like the other overlays).
 		var toggle = Input.Keyboard.KeysDown.Contains( Key.M );
 		if ( toggle && !wasToggleDown )
-			open = !open;
+			IsOpen = !IsOpen;
 		wasToggleDown = toggle;
 
-		if ( !open || !Input.MouseLeftPressed )
+		if ( !IsOpen || !Input.MouseLeftPressed )
 			return;
 
 		var mouse = MouseBase();
@@ -129,9 +115,10 @@ internal sealed class MinimapPanel : HudPanel
 
 	protected override void OnRender()
 	{
-		if ( !open || Projection() is not { } proj )
+		if ( !IsOpen || Projection() is not { } proj )
 			return;
 
+		DrawFrame( "w_map" );
 		var map = MapRect();
 		var mat = Material.UI;
 
@@ -158,13 +145,11 @@ internal sealed class MinimapPanel : HudPanel
 		var c = proj.Project( BuildCameraMode.Focus.X, BuildCameraMode.Focus.Y );
 		DrawHollow( new Rectangle( c.X - 14f, c.Y - 14f, 28f, 28f ), map, mat, CamBox );
 
-		// Legend toggle buttons (lit when their layer is on).
+		// Layer buttons: lit while the layer shows, pressed-in while hidden (clicks are handled in OnUpdate).
 		foreach ( var b in Legend() )
-		{
-			mat.Set( "Color", b.On ? LegendOn : LegendBg );
-			Graphics.Quad( b.Rect, mat );
-			Graphics.DrawText( Font, b.Label, b.Rect.X + 4f, b.Rect.Y + b.Rect.Height - 6f, TextAlign.Left, 1f );
-		}
+			RoundButton( b.Rect, b.Icon, !b.On );
+		if ( RoundButton( Ok, "b_okay" ) )
+			IsOpen = false;
 	}
 
 	// A centred square pin, clamped so it never spills past the map frame.
@@ -180,8 +165,8 @@ internal sealed class MinimapPanel : HudPanel
 
 	private static void DrawBorder( Rectangle r, Material mat )
 	{
-		mat.Set( "Color", Frame );
-		const float t = 2f;
+		mat.Set( "Color", Border );
+		const float t = 3f;
 		Graphics.Quad( new Rectangle( r.X - t, r.Y - t, r.Width + 2 * t, t ), mat );              // bottom
 		Graphics.Quad( new Rectangle( r.X - t, r.Y + r.Height, r.Width + 2 * t, t ), mat );        // top
 		Graphics.Quad( new Rectangle( r.X - t, r.Y, t, r.Height ), mat );                          // left
