@@ -61,6 +61,9 @@ public sealed class SaveGame
 		public bool Broken { get; set; }
 		/// <summary>A sideshow's prize cost and chance of losing, when set (null = the .sam's).</summary>
 		public int? PrizeCost { get; set; }
+		/// <summary>A stall's quality of goods and special-ingredient dose (shop window, 0–100).</summary>
+		public float Quality { get; set; } = 50f;
+		public float Ingredient { get; set; } = 50f;
 		/// <summary>A ride's length setting (1 = its own).</summary>
 		public float DurationScale { get; set; } = 1f;
 		public int? ChanceOfLosing { get; set; }

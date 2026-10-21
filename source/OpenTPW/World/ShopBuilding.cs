@@ -31,7 +31,15 @@ internal static class ShopBuilding
 	/// rides) and the <c>UsageInfo.*Effect</c> values a purchase has on the visitor.</summary>
 	public readonly record struct Stats( string Name, float Price, float CostOfGoods, float BuildCost,
 		int ShopType = 2, float HungerEffect = 0f, float ThirstEffect = 0f, float HappinessEffect = 0f,
-		float FatigueEffect = 0f, float LitterEffect = 0f, int Capacity = 1 );
+		float FatigueEffect = 0f, float LitterEffect = 0f, int Capacity = 1, int Ingredient = 0 );
+
+	/// <summary><c>UsageInfo.SpecialIngredient</c>: the one ingredient the shop window lets you dose.</summary>
+	public const int Fat = 1, Salt = 2, Ice = 3, Sugar = 4;
+
+	public static string IngredientName( int ingredient ) => ingredient switch
+	{
+		Fat => "fat", Salt => "salt", Ice => "ice", Sugar => "sugar", _ => "",
+	};
 
 	/// <summary>Which need a <c>UsageInfo.ShopType</c> serves: 2 snacks / 3 restaurant → food, 4 → drinks, 1 gifts /
 	/// 5 costumes / 6 balloons → impulse items.</summary>
@@ -153,7 +161,8 @@ internal static class ShopBuilding
 			F( "UsageInfo.HappinessEffect", 0f ),
 			F( "UsageInfo.FatigueEffect", 0f ),
 			F( "UsageInfo.LitterEffect", 0f ),
-			Math.Max( 1, (int)F( "Upgrades[0].InitCapacity", 1f ) ) ); // a small toilet seats 1, a super toilet 5
+			Math.Max( 1, (int)F( "Upgrades[0].InitCapacity", 1f ) ), // a small toilet seats 1, a super toilet 5
+			(int)F( "UsageInfo.SpecialIngredient", 0f ) );
 	}
 
 	/// <summary>Try to build the real shop model centred on <paramref name="origin"/> and scaled to fill a

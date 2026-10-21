@@ -1096,8 +1096,20 @@ public sealed class Peep : ModelEntity
 		shop.NoteSale( shop.Price, shop.CostOfGoods );
 		if ( shop.Stats is { } stats )
 		{
+			float thirstBefore = thirst;
 			(hunger, thirst, happiness, energy) = ShopBuilding.ApplyEffects( stats, hunger, thirst, happiness, energy,
 				HungerThreshold, ThirstThreshold, MaxEnergy );
+			// The shop window's settings: better goods please more; the special ingredient has its own pull — fat
+			// tastes better, salt makes thirsty (more drinks sold), sugar gives energy, ice waters a drink down.
+			happiness = Math.Clamp( happiness + stats.HappinessEffect * (shop.Quality - 50f) / 50f, 0f, 100f );
+			float dose = shop.IngredientAmount / 100f;
+			switch ( stats.Ingredient )
+			{
+				case ShopBuilding.Fat: happiness = Math.Min( 100f, happiness + 6f * dose ); break;
+				case ShopBuilding.Salt: thirst += ThirstThreshold * 0.5f * dose; break;
+				case ShopBuilding.Sugar: energy = Math.Min( MaxEnergy, energy + MaxEnergy * 0.2f * dose ); break;
+				case ShopBuilding.Ice: thirst = thirstBefore - (thirstBefore - thirst) * (1.25f - dose / 2f); break;
+			}
 			if ( stats.LitterEffect > 0f && Random.Shared.NextDouble() * 100f < stats.LitterEffect )
 				wrapperTimer = 4f + 8f * (float)Random.Shared.NextDouble();
 		}

@@ -688,7 +688,7 @@ public class Level
 			{
 				Kind = "shop", Name = sh.CatalogKey, TileX = sh.TileX, TileY = sh.TileY,
 				TicketPrice = sh.Price, // reuse the generic price field for the stall's sale price (T-041)
-				Filth = sh.Filth, Closed = sh.IsClosed,
+				Filth = sh.Filth, Closed = sh.IsClosed, Quality = sh.Quality, Ingredient = sh.IngredientAmount,
 			} );
 
 		// Staff (T-059 v2): role + wander centre + patrol zone — respawned on load (they roam, so no grid tile).
@@ -808,6 +808,8 @@ public class Level
 					shop.Price = p.TicketPrice;
 				shop.Filth = p.Filth;
 				shop.IsClosed = p.Closed;
+				shop.Quality = p.Quality;
+				shop.IngredientAmount = p.Ingredient;
 			}
 		}
 
@@ -1317,12 +1319,12 @@ public class Level
 
 	// Sell/demolish a placed stall (T-041): free its footprint cells, refund part of the cost, remove it.
 	/// <summary>A stall picked up to be moved: what it was, to rebuild it as it was.</summary>
-	public sealed record MovedShop( float Price, float Filth, bool Closed, float BuildCost, int FromX, int FromY );
+	public sealed record MovedShop( float Price, float Filth, bool Closed, float BuildCost, int FromX, int FromY, float Quality, float Ingredient );
 
 	/// <summary>Pick <paramref name="shop"/> up to move it (no refund).</summary>
 	public static MovedShop PickUpShop( Shop shop, PlacementGrid grid )
 	{
-		var moved = new MovedShop( shop.Price, shop.Filth, shop.IsClosed, shop.BuildCost, shop.TileX, shop.TileY );
+		var moved = new MovedShop( shop.Price, shop.Filth, shop.IsClosed, shop.BuildCost, shop.TileX, shop.TileY, shop.Quality, shop.IngredientAmount );
 		DemolishShop( shop, grid, refundIt: false );
 		return moved;
 	}
@@ -1338,6 +1340,8 @@ public class Level
 			shop.Filth = moved.Filth;
 			shop.IsClosed = moved.Closed;
 			shop.BuildCost = moved.BuildCost;
+			shop.Quality = moved.Quality;
+			shop.IngredientAmount = moved.Ingredient;
 		}
 		UiSounds.Play( UiSounds.LaySmall );
 		return true;

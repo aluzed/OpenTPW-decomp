@@ -36,7 +36,7 @@ internal sealed class ItemInfoWindow : GameWindow
 	private static readonly System.Numerics.Vector3 LabelInk = new( 0.05f, 0.18f, 0.05f );
 
 	// Dev aid: OPENTPW_UI_OPEN=ride selects the park's first ride once, to look at the window without clicking.
-	private bool devOpened = Environment.GetEnvironmentVariable( "OPENTPW_UI_OPEN" ) is not ("ride" or "rideit");
+	private bool devOpened = Environment.GetEnvironmentVariable( "OPENTPW_UI_OPEN" ) is not ("ride" or "rideit" or "shop");
 
 	protected override void OnUpdate()
 	{
@@ -45,6 +45,9 @@ internal sealed class ItemInfoWindow : GameWindow
 		{
 			devOpened = true;
 			build.SelectRide( first );
+			var stall = Shop.Stalls.FirstOrDefault( s => s.Stats is { Ingredient: > 0 } ) ?? Shop.Stalls.FirstOrDefault( s => !s.IsFree );
+			if ( Environment.GetEnvironmentVariable( "OPENTPW_UI_OPEN" ) == "shop" && stall != null )
+				build.SelectShop( stall );
 			if ( Environment.GetEnvironmentVariable( "OPENTPW_UI_OPEN" ) == "rideit" )
 			{
 				build.ClearSelection();
@@ -202,7 +205,15 @@ internal sealed class ItemInfoWindow : GameWindow
 		StatRow( Localization.Get( UIStrings.ScrapValue, "Scrap value" ), $"$ {shop.BuildCost * Ride.SellRefundFraction:0}" );
 
 		if ( !shop.IsFree )
-			SettingBox( 2, $"{Localization.Get( UIStrings.SalePrice, "Sale price" )} : $ {shop.Price:0}", Math.Clamp( shop.Price / 10f, 0f, 1f ),
+		{
+			SettingBox( 0, $"Quality of goods : {shop.Quality:0} %", shop.Quality / 100f,
+				() => shop.Quality = Math.Max( 0f, shop.Quality - 10f ), () => shop.Quality = Math.Min( 100f, shop.Quality + 10f ) );
+			if ( shop.Stats is { Ingredient: > 0 } st )
+				SettingBox( 1, $"Amount of {ShopBuilding.IngredientName( st.Ingredient )} : {shop.IngredientAmount:0} %", shop.IngredientAmount / 100f,
+					() => shop.IngredientAmount = Math.Max( 0f, shop.IngredientAmount - 10f ), () => shop.IngredientAmount = Math.Min( 100f, shop.IngredientAmount + 10f ) );
+		}
+		if ( !shop.IsFree )
+			SettingBox( 2, $"{"Sale price"} : $ {shop.Price:0}", Math.Clamp( shop.Price / 10f, 0f, 1f ),
 				() => shop.Price = Math.Max( 1f, shop.Price - 1f ), () => shop.Price += 1f );
 
 		if ( RoundButton( Action( 143f ), "b_delete_login", hint: 33 ) )
@@ -216,6 +227,8 @@ internal sealed class ItemInfoWindow : GameWindow
 			{
 				s.Price = shop.Price;
 				s.IsClosed = shop.IsClosed;
+				s.Quality = shop.Quality;
+				s.IngredientAmount = shop.IngredientAmount;
 			}
 		if ( RoundButton( Action( 672f, 93f ), shop.IsClosed ? "b_doorc" : "b_dooro", hint: shop.IsClosed ? 30 : 31 ) )
 			shop.IsClosed = !shop.IsClosed;

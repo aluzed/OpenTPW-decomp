@@ -108,7 +108,20 @@ public sealed class Shop : ModelEntity
 	private readonly string? title;
 
 	/// <summary>What one sale costs the park in goods (<c>UsageInfo.InitCostOfGoods</c>); the profit is the price minus this.</summary>
-	public float CostOfGoods { get; set; }
+	/// <summary>What one sale costs the park in goods: the .sam's, scaled by the quality (a quarter less at the
+	/// cheapest, half as much again at the best) and, for a drink, cheaper the more ice.</summary>
+	public float CostOfGoods
+	{
+		get => baseCostOfGoods * (0.5f + Quality / 100f) * (Stats?.Ingredient == ShopBuilding.Ice ? 1.25f - IngredientAmount / 200f : 1f);
+		set => baseCostOfGoods = value;
+	}
+	private float baseCostOfGoods;
+
+	/// <summary>The shop window's "Quality of goods" (0–100): dearer goods, happier customers.</summary>
+	public float Quality { get; set; } = 50f;
+
+	/// <summary>The shop window's "Amount of fat / salt / ice / sugar" (0–100) for a shop with a special ingredient.</summary>
+	public float IngredientAmount { get; set; } = 50f;
 
 	/// <summary>Closed by the player (the shop window's gate): visitors don't use it.</summary>
 	public bool IsClosed { get; set; }
