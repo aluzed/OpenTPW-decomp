@@ -55,3 +55,14 @@ below `Expensive × ideal` → `TooHigh` (20), else `MuchTooHigh` (0). The opini
 happiness** — `AboutRight` 50 is exactly the old fixed `StartHappiness`, and a 0 leaves at once (below
 `LeaveHappiness`). Interpretation until reversed. So FEE± now matters: a cheap park arrives happy (in the 130 s
 dev-park run vandalism fell from 69–351 to 0), an overpriced one turns visitors away. Unit-tested.
+
+## Next: the arrival vehicles (notes, 2026-10-21)
+
+Each world ships `features/bus.wad` (+ `ferry.wad`, `seaplane.wad`): a ride-like fixed item — `Bus.MD2` (3 meshes),
+keyframes `Busm1..3` (one `ANIM_Main` channel, 4 animated surfaces, duration 80), a `bus.RSE` script, and
+`Info.DontApplyOffset 1` ("a fixed item whose animation should be played relative to world (0,0), not the object
+pos") — i.e. its keyframes *are* the drive along the entrance road. The global `AmbientHD.sdt` has the matching
+sounds (`nl_bus_go/idle/stop`, `mk_bus_1..4`, ferry/plane sets). A quick experiment spawning it as a `Ride` at
+(0,0,0) loaded the model, script and keyframes, but the bus wasn't visible: `Ride` applies keyframes relative to
+the object and re-centres the footprint (T-072). Needs a `DontApplyOffset` path in `Ride`/`RideEngine`, then
+syncing a group's spawn to the bus's stop.
