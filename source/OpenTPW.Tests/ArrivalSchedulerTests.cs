@@ -10,30 +10,31 @@ public class ArrivalSchedulerTests
 	private static readonly ArrivalSettings Shipped = ArrivalSettings.Defaults; // 1, 150, 15, 20, 6
 
 	[TestMethod]
-	public void GroupsArriveEveryIntervalAndNotBetween()
+	public void ABusComesEveryTimeBetweenArrivalsSeconds()
 	{
 		var s = new ArrivalScheduler( Shipped );
-		Assert.AreEqual( 15f, s.Interval, 1e-4f, "TimeBetweenArrivals 150 × 0.1 s" );
-		Assert.AreEqual( 0, s.Update( 14f, 50f, 999, 0 ) );
-		Assert.IsTrue( s.Update( 1.5f, 50f, 999, 0 ) > 0 );
-		Assert.AreEqual( 0, s.Update( 1f, 50f, 999, 0 ) );
+		Assert.AreEqual( 150f, s.Interval, 1e-4f, "TimeBetweenArrivals is in seconds (world turns / 4)" );
+		Assert.AreEqual( 0, s.Update( 149f, () => 100f, true, 0 ) );
+		Assert.IsTrue( s.Update( 1.5f, () => 100f, true, 0 ) > 0 );
+		Assert.AreEqual( 0, s.Update( 1f, () => 100f, true, 0 ) );
 	}
 
 	[TestMethod]
-	public void GroupSizeGrowsWithRatingAndANewParkBonus()
+	public void BusloadFollowsTheParksAttractionAndTheFee()
 	{
-		Assert.AreEqual( 15, ArrivalScheduler.GroupSize( Shipped, -1f, newPark: false ), "no rating yet → FixedRate" );
-		Assert.AreEqual( 23, ArrivalScheduler.GroupSize( Shipped, 50f, newPark: false ), "15 + 50/6" );
-		Assert.AreEqual( 43, ArrivalScheduler.GroupSize( Shipped, 50f, newPark: true ), "+ NewParkBonus 20" );
-		Assert.AreEqual( 5, ArrivalScheduler.GroupSize( new ArrivalSettings( 5, 150f, 0f, 0f, 6f ), 0f, false ), "at least MinPeople" );
+		// (NewParkBonus 20 + points) × 0.8 when charging (1.2 free) ÷ PointsPerVisitor 6 — FUN_004cf5b0.
+		Assert.AreEqual( 2, ArrivalScheduler.GroupSize( Shipped, 0f, chargesAdmission: true ), "an empty park: 20 × 0.8 / 6" );
+		Assert.AreEqual( 16, ArrivalScheduler.GroupSize( Shipped, 100f, chargesAdmission: true ), "120 × 0.8 = 96 / 6" );
+		Assert.AreEqual( 24, ArrivalScheduler.GroupSize( Shipped, 100f, chargesAdmission: false ), "a free park: 120 × 1.2 = 144 / 6" );
+		Assert.AreEqual( 5, ArrivalScheduler.GroupSize( new ArrivalSettings( 5, 150f, 0f, 0f, 6f ), 0f, true ), "at least MinPeople" );
 	}
 
 	[TestMethod]
 	public void TheParkNeverExceedsItsCap()
 	{
 		var s = new ArrivalScheduler( Shipped );
-		Assert.AreEqual( 3, s.Update( 15f, 100f, 0, ArrivalScheduler.MaxPeepsInPark - 3 ) );
-		Assert.AreEqual( 0, s.Update( 15f, 100f, 0, ArrivalScheduler.MaxPeepsInPark ) );
+		Assert.AreEqual( 3, s.Update( 150f, () => 1000f, true, ArrivalScheduler.MaxPeepsInPark - 3 ) );
+		Assert.AreEqual( 0, s.Update( 150f, () => 1000f, true, ArrivalScheduler.MaxPeepsInPark ) );
 	}
 
 	[TestMethod]

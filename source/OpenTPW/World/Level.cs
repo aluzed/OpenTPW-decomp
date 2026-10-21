@@ -1376,13 +1376,13 @@ public class Level
 		if ( arrivals != null && !GatesOpen && Entity.All.Any( e => e is Ride { IsFeature: false } ) )
 		{
 			// Closed, but there's something to come for: arrivals gather at the gate.
-			int coming = arrivals.Update( Time.Delta, Peep.AverageHappiness, GameClock.Current?.TotalDays ?? 0, WaitingAtGate );
+			int coming = arrivals.Update( Time.Delta, Ride.ParkAttractionPoints, (ParkFinances.Current?.EntryFee ?? 0f) > 0f, WaitingAtGate );
 			WaitingAtGate = Math.Min( MaxWaitingAtGate, WaitingAtGate + coming );
 		}
 		if ( arrivals != null && GatesOpen )
 		{
 			int inPark = Entity.All.Count( e => e is Peep );
-			int arriving = arrivals.Update( Time.Delta, Peep.AverageHappiness, GameClock.Current?.TotalDays ?? 0, inPark );
+			int arriving = arrivals.Update( Time.Delta, Ride.ParkAttractionPoints, (ParkFinances.Current?.EntryFee ?? 0f) > 0f, inPark );
 			if ( arriving > 0 )
 			{
 				if ( arrivalBus != null )

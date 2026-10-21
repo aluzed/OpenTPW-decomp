@@ -18,51 +18,55 @@ public readonly record struct ArrivalSettings( int MinPeople, float TimeBetweenA
 }
 
 /// <summary>
-/// Brings visitors into the park in groups (T-074) — the original's arrivals come by bus (its arrival object
-/// serialises <c>mArrivalRate</c>, <c>mTargetVehicleCapacity</c>, <c>mPeopleOnBus</c>), replacing the fixed crowd of 30
-/// recycled peeps. The exact original formula isn't reversed yet, so the five <c>Arrival.*</c> values are used as
-/// follows (an interpretation, kept in one place):
+/// Brings visitors into the park by the busload (T-074), as the original does (reversed from <c>tp.exe</c>:
+/// <c>FUN_004cf3e0</c> / <c>FUN_004cf5b0</c>):
 /// <list type="bullet">
-/// <item>a group arrives every <c>TimeBetweenArrivals</c> × <see cref="TimeUnitSeconds"/> (150 → 15 s);</item>
-/// <item>its size is <c>FixedRate</c> + park rating ÷ <c>PointsPerVisitor</c> (+ <c>NewParkBonus</c> while the park is
-/// in its first year), at least <c>MinPeople</c> — so a better-rated park draws bigger crowds;</item>
-/// <item>the park never holds more than <see cref="MaxPeepsInPark"/> visitors (a performance cap).</item>
+/// <item>a bus comes once <c>TimeBetweenArrivals</c> real seconds (150) have passed since the last one left — the
+/// game counts world turns ÷ 4;</item>
+/// <item>it brings <c>(NewParkBonus + attraction points) × k ÷ PointsPerVisitor</c> visitors, at least
+/// <c>MinPeople</c>, where k is 1.2 for a free park and 0.8 when it charges admission, and the attraction points
+/// are the park's rides and sideshows (<see cref="Ride.ParkAttractionPoints"/>: each kind of ride once, its
+/// <c>AttractionValue</c> plus its <c>NewBonus</c> while it's new);</item>
+/// <item>the park never holds more than <see cref="MaxPeepsInPark"/> visitors (the original caps at 500; 250 is
+/// OpenTPW's performance cap). <c>FixedRate</c> isn't read by the arrival code.</item>
 /// </list>
-/// Pure (unit-tested): the caller spawns what <see cref="Update"/> returns.
+/// Pure (unit-tested): the caller dispatches what <see cref="Update"/> returns.
 /// </summary>
 public sealed class ArrivalScheduler
 {
-	public const float TimeUnitSeconds = 0.1f;
 	public const int MaxPeepsInPark = 250;
-	public const int NewParkDays = GameClock.DaysPerMonth * GameClock.MonthsPerYear;
+
+	/// <summary>The bus-size multiplier for a free park / one that charges admission (tp.exe 0x700364 / 0x700368).</summary>
+	public const float FreeParkFactor = 1.2f, PaidParkFactor = 0.8f;
 
 	private readonly ArrivalSettings settings;
 	private float timer;
 
 	public ArrivalScheduler( ArrivalSettings settings ) => this.settings = settings;
 
-	/// <summary>Seconds between two arrival groups.</summary>
-	public float Interval => MathF.Max( 1f, settings.TimeBetweenArrivals * TimeUnitSeconds );
+	/// <summary>Seconds between two buses.</summary>
+	public float Interval => MathF.Max( 1f, settings.TimeBetweenArrivals );
 
-	/// <summary>How many visitors a group brings for a park <paramref name="rating"/> (0–100; negative = no
-	/// visitors yet, counted as 0) and whether the park is still new.</summary>
-	public static int GroupSize( ArrivalSettings s, float rating, bool newPark )
+	/// <summary>How many visitors a bus brings to a park of <paramref name="attractionPoints"/> that does or doesn't
+	/// charge admission.</summary>
+	public static int GroupSize( ArrivalSettings s, float attractionPoints, bool chargesAdmission )
 	{
-		float fromRating = s.PointsPerVisitor > 0f ? MathF.Max( 0f, rating ) / s.PointsPerVisitor : 0f;
-		float size = s.FixedRate + fromRating + (newPark ? s.NewParkBonus : 0f);
-		return Math.Max( s.MinPeople, (int)MathF.Round( size ) );
+		float scaled = (s.NewParkBonus + MathF.Max( 0f, attractionPoints )) * (chargesAdmission ? PaidParkFactor : FreeParkFactor);
+		int perVisitor = Math.Max( 1, (int)s.PointsPerVisitor );
+		return Math.Max( s.MinPeople, (int)scaled / perVisitor );
 	}
 
-	/// <summary>Advance by <paramref name="dt"/> seconds; returns how many visitors arrive now (0 between groups),
-	/// clipped so the park stays under <see cref="MaxPeepsInPark"/>.</summary>
-	public int Update( float dt, float rating, int parkAgeDays, int inPark )
+	/// <summary>Advance by <paramref name="dt"/> seconds; returns how many visitors arrive now (0 between buses),
+	/// clipped so the park stays under <see cref="MaxPeepsInPark"/>. The attraction points are only asked for when a
+	/// bus is due.</summary>
+	public int Update( float dt, Func<float> attractionPoints, bool chargesAdmission, int inPark )
 	{
 		timer += dt;
 		if ( timer < Interval )
 			return 0;
 		timer -= Interval;
 
-		int group = GroupSize( settings, rating, parkAgeDays < NewParkDays );
+		int group = GroupSize( settings, attractionPoints(), chargesAdmission );
 		return Math.Clamp( group, 0, Math.Max( 0, MaxPeepsInPark - inPark ) );
 	}
 }

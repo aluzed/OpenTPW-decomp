@@ -178,6 +178,29 @@ public class Ride : Entity
 	/// <summary>The ride's base attraction value (<c>Info.AttractionValue</c>).</summary>
 	public int Attraction { get; private set; } = 25;
 
+	// The extra draw of a new ride (Attraction[0..2].NewBonus — 10 / 7 / 4 on most) for each NewAttractionDecayTime
+	// days (30) of its life.
+	private readonly int[] newBonus = { 10, 7, 4 };
+	private int newAttractionDecayDays = 30;
+
+	/// <summary>What this ride adds to the park's pull now: <see cref="Attraction"/> plus its new-ride bonus.</summary>
+	public int AttractionNow
+	{
+		get
+		{
+			int bucket = AgeDays / Math.Max( 1, newAttractionDecayDays );
+			return Attraction + (bucket < newBonus.Length ? newBonus[bucket] : 0);
+		}
+	}
+
+	/// <summary>The park's attraction points, as the arrival code adds them up (<c>FUN_004c8240</c>): every kind of ride
+	/// and sideshow counts once (copies of one ride share its points), at its <see cref="AttractionNow"/> — the
+	/// oldest copy's age decides the new-ride bonus. Broken rides and features don't count.</summary>
+	public static float ParkAttractionPoints()
+		=> Entity.All.OfType<Ride>().Where( r => !r.IsFeature && !r.IsBroken )
+			.GroupBy( r => r.Archive, StringComparer.OrdinalIgnoreCase )
+			.Sum( g => (float)g.MaxBy( r => r.AgeDays )!.AttractionNow );
+
 	/// <summary>What a peep pays to board, in coins. Rides are free in Theme Park World — the original's ride window
 	/// has no price, only shops ("Sale price") and sideshows ("Price of game") charge, and the gate fee is what a
 	/// park's rides are worth (<see cref="EntryFeeOpinion"/>) — so this is 0 except for sideshows (player-settable).</summary>
@@ -504,6 +527,9 @@ public class Ride : Entity
 			Excitement = Math.Max( 1, ReadInt( settings, "UsageInfo.ExcitementLevel", 50 ) );
 			InfoId = ReadInt( settings, "Info.Id", 0 );
 			Attraction = ReadInt( settings, "Info.AttractionValue", IsFeature ? 10 : 25 ); // Features.sam: 10
+			for ( int b = 0; b < newBonus.Length; b++ )
+				newBonus[b] = ReadInt( settings, $"Attraction[{b}].NewBonus", newBonus[b] );
+			newAttractionDecayDays = ReadInt( settings, "Info.NewAttractionDecayTime", newAttractionDecayDays );
 			ProvidesSecurity = IsFeature && ReadInt( settings, "UsageInfo.ProvidesSecurity", 0 ) != 0;
 			ChillsYouOut = IsFeature && ReadInt( settings, "UsageInfo.ChillsYouOut", 0 ) != 0;
 			IsIndoors = ReadInt( settings, "UsageInfo.ISIndoors", 0 ) != 0; // under cover → shelter in bad weather

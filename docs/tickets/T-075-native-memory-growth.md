@@ -2,7 +2,7 @@
 
 - **Priority**: 🟡 Low/Medium (a long session grows; not a crash)
 - **Type**: Engine / rendering resources
-- **Status**: ☐ To do — measured 2026-10-21
+- **Status**: ✅ Done — no leak (15-minute soak, 2026-10-21)
 
 ## Observed
 
@@ -37,3 +37,10 @@ After trace logging became opt-in (`OPENTPW_TRACE=1`; the ride VM's COPY opcode 
 execution, thousands per minute), a 6-minute jungle soak with ~250 visitors measured RSS 874 MB → 881 MB between
 minutes 2 and 6 — **~1.7 MB/min, down from ~13 MB/min**. Most of the "native" growth was the console logging
 path. The small residue is within allocator/driver noise; leave the ticket open at low priority for a longer soak.
+
+## Closed (2026-10-21, night) — no leak
+
+A 15-minute soak of the jungle dev park (arrivals, ~250 visitors, golden ticket won mid-run): **clean exit, no
+exception**, RSS 1 014 MB at minute 5 → 1 022 MB at minute 15, flat (±0.1 MB) over the last five minutes. The
+working set settles; there is no unbounded native growth. (The previous soak had died at minute 8 — not memory:
+the golden-ticket award iterated `Entity.All` while its fireworks added particles, fixed in `b796e28`.)

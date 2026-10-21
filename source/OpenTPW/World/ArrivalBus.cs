@@ -31,15 +31,15 @@ public sealed class ArrivalBus
 	private int passengers;
 	private int pending;
 
-	/// <summary>Called with the group size when the bus reaches the arrival stop.</summary>
+	/// <summary>Called for each visitor stepping off at the arrival stop (one a world turn, as the game drops them).</summary>
 	public Action<int>? Offload { get; set; }
 
 	/// <summary>Where the group steps off (the arrival shelter).</summary>
 	public Vector3 Stop => arrivePath[^1];
 
 	private const float Speed = 60f;         // world units per second (the bus is ~32 long)
-	private const float OffloadSeconds = 3f; // bus.RSE: WAIT 1000 after the arrival, then the game's trigger
-	private const int Capacity = 40;         // the original's arrival vehicle sizes (mArrivalVehicle_Size1..3) are unknown
+	private const float StepOffSeconds = 0.25f; // FUN_004cf3e0 drops one visitor per world turn (4 a second)
+	private const float WaitAfterOffload = 1f; // bus.RSE: WAIT 1000 before it pulls away
 
 	// The forecourt road, relative to the entrance tile (FixedItemInfo.EntrancePos, the same in all four worlds),
 	// traced from the terrain's road_* meshes: a U whose left arm climbs out of the tunnel the bus rests in
@@ -122,8 +122,8 @@ public sealed class ArrivalBus
 			case Phase.Idle:
 				if ( pending <= 0 )
 					return;
-				passengers = Math.Min( pending, Capacity );
-				pending -= passengers;
+				passengers = pending; // the whole busload (the original picks a bigger vehicle for over 36 / 60)
+				pending = 0;
 				Start( Phase.Arriving, arrivePath );
 				SetVisible( true );
 				break;
@@ -132,14 +132,24 @@ public sealed class ArrivalBus
 				if ( Drive( dt ) )
 				{
 					phase = Phase.Offloading;
-					offloadUntil = now + OffloadSeconds;
-					Offload?.Invoke( passengers );
-					passengers = 0;
+					offloadUntil = now;
 				}
 				break;
 
 			case Phase.Offloading:
-				if ( now >= offloadUntil )
+				// One visitor steps off a turn; once the bus is empty it waits a moment, then pulls away.
+				if ( passengers > 0 )
+				{
+					while ( passengers > 0 && now >= offloadUntil )
+					{
+						Offload?.Invoke( 1 );
+						passengers--;
+						offloadUntil += StepOffSeconds;
+					}
+					if ( passengers == 0 )
+						offloadUntil = now + WaitAfterOffload;
+				}
+				else if ( now >= offloadUntil )
 					Start( Phase.Leaving, leavePath );
 				break;
 

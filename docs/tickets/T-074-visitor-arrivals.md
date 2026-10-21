@@ -3,7 +3,7 @@
 - **Priority**: 🟠 Medium — two golden-ticket goals were unreachable with a fixed crowd of 30
   (`GoldenTicketLocal.PeopleInPark 200`, `AtLeastThisManyHappyPeople 150`)
 - **Type**: Gameplay / RE
-- **Status**: ⚠️ Implemented (data-driven approximation + arrival bus, 2026-10-21) — exact original formula still to reverse.
+- **Status**: ✅ Done (2026-10-21) — the original's arrival formula is reversed and used; the bus route is hand-traced.
   - `ArrivalScheduler` (pure, unit-tested): a group every `TimeBetweenArrivals × 0.1 s` (150 → 15 s) of
     `FixedRate + rating / PointsPerVisitor (+ NewParkBonus in year 1)`, at least `MinPeople`, capped at 250 in park.
   - Visitors stay `PeepInfo.ExitLevel ± ExitLevelVar` seconds (the .sam calls it the ExitLevel counter "in
@@ -106,3 +106,24 @@ script's offload), drives on past the departure shelter and disappears into the 
 runs (40 per trip). Same route in all four worlds (same entrance tile and forecourt; each world's bus is its own
 colour). The visitors still appear just outside the gate rather than walking up from the shelter, and the route is
 hand-traced rather than the original's (the engine's vehicle path is still unreversed).
+
+## The original's arrival formula (2026-10-21, night)
+
+Reversed from `tp.exe`:
+
+- `FUN_004cf3e0` (the arrival update): once `(turn − last bus) / 4` — real seconds — passes `Arrival.TimeBetweenArrivals`
+  (**150 s**, not tenths), it computes a busload (`FUN_004cf5b0`, logged "Bus about to arrive with %d people") and calls
+  a vehicle sized 1 / 2 / 3 for < 36 / ≤ 60 / > 60 people (`mArrivalVehicle_Size1..3`); at the stop (`VAR_STATUS` 2) it
+  drops **one visitor per world turn** ("Bus: dropping off kids"), then resets the timer and sends the bus on.
+- `FUN_004cf5b0`: people = max(`MinPeople`, ⌊(`NewParkBonus` + attraction points) × k⌋ ÷ `PointsPerVisitor`), k = **1.2**
+  for a park whose entry is free, **0.8** otherwise (floats at 0x700364 / 0x700368), capped so the park holds at most
+  500 (1 500 in another mode). `FixedRate` isn't read by this code.
+- `FUN_004c8240`, the attraction points: over the rides and sideshows in service, each **kind** counts once (copies
+  divide its points), worth its `Info.AttractionValue` plus `Attraction[n].NewBonus` for its age in
+  `Info.NewAttractionDecayTime`-day steps (10 / 7 / 4 for the first three steps on most jungle rides).
+- The visitor's `mExitLevel` (`PeepInfo.ExitLevel` 120 ± `ExitLevelVar` 60) is an integer counted down once a second
+  (every 4th turn) in the wandering state (`FUN_00501650`); at 0 the visitor heads home (`FUN_00500a50`).
+
+`ArrivalScheduler` and `Ride.ParkAttractionPoints` now follow this (unit-tested), and `ArrivalBus` lets its
+passengers off one per 0.25 s and waits a second before pulling away. The jungle dev park (11 kinds of ride) gets a
+bus of 37 every 150 s. OpenTPW keeps 250 as its in-park performance cap and one bus model for all sizes.
