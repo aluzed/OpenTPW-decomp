@@ -21,7 +21,7 @@ internal abstract class HudPanel : Panel
 		=> (ParkHud.Current?.ContainsMouse() ?? false) || (BuildPanel.Current?.ContainsMouse() ?? false) || (ItemInfoWindow.Current?.ContainsMouse() ?? false)
 			|| (ParkInfoWindow.Current?.ContainsMouse() ?? false) || (ResearchWindow.Current?.ContainsMouse() ?? false)
 			|| (StaffWindow.Current?.ContainsMouse() ?? false) || (VisitorWindow.Current?.ContainsMouse() ?? false)
-			|| (MessageTags.Current?.ContainsMouse() ?? false) || (ParkListWindow.Current?.ContainsMouse() ?? false)
+			|| (MessageTags.Current?.ContainsMouse() ?? false) || (ParkListWindow.Current?.ContainsMouse() ?? false) || (TrainingWindow.Current?.ContainsMouse() ?? false)
 			|| (OptionsPanel.Current?.ContainsMouse() ?? false) || (FinancePanel.Current?.ContainsMouse() ?? false)
 			|| (MinimapPanel.Current?.ContainsMouse() ?? false) || (SavePanel.Current?.ContainsMouse() ?? false)
 			|| (ThemePanel.Current?.ContainsMouse() ?? false) || (LoanPanel.Current?.ContainsMouse() ?? false)

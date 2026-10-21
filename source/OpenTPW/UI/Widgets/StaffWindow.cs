@@ -99,7 +99,7 @@ internal sealed class StaffWindow : GameWindow
 	}
 
 	// The role's portrait in ui.wad (the hire window's h_* pictures).
-	private static string Portrait( StaffRole role ) => role switch
+	internal static string Portrait( StaffRole role ) => role switch
 	{
 		StaffRole.Handyman => "h_handy", StaffRole.Mechanic => "h_mech", StaffRole.Guard => "h_guard",
 		StaffRole.Researcher => "h_resrcher", _ => "h_enter",

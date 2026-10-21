@@ -144,6 +144,19 @@ public class Level
 		GameClock.Current.OnNewDay += Staff.OnNewDayAll;
 		GameClock.Current.OnNewDay += () => StaffStrikes.Current?.OnNewDay( GameClock.Current?.Day ?? 1 );
 		GameClock.Current.OnNewMonth += Staff.ConsiderStrikes;
+		// Staff training budgets: spent on training as each month closes, counted with the staff costs.
+		StaffTraining.Current = new StaffTraining();
+		GameClock.Current.OnNewMonth += () =>
+		{
+			if ( StaffTraining.Current is not { } training || ParkFinances.Current is not { } fin )
+				return;
+			float spent = training.Spend( Entity.All.OfType<Staff>().ToList(), fin.Money );
+			if ( spent > 0f )
+			{
+				fin.PayWages( spent );
+				Log.Info( $"[staff] training budgets spent $ {spent:0}" );
+			}
+		};
 		if ( Environment.GetEnvironmentVariable( "OPENTPW_BANKRUPT_DEMO" ) != null )
 			ParkFinances.Current.ForceBankrupt();
 
@@ -732,6 +745,7 @@ public class Level
 		s.GoldenTickets = GoldenTicketGoals.Current?.Won.ToList() ?? new();
 		s.Researched = ItemResearch.Current?.Unlocked.ToList();
 		s.ResearchProgress = ItemResearch.Current?.CategoryProgress ?? new();
+		s.TrainingBudgets = StaffTraining.Current?.Budgets.ToDictionary( b => b.Key.ToString(), b => b.Value ) ?? new();
 
 		// Slot-menu metadata (T-061): an at-a-glance summary so the player can tell saves apart.
 		s.Meta = new SaveGame.MetaInfo
@@ -858,6 +872,10 @@ public class Level
 		GoldenTicketGoals.Current?.RestoreAwarded( s.GoldenTicketAwarded, s.GoldenTickets );
 		if ( s.Researched != null )
 			ItemResearch.Current?.Restore( s.Researched, s.ResearchProgress );
+		StaffTraining.Current = new StaffTraining();
+		foreach ( var (role, amount) in s.TrainingBudgets )
+			if ( Enum.TryParse<StaffRole>( role, out var r ) )
+				StaffTraining.Current?.SetBudget( r, amount );
 
 		Log.Info( $"[save] restored {s.Placements.Count} placement(s) + {s.Staff.Count} staff" );
 	}
@@ -1485,6 +1503,7 @@ public class Level
 			Hud.AddChild( new VisitorWindow() );  // a visitor's window (click one in the park)
 			Hud.AddChild( new MessageTags() );    // the message tags down the right edge
 			Hud.AddChild( new ParkListWindow() ); // all items / staff / visitors (park information, V)
+			Hud.AddChild( new TrainingWindow() ); // staff training budgets (from the staff list)
 			Hud.AddChild( new FinancePanel() );   // F11 income/expense graph (T-049)
 			Hud.AddChild( new MinimapPanel() );   // corner minimap (M toggles, click pans) (T-057)
 			Hud.AddChild( new SavePanel() );      // F8 save/load slot menu with park summaries (T-061)
