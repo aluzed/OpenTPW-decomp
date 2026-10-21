@@ -105,7 +105,7 @@ public class Level
 		// The park floor (T-071) lives in base.lnd, not in the terrain mesh. Best-effort: without it the scenery
 		// still loads, only the ground is missing.
 		ParkGround? ground = null;
-		try { ground = new ParkGround( $"levels/{Current.Name}/terrain", terrain ); }
+		try { ground = terrain.Ground = new ParkGround( $"levels/{Current.Name}/terrain", terrain ); }
 		catch ( Exception e ) { Log.Warning( $"[ground] {e.Message}" ); }
 
 		// The park starts with a budget; peeps pay a gate fee + ride tickets, rides cost upkeep (see Ride / Peep).
@@ -1147,7 +1147,14 @@ public class Level
 	{
 		Camera.Update();
 
-		Entity.All.ForEach( entity => entity.Render() );
+		// The world first, then the UI on top: entities render in creation order, and visitors that arrive after
+		// the HUD was built (T-074) would otherwise be drawn over it.
+		foreach ( var entity in Entity.All )
+			if ( entity is not RootPanel )
+				entity.Render();
+		foreach ( var entity in Entity.All )
+			if ( entity is RootPanel )
+				entity.Render();
 
 		// A full-screen "Loading <theme>…" curtain shown for the frame before a reload's synchronous load, so
 		// the screen freezes on this instead of the old park (T-062).

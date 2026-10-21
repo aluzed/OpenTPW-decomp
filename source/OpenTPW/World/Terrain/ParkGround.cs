@@ -21,8 +21,11 @@ public sealed class ParkGround
 	/// <summary>Resolution of the composed ground texture.</summary>
 	public const float OutputPixelsPerUnit = 2f;
 
+	/// <summary>World Z of the park floor — the level of the fence feet and paths.</summary>
+	public const float SurfaceZ = 0f;
+
 	// Just under the scenery meshes that lie flat at Z = 0 (paths, fence feet), so they win the depth test.
-	private const float GroundZ = -0.1f;
+	private const float GroundZ = SurfaceZ - 0.1f;
 
 	public float Width { get; }
 	public float Depth { get; }

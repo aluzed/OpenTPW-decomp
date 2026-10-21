@@ -155,13 +155,13 @@ public sealed class Staff : ModelEntity
 
 		sheet = RoleSprite( role );
 		fallback = RoleModel( role );
-		spriteHeight = 16f;
+		spriteHeight = 10f; // ~1 tile (was 16, sized for the old 16-unit grid — T-072)
 		Model = sheet != null ? sheet.FrameModel( 0 ) : fallback;
 		Scale = new Vector3( 3f, 1f, 7f ); // overridden per-frame on the sprite path
 		speed = 10f + (float)Random.Shared.NextDouble() * 4f;
 		target = PickWanderTarget();
 		Position = target;
-		shadow = new ModelEntity { Model = Peep.ShadowModel(), Scale = new Vector3( spriteHeight * 0.45f, spriteHeight * 0.45f, 1f ) };
+		shadow = new ModelEntity { Model = Peep.ShadowModel(), Scale = new Vector3( spriteHeight * 0.25f, spriteHeight * 0.25f, 1f ) };
 		DropToGround();
 	}
 

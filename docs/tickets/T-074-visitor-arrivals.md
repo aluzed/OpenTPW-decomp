@@ -1,9 +1,19 @@
 # T-074 — Visitor arrivals (`Arrival.*`) instead of a fixed crowd of 30
 
-- **Priority**: 🟡 Feature (fidelity — not blocking: golden-ticket visitor goals count admissions, and a
-  recycled visitor pays again)
+- **Priority**: 🟠 Medium — two golden-ticket goals were unreachable with a fixed crowd of 30
+  (`GoldenTicketLocal.PeopleInPark 200`, `AtLeastThisManyHappyPeople 150`)
 - **Type**: Gameplay / RE
-- **Status**: ☐ To do — RE started (2026-10-21)
+- **Status**: ⚠️ Implemented (data-driven approximation, 2026-10-21) — exact original formula still to reverse.
+  - `ArrivalScheduler` (pure, unit-tested): a group every `TimeBetweenArrivals × 0.1 s` (150 → 15 s) of
+    `FixedRate + rating / PointsPerVisitor (+ NewParkBonus in year 1)`, at least `MinPeople`, capped at 250 in park.
+  - Visitors stay `PeepInfo.ExitLevel ± ExitLevelVar` seconds (the .sam calls it the ExitLevel counter "in
+    SECONDS"; energy drained at a hard-coded 2/s, ~50 s) and then **leave for good** (`Peep.LeaveOnExit`) instead
+    of being recycled. The opening crowd of 30 stays.
+  - Jungle dev park: fills to the 250 cap in ~100 s (new-park bonus), economy turns positive (entry fees + stall
+    sales), both golden-ticket crowd goals become reachable.
+  - Side fixes found with the bigger crowd: terrain height sampling was 94% of the frame (→ spatial index +
+    ground-plane height, commit `perf:`), late arrivals drew over the HUD (UI now renders last), peep/staff
+    shadows were dark squares and sprites 1.5 tiles tall (sized for the old 16-unit grid, T-072).
 
 ## Observed
 

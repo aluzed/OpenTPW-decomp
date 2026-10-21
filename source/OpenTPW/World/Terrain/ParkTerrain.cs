@@ -114,10 +114,19 @@ public sealed class ParkTerrain : Entity
 	/// through a spatial index (a linear scan of every vertex was 94% of a crowded park's frame time).</summary>
 	public float SampleHeight( float x, float y )
 	{
+		// On the park floor (base.lnd ground, T-071) the surface is the flat ground plane: the nearest mesh vertex
+		// there is some rock or fence foot, and searching for it from the open lawn (no vertices) was the costliest
+		// query. Only scenery (river, lake, forecourt, outside the fence) samples the meshes.
+		if ( Ground != null && !Ground.IsScenery( x, y ) )
+			return ParkGround.SurfaceZ;
+
 		nearest ??= new NearestVertexIndex( worldVerts.Select( v => (v.X, v.Y) ).ToList() );
 		int i = nearest.Nearest( x, y );
 		return i >= 0 ? worldVerts[i].Z : 0f;
 	}
 
 	private NearestVertexIndex? nearest;
+
+	/// <summary>The park floor, once loaded (T-071): where it has ground, <see cref="SampleHeight"/> is its plane.</summary>
+	public ParkGround? Ground { get; set; }
 }

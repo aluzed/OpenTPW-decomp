@@ -228,7 +228,9 @@ public sealed class Peep : ModelEntity
 
 		// Prefer a real decoded peep sprite (per-frame models, directional walk cycles), a random kid for
 		// crowd variety; fall back to a flat-colour billboard if it can't load.
-		spriteHeight = 15f + (float)Random.Shared.NextDouble() * 3f;
+		// ~1 tile tall (was 15–18 units, sized for the old 16-unit grid — next to true-scale rides a visitor stood
+		// 1.5 tiles tall, T-072).
+		spriteHeight = 9.4f + (float)Random.Shared.NextDouble() * 1.9f;
 		sheet = SpriteSheet.Load( KidSpriteDir, KidSprites[Random.Shared.Next( KidSprites.Length )] );
 		if ( sheet != null )
 		{
@@ -244,7 +246,8 @@ public sealed class Peep : ModelEntity
 		}
 		speed = 8f + (float)Random.Shared.NextDouble() * 7f;
 		Position = spawn;
-		shadow = new ModelEntity { Model = ShadowModel(), Scale = new Vector3( spriteHeight * 0.4f, spriteHeight * 0.4f, 1f ) };
+		// ~0.7 of a 10-unit tile across (it was sized for the old 16-unit grid and read as a dark square — T-072).
+		shadow = new ModelEntity { Model = ShadowModel(), Scale = new Vector3( spriteHeight * 0.22f, spriteHeight * 0.22f, 1f ) };
 		ParkFinances.Current?.TakeEntryFee(); // pays the gate on arrival
 		energyDrainPerSec = DrainForStay();
 		PickRoute();
@@ -608,9 +611,24 @@ public sealed class Peep : ModelEntity
 			return shadowModel;
 		var material = new Material<ObjectUniformBuffer>( "content/shaders/unlit.shader",
 			MaterialFlags.DoubleSided | MaterialFlags.DisableDepthWrite );
-		material.Set( "Color", new Texture( [0, 0, 0, 90], 1, 1 ) );
+		material.Set( "Color", new Texture( ShadowBlob( 32 ), 32, 32 ) );
 		shadowModel = Primitives.Plane.GenerateModel( material );
 		return shadowModel;
+	}
+
+	/// <summary>A round, soft-edged shadow: black, alpha falling from ~110 at the centre to 0 at the rim (it was a
+	/// uniformly dark 1×1 texture, i.e. a square).</summary>
+	internal static byte[] ShadowBlob( int size )
+	{
+		var rgba = new byte[size * size * 4];
+		float c = (size - 1) / 2f;
+		for ( int y = 0; y < size; y++ )
+			for ( int x = 0; x < size; x++ )
+			{
+				float r = MathF.Sqrt( (x - c) * (x - c) + (y - c) * (y - c) ) / c;
+				rgba[(y * size + x) * 4 + 3] = (byte)(r >= 1f ? 0 : 110f * MathF.Pow( 1f - r, 1.5f ));
+			}
+		return rgba;
 	}
 
 	/// <summary>An entertainer lifts this peep's mood (capped at full); a happier peep stays longer.</summary>
