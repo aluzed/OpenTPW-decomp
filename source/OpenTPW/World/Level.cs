@@ -735,9 +735,11 @@ public class Level
 		// but peeps play them for pay-to-play takings rather than a flat ticket (see Ride.IsSideshow).
 		AddFrom( "sideshow", LevelTheme.SideshowNames( theme ) );
 
-		list.Add( new BuildCatalogItem( "shop", null, null, 2, 2, 500f ) );   // food stall (satisfies hunger)
-		list.Add( new BuildCatalogItem( "drink", null, null, 2, 2, 450f ) );  // drink stall (satisfies thirst, T-039)
-		list.Add( new BuildCatalogItem( "toilet", null, null, 2, 2, 400f ) ); // toilet (relieves bladder, free to use, T-039)
+		// Stalls cost what their .sam says (Upgrades[0].CostOfUpgrade — jungle burger 800); these are the fallbacks.
+		float StallCost( ShopKind kind, float fallback ) => ShopBuilding.StatsFor( kind, Current.Name )?.BuildCost ?? fallback;
+		list.Add( new BuildCatalogItem( "shop", null, null, 2, 2, StallCost( ShopKind.Food, 500f ) ) );    // food stall (satisfies hunger)
+		list.Add( new BuildCatalogItem( "drink", null, null, 2, 2, StallCost( ShopKind.Drink, 450f ) ) );  // drink stall (satisfies thirst, T-039)
+		list.Add( new BuildCatalogItem( "toilet", null, null, 2, 2, StallCost( ShopKind.Toilet, 400f ) ) ); // toilet (relieves bladder, free to use, T-039)
 		list.Add( new BuildCatalogItem( "entertainer", null, StaffRole.Entertainer, 1, 1, 800f ) );
 		list.Add( new BuildCatalogItem( "handyman", null, StaffRole.Handyman, 1, 1, 600f ) );
 		list.Add( new BuildCatalogItem( "guard", null, StaffRole.Guard, 1, 1, 1000f ) );

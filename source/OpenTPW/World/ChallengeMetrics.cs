@@ -33,7 +33,7 @@ public static class ChallengeMetrics
 			2 => fin.FoodSold,         // "Sell N Burgers" — food
 			3 => fin.DrinkSold,        // "Sell N Drinks"
 			11 => fin.VisitorsTotal,   // "Get N new visitors"
-			12 => fin.FoodRevenue,     // "Make N profit from all shops" (concession takings)
+			12 => fin.ShopProfit,      // "Make N profit from all shops" (takings minus cost of goods)
 			13 => fin.SideshowRevenue, // "Get your sideshows to make N profit"
 			16 => fin.ResearchCompleted, // "Research N new rides" (approx: ride research completed)
 			18 => fin.CoastersBuilt,   // "Build a [Minecart] Coaster" (approx: any coaster)

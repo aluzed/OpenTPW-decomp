@@ -210,6 +210,12 @@ public sealed class ParkFinances
 	public int DrinkSold { get; private set; }
 	public int VisitorsTotal { get; private set; }
 
+	/// <summary>What the shops' goods cost the park (the cost-of-goods part of each sale).</summary>
+	public float GoodsSpent { get; private set; }
+
+	/// <summary>Shop profit: takings minus the cost of the goods sold (challenge type 12).</summary>
+	public float ShopProfit => FoodRevenue - GoodsSpent;
+
 	/// <summary>Track rides (coasters) built and ride research completed — challenge types 18 and 16.</summary>
 	public int CoastersBuilt { get; private set; }
 	public int ResearchCompleted { get; private set; }
@@ -254,10 +260,11 @@ public sealed class ParkFinances
 
 	/// <summary>A visitor buys from a concession (<paramref name="drink"/> distinguishes a drink stall from a
 	/// food stall, for the challenge counters).</summary>
-	public void TakeFoodSale( float price, bool drink = false )
+	public void TakeFoodSale( float price, bool drink = false, float costOfGoods = 0f )
 	{
-		Money += price;
+		Money += price - costOfGoods;
 		FoodRevenue += price;
+		GoodsSpent += costOfGoods;
 		if ( drink ) DrinkSold++; else FoodSold++;
 	}
 

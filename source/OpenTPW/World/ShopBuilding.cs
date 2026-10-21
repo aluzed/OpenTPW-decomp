@@ -21,6 +21,51 @@ internal static class ShopBuilding
 		_ => new[] { "burger", "fries", "steak", "hotdog", "sburger", "gchips" }.Select( n => $"levels/{theme}/shops/{n}" ),
 	};
 
+	/// <summary>A stall's authored economics from its <c>.sam</c> (e.g. jungle Burger Shop: price 30, cost of goods 20,
+	/// build 800): <c>Info.Name</c>, <c>UsageInfo.InitPricePerUse</c>, <c>UsageInfo.InitCostOfGoods</c> and the first
+	/// level's <c>Upgrades[0].CostOfUpgrade</c> (the build price, as for rides).</summary>
+	public readonly record struct Stats( string Name, float Price, float CostOfGoods, float BuildCost );
+
+	/// <summary>The stats of the first <paramref name="kind"/> stall the theme ships, or null (the caller keeps its
+	/// defaults).</summary>
+	public static Stats? StatsFor( ShopKind kind, string theme )
+	{
+		foreach ( var archive in Candidates( kind, theme ) )
+		{
+			var name = Path.GetFileName( archive );
+			// The .sam's case varies per stall (Burger.sam, Toilet.sam): look it up in the archive's listing.
+			string? samPath = null;
+			try
+			{
+				samPath = FileSystem.GetFiles( archive )
+					.FirstOrDefault( f => Path.GetFileName( f ).Equals( $"{name}.sam", StringComparison.OrdinalIgnoreCase ) );
+			}
+			catch { /* no such archive in this theme */ }
+			if ( samPath == null )
+				continue;
+			try
+			{
+				using var stream = FileSystem.OpenRead( samPath );
+				return ParseStats( new SettingsFile( stream ), name );
+			}
+			catch { /* unreadable — try the next one */ }
+		}
+		return null;
+	}
+
+	/// <summary>Pure parse of <see cref="Stats"/> from a stall's settings (fallbacks: price 8, no goods cost, build 500).</summary>
+	public static Stats ParseStats( SettingsFile sam, string fallbackName )
+	{
+		float F( string key, float fallback ) =>
+			float.TryParse( sam[key], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var v ) ? v : fallback;
+		var title = sam["Info.Name"];
+		return new Stats(
+			string.IsNullOrWhiteSpace( title ) ? fallbackName : title,
+			F( "UsageInfo.InitPricePerUse", 8f ),
+			F( "UsageInfo.InitCostOfGoods", 0f ),
+			F( "Upgrades[0].CostOfUpgrade", 500f ) );
+	}
+
 	/// <summary>Try to build the real shop model centred on <paramref name="origin"/> and scaled to fill a
 	/// <paramref name="footprintSize"/>-wide cell, appending its per-mesh entities to <paramref name="parts"/>
 	/// (the caller removes them on demolish). True if a model loaded.</summary>

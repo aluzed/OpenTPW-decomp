@@ -82,3 +82,10 @@ upgrades) has no price; only shops ("Sale price") and sideshows ("Price of game"
 derived from the park's total ride excitement. OpenTPW charged a per-ride ticket (excitement/10). Rides are now free:
 `Ride.TicketPrice` is 0 except for sideshows, the ride PRICE± buttons / `,` `.` keys apply to sideshows only, and a
 free ride has no value-for-money term in `Peep.RateRide`. A 130 s autoplace run still gains money (gate + shops).
+
+## 2026-10-21 — stalls from their data
+
+Each stall reads its `.sam` (`ShopBuilding.StatsFor`): name (`Info.Name`, e.g. "Burger Shop"), sale price
+(`UsageInfo.InitPricePerUse`, burger 30), cost of goods (`UsageInfo.InitCostOfGoods`, 20 — deducted from each sale;
+`ParkFinances.ShopProfit` = takings − goods, used by challenge type 12) and build cost (`Upgrades[0].CostOfUpgrade`:
+food 800, drink 650, toilet 100 — were invented 500/450/400). Toilets stay free to use. Unit-tested.

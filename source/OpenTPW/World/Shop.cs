@@ -29,8 +29,12 @@ public sealed class Shop : ModelEntity
 	/// <summary>What this stall sells (which need it satisfies).</summary>
 	public ShopKind Kind { get; }
 
-	/// <summary>Display name (for the manage UI).</summary>
-	public string Name => Kind switch { ShopKind.Drink => "Drink Stall", ShopKind.Toilet => "Toilet", _ => "Food Stall" };
+	/// <summary>Display name (for the manage UI): the stall's own <c>Info.Name</c> when its data loaded.</summary>
+	public string Name => title ?? Kind switch { ShopKind.Drink => "Drink Stall", ShopKind.Toilet => "Toilet", _ => "Food Stall" };
+	private readonly string? title;
+
+	/// <summary>What one sale costs the park in goods (<c>UsageInfo.InitCostOfGoods</c>); the profit is the price minus this.</summary>
+	public float CostOfGoods { get; set; }
 
 	/// <summary>Grid footprint (set when placed) — used to select it by clicking a covered tile, and to
 	/// free its cells on sell/demolish (T-041).</summary>
@@ -66,6 +70,16 @@ public sealed class Shop : ModelEntity
 	{
 		Price = price;
 		Kind = kind;
+		// The stall's own price / cost of goods / name from its .sam (a toilet stays free).
+		if ( ShopBuilding.StatsFor( kind, Level.Current.Name ) is { } stats )
+		{
+			title = stats.Name;
+			if ( kind != ShopKind.Toilet )
+			{
+				Price = stats.Price;
+				CostOfGoods = stats.CostOfGoods;
+			}
+		}
 		Position = position.WithZ( terrain.SampleHeight( position.X, position.Y ) );
 
 		// Prefer the theme's real stall/toilet building; keep the coloured billboard only as a fallback.
