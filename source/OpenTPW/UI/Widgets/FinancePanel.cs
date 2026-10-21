@@ -142,9 +142,9 @@ internal sealed class FinancePanel : GameWindow
 			Text( Small, $"{Localization.Get( UIStrings.MoneyIn, "Money in" )} $ {last.Income:0}   {Localization.Get( UIStrings.MoneyOut, "Money out" )} $ {last.Expense:0}", 450f, 418f, 11f );
 		}
 
-		if ( RoundButton( LoansButton, "b_loan" ) )
+		if ( RoundButton( LoansButton, "b_loan", hint: 174 ) )
 			LoanPanel.Current?.Toggle();
-		if ( RoundButton( Ok, "b_okay" ) )
+		if ( RoundButton( Ok, "b_okay", hint: 1 ) )
 			IsOpen = false;
 	}
 }

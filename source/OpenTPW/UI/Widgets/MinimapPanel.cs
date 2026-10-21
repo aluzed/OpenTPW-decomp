@@ -148,7 +148,7 @@ internal sealed class MinimapPanel : GameWindow
 		// Layer buttons: lit while the layer shows, pressed-in while hidden (clicks are handled in OnUpdate).
 		foreach ( var b in Legend() )
 			RoundButton( b.Rect, b.Icon, !b.On );
-		if ( RoundButton( Ok, "b_okay" ) )
+		if ( RoundButton( Ok, "b_okay", hint: 1 ) )
 			IsOpen = false;
 	}
 

@@ -94,7 +94,7 @@ internal sealed class StaffWindow : GameWindow
 		}
 		Text( Small, staff.CanTrain ? $"$ {cost:0}" : "max", 633f, 358f, 11f, default, TextAlign.Center );
 
-		if ( RoundButton( Ok, "b_okay" ) )
+		if ( RoundButton( Ok, "b_okay", hint: 1 ) )
 			build.ClearSelection();
 	}
 

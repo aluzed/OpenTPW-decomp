@@ -114,7 +114,7 @@ internal sealed class ParkInfoWindow : GameWindow
 		if ( RoundButton( Gates, "b_open", selected: !Level.GatesOpen ) )
 			Level.ToggleGates();
 		Text( Small, Level.GatesOpen ? "Park open" : "Park closed", 810f, 336f, 11f, Level.GatesOpen ? default : LockedInk, TextAlign.Center );
-		if ( RoundButton( Ok, "b_okay" ) )
+		if ( RoundButton( Ok, "b_okay", hint: 1 ) )
 			IsOpen = false;
 	}
 

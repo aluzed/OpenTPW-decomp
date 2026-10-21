@@ -71,11 +71,11 @@ internal sealed class ItemInfoWindow : GameWindow
 		// Right-hand column: previous / next ride, close.
 		var rides = Entity.All.OfType<Ride>().Where( r => !r.IsFeature ).ToList();
 		int at = build.SelectedRide is { } current ? rides.IndexOf( current ) : -1;
-		if ( RoundButton( Up, "b_arup", enabled: rides.Count > 1 && at >= 0 ) )
+		if ( RoundButton( Up, "b_arup", hint: 21, enabled: rides.Count > 1 && at >= 0 ) )
 			build.SelectRide( rides[(at - 1 + rides.Count) % rides.Count] );
-		if ( RoundButton( Down, "b_ardown", enabled: rides.Count > 1 && at >= 0 ) )
+		if ( RoundButton( Down, "b_ardown", hint: 20, enabled: rides.Count > 1 && at >= 0 ) )
 			build.SelectRide( rides[(at + 1) % rides.Count] );
-		if ( RoundButton( Ok, "b_okay" ) )
+		if ( RoundButton( Ok, "b_okay", hint: 1 ) )
 			build.ClearSelection();
 	}
 
@@ -131,25 +131,25 @@ internal sealed class ItemInfoWindow : GameWindow
 			SettingBox( 2, $"Level : {ride.UpgradeLevel + 1} / {Math.Max( 1, ride.Upgrades.Count )}",
 				ride.Upgrades.Count > 0 ? (ride.UpgradeLevel + 1f) / ride.Upgrades.Count : 1f );
 
-		if ( RoundButton( Action( 143f ), "b_delete_login" ) )
+		if ( RoundButton( Action( 143f ), "b_delete_login", hint: 15 ) )
 			build.SellSelected();
 		// Move: pick the ride up and put it down elsewhere, as it is (not a ride with a laid track).
-		if ( RoundButton( Action( 217f ), "b_move", enabled: ride.Track == null && ride.TileTrack == null && !ride.IsResearching ) )
+		if ( RoundButton( Action( 217f ), "b_move", hint: 14, enabled: ride.Track == null && ride.TileTrack == null && !ride.IsResearching ) )
 			build.BeginMoveSelected();
-		RoundButton( Action( 369f ), "b_queue", enabled: false );
-		if ( RoundButton( Action( 450f ), "b_rideit" ) )
+		RoundButton( Action( 369f ), "b_queue", enabled: false, hint: 9 );
+		if ( RoundButton( Action( 450f ), "b_rideit", hint: 16 ) )
 		{
 			build.ClearSelection();
 			RideItCameraMode.Start( ride );
 		}
 		// Call a mechanic: the nearest one comes to service the ride (lit while one is on the way).
 		bool coming = Staff.MechanicCalledTo( ride );
-		if ( RoundButton( Action( 525f ), "b_callmech", selected: coming, enabled: !coming && Entity.All.OfType<Staff>().Any( s => s.Role == StaffRole.Mechanic ) ) )
+		if ( RoundButton( Action( 525f ), "b_callmech", hint: 8, selected: coming, enabled: !coming && Entity.All.OfType<Staff>().Any( s => s.Role == StaffRole.Mechanic ) ) )
 			Staff.CallMechanic( ride );
 		// Upgrade: research the next level, then buy it (the R / U keys).
 		bool canResearch = ride.HasNextLevel && !ride.NextResearched && !ride.IsResearching && fin.CanAfford( ride.NextResearchCost );
 		bool canUpgrade = ride.NextResearched && fin.CanAfford( ride.NextUpgradeCost );
-		if ( RoundButton( Action( 600f ), "b_upgrade", enabled: canResearch || canUpgrade ) )
+		if ( RoundButton( Action( 600f ), "b_upgrade", hint: 19, enabled: canResearch || canUpgrade ) )
 		{
 			if ( canUpgrade )
 			{
@@ -163,7 +163,7 @@ internal sealed class ItemInfoWindow : GameWindow
 			}
 		}
 		// The gate: open (green light) / closed.
-		if ( RoundButton( Action( 672f, 93f ), ride.IsClosed ? "b_doorc" : "b_dooro" ) )
+		if ( RoundButton( Action( 672f, 93f ), ride.IsClosed ? "b_doorc" : "b_dooro", hint: ride.IsClosed ? 12 : 13 ) )
 			ride.SetClosed( !ride.IsClosed );
 	}
 
@@ -191,11 +191,11 @@ internal sealed class ItemInfoWindow : GameWindow
 			SettingBox( 2, $"{Localization.Get( UIStrings.SalePrice, "Sale price" )} : $ {shop.Price:0}", Math.Clamp( shop.Price / 10f, 0f, 1f ),
 				() => shop.Price = Math.Max( 1f, shop.Price - 1f ), () => shop.Price += 1f );
 
-		if ( RoundButton( Action( 143f ), "b_delete_login" ) )
+		if ( RoundButton( Action( 143f ), "b_delete_login", hint: 33 ) )
 			build.SellSelected();
-		if ( RoundButton( Action( 217f ), "b_move" ) )
+		if ( RoundButton( Action( 217f ), "b_move", hint: 32 ) )
 			build.BeginMoveSelected();
-		if ( RoundButton( Action( 672f, 93f ), shop.IsClosed ? "b_doorc" : "b_dooro" ) )
+		if ( RoundButton( Action( 672f, 93f ), shop.IsClosed ? "b_doorc" : "b_dooro", hint: shop.IsClosed ? 30 : 31 ) )
 			shop.IsClosed = !shop.IsClosed;
 	}
 }

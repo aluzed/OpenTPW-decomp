@@ -100,7 +100,7 @@ internal sealed class ResearchWindow : GameWindow
 			Fill( tubeRect with { Width = tubeRect.Width * fraction }, Fluid );
 		}
 
-		if ( RoundButton( Ok, "b_okay" ) )
+		if ( RoundButton( Ok, "b_okay", hint: 1 ) )
 			IsOpen = false;
 	}
 

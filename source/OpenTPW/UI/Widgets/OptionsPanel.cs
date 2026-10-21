@@ -107,7 +107,7 @@ internal sealed class OptionsPanel : GameWindow
 			Fill( new Rectangle( knob - 2f, track.Y - 3f, 4f, track.Height + 6f ), SolidOf( 235, 235, 240 ) );
 			Text( Small, $"{value * 100f:0} %", TrackX + TrackW + 30f, top, 11f );
 		}
-		if ( RoundButton( Ok, "b_okay" ) )
+		if ( RoundButton( Ok, "b_okay", hint: 1 ) )
 			IsOpen = false;
 	}
 }

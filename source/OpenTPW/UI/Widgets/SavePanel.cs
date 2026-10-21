@@ -91,7 +91,7 @@ internal sealed class SavePanel : GameWindow
 				Level.ApplySave( g );
 		}
 
-		if ( RoundButton( Ok, "b_okay" ) )
+		if ( RoundButton( Ok, "b_okay", hint: 1 ) )
 			IsOpen = false;
 	}
 }

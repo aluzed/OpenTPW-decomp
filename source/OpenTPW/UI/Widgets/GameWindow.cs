@@ -74,6 +74,19 @@ internal abstract class GameWindow : HudPanel
 		return any;
 	}
 
+	private static string? hoverHint;
+
+	/// <summary>Show the game's hint <paramref name="index"/> (UIHELPTEXT.str) for what is under the cursor.</summary>
+	protected static void Hint( int index ) => hoverHint = UiHelp.Text( index, "" );
+
+	/// <summary>The game's hint for the window button under the cursor this frame (UIHELPTEXT.str), taken once.</summary>
+	public static string? TakeHoverHint()
+	{
+		var h = hoverHint;
+		hoverHint = null;
+		return string.IsNullOrEmpty( h ) ? null : h;
+	}
+
 	/// <summary>Whether Esc may close it (a message that must be answered can't be).</summary>
 	protected virtual bool Closable => true;
 
@@ -136,9 +149,11 @@ internal abstract class GameWindow : HudPanel
 
 	/// <summary>A round ui.wad button (b_*.wct; its "d" look when pressed / selected), slightly larger under the cursor.
 	/// Returns true when clicked.</summary>
-	protected static bool RoundButton( Rectangle r, string texture, bool selected = false, bool enabled = true )
+	protected static bool RoundButton( Rectangle r, string texture, bool selected = false, bool enabled = true, int hint = -1 )
 	{
 		bool over = Contains( r, MouseBase() );
+		if ( over && hint >= 0 )
+			hoverHint = UiHelp.Text( hint, "" );
 		var name = selected && UiTexture( texture + "d" ) != null ? texture + "d" : texture;
 		var draw = over && enabled ? new Rectangle( r.X - 2f, r.Y - 2f, r.Width + 4f, r.Height + 4f ) : r;
 		if ( !enabled && UiTexture( texture + "g" ) is { } grey )

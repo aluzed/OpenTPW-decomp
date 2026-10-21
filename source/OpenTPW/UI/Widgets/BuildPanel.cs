@@ -60,6 +60,9 @@ internal sealed class BuildPanel : GameWindow
 		(BuildCategory.Staff, "b_shandy", UIStrings.HireCleaners, "Hire Staff"),
 	};
 
+	// "Left-click to buy rides / sideshows / shops / miscellaneous items", "Left-click to hire staff".
+	private static readonly int[] TabHints = { 521, 523, 522, 524, 153 };
+
 	private static Rectangle TabRect( int i ) => At( 597f + i * 50f, 91f, 46f, 46f );
 	private static readonly Rectangle Preview = At( 196f, 86f, 189f, 190f );
 	private static readonly Rectangle Stats = At( 124f, 291f, 331f, 129f );
@@ -156,7 +159,7 @@ internal sealed class BuildPanel : GameWindow
 
 		// Tabs over the list.
 		for ( int t = 0; t < Tabs.Length; t++ )
-			RoundButton( TabRect( t ), Tabs[t].Icon, Tabs[t].Category == tab );
+			RoundButton( TabRect( t ), Tabs[t].Icon, Tabs[t].Category == tab, hint: TabHints[t] );
 
 		DrawInset( List );
 		Fill( At( 482f, HeaderTop, 196f, HeaderHeight ), Header );
@@ -204,8 +207,11 @@ internal sealed class BuildPanel : GameWindow
 			Text( Small, $"$ {item.Cost:0}", 776f, top + 1f, 11f, ink, TextAlign.Right );
 		}
 
+		if ( hoveredRow != null )
+			Hint( hoveredRow.Value.Candidate != null ? 153 : 11 ); // "Left-click to hire staff" / "Left-click to buy"
+
 		// The right-hand column: close.
-		RoundButton( CloseButton, "b_exit" );
+		RoundButton( CloseButton, "b_exit", hint: 1 );
 	}
 
 	// A candidate: their portrait and name, and the grade and wage they would come at.

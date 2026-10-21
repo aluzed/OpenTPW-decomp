@@ -75,7 +75,7 @@ internal sealed class VisitorWindow : GameWindow
 		Text( Small, "Money", 428f, y, 11f );
 		Text( Small, $"$ {peep.Cash:0}", 520f, y, 11f );
 
-		if ( RoundButton( Ok, "b_okay" ) )
+		if ( RoundButton( Ok, "b_okay", hint: 1 ) )
 			build.ClearSelection();
 	}
 }

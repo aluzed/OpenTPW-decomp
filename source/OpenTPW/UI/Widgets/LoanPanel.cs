@@ -73,7 +73,7 @@ internal sealed class LoanPanel : GameWindow
 				fin.TakeLoan( i );
 		}
 
-		if ( RoundButton( Ok, "b_okay" ) )
+		if ( RoundButton( Ok, "b_okay", hint: 1 ) )
 			IsOpen = false;
 	}
 }

@@ -273,6 +273,8 @@ internal sealed class ParkHud : HudPanel
 	/// advisor is saying, else what a click on the park would do.</summary>
 	private static string? HintText()
 	{
+		if ( GameWindow.TakeHoverHint() is { } windowHint )
+			return windowHint;
 		var m = MouseBase();
 		for ( int i = 0; i < Buttons.Length; i++ )
 			if ( Contains( ButtonRect( i ), m ) )
