@@ -61,3 +61,11 @@ a need past its threshold scores `needWeight · urgency − distanceWeight · di
 stays in the same range (shops $408 vs $472, toilet visits 48 vs 59); single runs are noisy (vandalism 29 vs 0
 in the previous run), so balance wasn't re-tuned. Illness weight (`DecisionVarIllnessWeight`) has no
 illness/first-aid model to drive yet.
+
+## Update (2026-10-21) — the mood a ride gives
+
+A finished ride now lifts the visitor's happiness by the authored match between the ride's excitement and the
+visitor's `PreferredExcitement` (`PeepInfo.PerfectRide` +25 within ±5, `GoodRide` +15 within ±15, `OKRide` +5 within
+±40, nothing further off — `Peep.RideHappiness`, unit-tested), less up to 15 for a worn ride. It was
+`(satisfaction − 50) × 0.3`, which ignored the visitor's taste; satisfaction still drives the ride rating and the
+visitor's thought.

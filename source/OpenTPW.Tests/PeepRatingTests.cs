@@ -86,4 +86,14 @@ public class PeepRatingTests
 		Assert.AreNotEqual( RideThought.GoodValue, thought );
 		Assert.AreNotEqual( RideThought.TooExpensive, thought );
 	}
+
+	[TestMethod]
+	public void ARidePleasesByHowWellItMatchesTheVisitorsTaste()
+	{
+		Assert.AreEqual( 25f, Peep.RideHappiness( 70, 72f ), "within ±5: perfect" );
+		Assert.AreEqual( 15f, Peep.RideHappiness( 70, 80f ), "within ±15: good" );
+		Assert.AreEqual( 5f, Peep.RideHappiness( 30, 65f ), "within ±40: OK" );
+		Assert.AreEqual( 0f, Peep.RideHappiness( 20, 80f ), "far off the taste" );
+		Assert.AreEqual( 5f, Peep.RideHappiness( 90, -1f ), "no taste: an OK ride" );
+	}
 }

@@ -169,6 +169,13 @@ public class Level
 				Peep.ExitLevelSeconds = exitLevel;
 			if ( float.TryParse( peepSam["PeepInfo.ExitLevelVar"], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var exitVar ) )
 				Peep.ExitLevelVarSeconds = exitVar;
+			// How much a ride pleases a visitor, by how well its excitement matches the visitor's taste.
+			if ( float.TryParse( peepSam["PeepInfo.PerfectRide"], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var perfectRide ) )
+				Peep.PerfectRideHappiness = perfectRide;
+			if ( float.TryParse( peepSam["PeepInfo.GoodRide"], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var goodRide ) )
+				Peep.GoodRideHappiness = goodRide;
+			if ( float.TryParse( peepSam["PeepInfo.OKRide"], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var okRide ) )
+				Peep.OkRideHappiness = okRide;
 			// Ride sickness: each ride adds excitement ÷ RideVomitDivisor; at VomitCapacity the visitor is sick.
 			if ( float.TryParse( peepSam["PeepInfo.RideVomitDivisor"], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var vomitDivisor ) && vomitDivisor > 0f )
 				Peep.RideVomitDivisor = vomitDivisor;

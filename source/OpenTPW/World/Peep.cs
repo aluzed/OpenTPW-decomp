@@ -64,7 +64,6 @@ public sealed class Peep : ModelEntity
 	/// for good instead of being recycled into a fresh visitor.</summary>
 	public static bool LeaveOnExit { get; set; }
 	private const float WaitPenaltyPerSec = 1f; // standing in a line that isn't moving sours the mood
-	private const float RideRewardScale = 0.3f; // happiness gained = ride excitement × this
 	private const float LeaveHappiness = 10f;   // fed up below this
 	// Stray litter besides the wrappers stalls hand out (their authored LitterEffect): ~1 piece per 2 minutes of
 	// wandering. It was 0.04 (one per 25 s) before purchases dropped wrappers, which kept a 250-visitor park at the
@@ -351,9 +350,10 @@ public sealed class Peep : ModelEntity
 				LastThought = thought;
 				thoughtTally[(int)thought]++; // park-wide mood tally (T-050, surfaced on the HUD)
 				route.Ride.RegisterRideExperience( satisfaction );
-				// Happiness change is driven by satisfaction (which already folds in value-for-money +
-				// reliability), centred on 50 so a great ride lifts the mood and a poor one sours it.
-				happiness = Math.Clamp( happiness + (satisfaction - 50f) * RideRewardScale, 0f, 100f );
+				// The mood lift is the authored match between the ride's excitement and what this visitor likes
+				// (PeepInfo.PerfectRide/GoodRide/OKRide), less a worn ride's discomfort.
+				happiness = Math.Clamp( happiness + RideHappiness( route.Ride.Excitement, preferredExcitement )
+					- (1f - Math.Clamp( route.Ride.Reliability, 0f, 1f )) * UnreliableRidePenalty, 0f, 100f );
 				illness += route.Ride.Excitement / MathF.Max( 0.1f, RideVomitDivisor );
 				riding = false;
 				route.Leave();
@@ -556,6 +556,23 @@ public sealed class Peep : ModelEntity
 
 		FaceCamera();
 		ApplySprite();
+	}
+
+	/// <summary><c>PeepInfo.PerfectRide / GoodRide / OKRide</c> (Standard.sam 25 / 15 / 5): the happiness a ride gives
+	/// when its excitement is within ±5 / ±15 / ±40 of the visitor's preferred excitement.</summary>
+	public static float PerfectRideHappiness { get; set; } = 25f;
+	public static float GoodRideHappiness { get; set; } = 15f;
+	public static float OkRideHappiness { get; set; } = 5f;
+	private const float UnreliableRidePenalty = 15f; // a ride at 0 reliability costs this much happiness (MediumHappinessChange)
+
+	/// <summary>The happiness a ride of <paramref name="excitement"/> gives a visitor who prefers
+	/// <paramref name="preferred"/> (a negative preference = no taste: an OK ride). Pure.</summary>
+	public static float RideHappiness( int excitement, float preferred )
+	{
+		if ( preferred < 0f )
+			return OkRideHappiness;
+		float off = MathF.Abs( excitement - preferred );
+		return off <= 5f ? PerfectRideHappiness : off <= 15f ? GoodRideHappiness : off <= 40f ? OkRideHappiness : 0f;
 	}
 
 	// True once a peep is tired out or fed up — time to head for the exit.
