@@ -608,6 +608,9 @@ public sealed class RideEngine : IRideEngine
 
 	public void SetReverb( int level ) => Log.Trace( $"[ride] SETREVERB {level}" );
 
+	/// <summary>Where the riders are right now (the ride's moving train / car), or null — screams are placed there.</summary>
+	public Func<Vector3?>? RiderPosition { get; set; }
+
 	// DIPMUSIC: the music ducks by `amount` percent for a couple of seconds.
 	public void DipMusic( int amount )
 	{
@@ -742,7 +745,8 @@ public sealed class RideEngine : IRideEngine
 				return;
 
 			var track = peepSounds.soundFiles[screamIndices[Random.Shared.Next( screamIndices.Length )]];
-			Audio.PlaySfx3D( $"scream_{track.Name}", track.SoundData, LightPosition( SelfId ), gain ); // riders at the ride (T-047)
+			// The riders scream from where they are: the moving train / car when the ride has one (T-047), else the body.
+			Audio.PlaySfx3D( $"scream_{track.Name}", track.SoundData, RiderPosition?.Invoke() ?? LightPosition( SelfId ), gain );
 			Log.Info( $"[ride] scream -> {track.Name}" );
 		}
 		catch ( Exception e )

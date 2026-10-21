@@ -39,6 +39,10 @@ public sealed class RideVehicle : Entity
 	private float length;
 	private readonly ModelEntity car;
 	private readonly ModelEntity[] seats;
+
+	/// <summary>Where the lead car (or, for dodgems, the first car) is — null while none is out.</summary>
+	public Vector3? LeadPosition => car.Position.Z > -1000f ? car.Position
+		: seats.Length > 0 && seats[0] != null && seats[0].Position.Z > -1000f ? seats[0].Position : null;
 	private readonly IReadOnlyList<int> seatNodeIds; // car/seat node ids this vehicle drives (T-048)
 	private float dist;
 

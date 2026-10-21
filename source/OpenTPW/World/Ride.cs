@@ -464,6 +464,9 @@ public class Ride : Entity
 
 	private readonly RideEngine engine = new();
 
+	// The engine places the riders' screams at the moving train / car (T-047).
+	private void BindRiderPosition() => engine.RiderPosition = () => Train?.LeadPosition ?? Vehicle?.LeadPosition;
+
 	/// <summary>The ride's WAD path (e.g. <c>levels/jungle/rides/coaster1</c>) — used to load extra
 	/// assets like coaster track textures (T-045).</summary>
 	public string Archive { get; }
@@ -490,6 +493,7 @@ public class Ride : Entity
 		// Script (the VFS resolves the path into the .wad; matching is case-insensitive — T-014).
 		VM = new RideVM( FileSystem.OpenRead( $"{rideArchive}/{rideName}.rse" ) );
 		VM.Engine = engine;
+		BindRiderPosition();
 
 		// SPAWNCHILD loads sibling child scripts from the same WAD, sharing this ride's engine.
 		VM.ChildLoader = name =>

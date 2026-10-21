@@ -119,8 +119,9 @@ existing physics:
 
 1. **`COAST`/`ADDOBJ` sound residue**: COAST's direct triggers + the ADDOBJ object-sound binding (needs the
    `.MAP`/EventMap code→asset catalog — T-016/T-032).
-2. A finer pass on the 3-4-vs-5-9 split's *audible* character (e.g. per-category gain/reverb buses) and on
-   positioning the scream at the moving car/seat node rather than the ride body.
+2. A finer pass on the 3-4-vs-5-9 split's *audible* character (e.g. per-category gain/reverb buses). (The scream now
+   comes from the moving train / car — `RideEngine.RiderPosition`, the lead car of a coaster train or a car ride's
+   vehicle — and from the ride body only when it has none, 2026-10-21.)
 
 ## Acceptance criteria
 

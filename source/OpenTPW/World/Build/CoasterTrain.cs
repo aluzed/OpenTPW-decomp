@@ -21,6 +21,9 @@ public sealed class CoasterTrain : Entity
 	private readonly float tileSize;
 	private readonly float spacing;     // arc-length gap between cars
 	private readonly ModelEntity[] cars;
+
+	/// <summary>Where the lead car is (null while the train is hidden) — where its riders' screams come from.</summary>
+	public Vector3? LeadPosition => cars.Length > 0 && cars[0].Position.Z > -1000f ? cars[0].Position : null;
 	private readonly Vector3[] carRight; // each car's side axis, carried through a loop
 	private readonly List<Peep> riders = new(); // boarded peeps, seat order (front car first)
 	private readonly Model[] frames;      // CrocCar animation frames (base + CrocCarM1..3)
