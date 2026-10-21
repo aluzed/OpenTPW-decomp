@@ -53,8 +53,35 @@ internal sealed class MessageTags : GameWindow
 
 	public override void Close() => open = null;
 
+	private int summarisedYear;
+
+	// At each new year, a summary of the one just ended (UIHELPTEXT 534, "a year-end summary"): visitors, takings,
+	// profit and the park's rating, from the monthly samples.
+	private void YearEnd()
+	{
+		if ( GameClock.Current is not { } clock || ParkFinances.Current is not { } fin )
+			return;
+		if ( summarisedYear == 0 )
+			summarisedYear = clock.Year;
+		if ( clock.Year <= summarisedYear )
+			return;
+		int ended = summarisedYear;
+		summarisedYear = clock.Year;
+		var year = fin.History.TakeLast( 12 ).ToList();
+		if ( year.Count == 0 )
+			return;
+		int visitorsBefore = fin.History.Count > year.Count ? fin.History[^(year.Count + 1)].Visitors : 0;
+		float income = year.Sum( s => s.Income ), expense = year.Sum( s => s.Expense );
+		Post( Kind.News, $"End of year {ended}",
+			$"Visitors this year: {year[^1].Visitors - visitorsBefore}\nMoney in: $ {income:0}\nMoney out: $ {expense:0}\n" +
+			$"Profit: $ {income - expense:0}\nAverage happiness: {Peep.AverageHappiness:0} %" );
+		UiSounds.Play( UiSounds.Open );
+		Log.Info( $"[park] year {ended} summary: profit {income - expense:0}" );
+	}
+
 	protected override void OnUpdate()
 	{
+		YearEnd();
 		IsOpen = open != null;
 		if ( RideItCameraMode.Target != null || CamcorderCameraMode.Active )
 			return;
