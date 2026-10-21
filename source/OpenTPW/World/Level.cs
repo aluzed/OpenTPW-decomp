@@ -505,6 +505,7 @@ public class Level
 		if ( Environment.GetEnvironmentVariable( "OPENTPW_AUTOPLACE" ) != null )
 			ToggleGates();
 		Log.Info( $"[park] build mode ready ({catalog.Count} catalog items), {parkQueues.Count} queues" );
+		Texture.ClearPrefetched(); // decoded candidates no loader asked for (a texture found in its first folder)
 		// Staff start empty too — the player hires entertainers/handymen/guards/researchers from the
 		// catalog (T-043), each charged a hire cost and then drawing wages.
 	}

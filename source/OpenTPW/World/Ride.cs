@@ -729,6 +729,11 @@ public class Ride : Entity
 		VM?.SetHeadCapacity( NodeField.ObjectNodeIds.Count );
 		Log.Info( $"[ride] model {md2Path}: {modelFile.Meshes.Count} mesh(es), {modelFile.Nodes.Count} node(s) ({CarNodeCount} car/seat)" );
 
+		// Decode the ride's textures in parallel before the meshes upload them one by one (T-030).
+		Texture.PrefetchWct( modelFile.Meshes.SelectMany( m => m.Materials ).Select( m => m.Name )
+			.Where( n => !RideSign.IsSignMaterial( n ) ).Distinct()
+			.SelectMany( n => new[] { $"{rideArchive}/stexture/{n}.wct", $"{rideArchive}/textures/{n}.wct" } ) );
+
 		var parts = new List<ModelEntity>();
 		Texture? sign = null;
 		foreach ( var mesh in modelFile.Meshes )

@@ -68,11 +68,63 @@ public partial class Texture : Asset
 		CreateTexture( path, data, width, height, flags );
 	}
 
+	private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, TextureData> prefetched = new();
+
+	/// <summary>Decode a batch of WCT files on worker threads ahead of their <c>new Texture( path )</c> (T-030): the
+	/// files are read here on the calling thread (the VFS's WAD streams aren't thread-safe), decoded in parallel (the
+	/// WCT wavelet decode is the CPU-heavy half of a texture load), and the textures then only upload when created
+	/// on the render thread. Paths that don't exist, or are already loaded, are skipped.</summary>
+	public static void PrefetchWct( IEnumerable<string> paths )
+	{
+		var files = new List<(string Path, byte[] Data)>();
+		foreach ( var path in paths.Distinct( StringComparer.OrdinalIgnoreCase ) )
+		{
+			if ( prefetched.ContainsKey( path ) || TryGetCachedTexture( path, out _ ) )
+				continue;
+			try
+			{
+				using var stream = FileSystem.OpenRead( path );
+				if ( stream == null )
+					continue;
+				using var ms = new MemoryStream();
+				stream.CopyTo( ms );
+				files.Add( (path, ms.ToArray()) );
+			}
+			catch { /* not there: the loader's own fallbacks handle it */ }
+		}
+		Parallel.ForEach( files, f =>
+		{
+			try { prefetched[f.Path] = new TextureFile( new MemoryStream( f.Data ) ).Data; }
+			catch { /* decoded again (and reported) on the main thread */ }
+		} );
+	}
+
+	/// <summary>Drop decoded textures nobody created (a level load that bailed out).</summary>
+	public static void ClearPrefetched() => prefetched.Clear();
+
 	/// <summary>
 	/// Update from a Bullfrog WCT file
 	/// </summary>
 	private void UpdateFromWct( string path, TextureFlags flags )
 	{
+		// Decoded ahead on worker threads (PrefetchWct): only the GPU upload is left.
+		if ( prefetched.TryRemove( path, out var ready ) )
+		{
+			CreateTexture( path, ready.Data, (uint)ready.Width, (uint)ready.Height, flags );
+			return;
+		}
+
+		// Already uploaded: share it without decoding the file again (nearly half the WCT loads of a park — every ride
+		// and stall reloads the shared base-plate / sign textures — were decoded only to be thrown away).
+		if ( TryGetCachedTexture( path, out var cached ) )
+		{
+			NativeTexture = cached!.NativeTexture;
+			NativeTextureView = cached.NativeTextureView;
+			Width = cached.Width;
+			Height = cached.Height;
+			return;
+		}
+
 		// A path missing from its WAD opens as a null stream, which TextureFile turns into a 1×1 magenta placeholder.
 		// Throw instead, so callers' fallbacks run (next folder, the level's sharetex, Texture.Missing): the
 		// placeholder drew magenta faces, or — chroma-keyed — made the mesh invisible (T-073).

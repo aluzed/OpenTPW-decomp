@@ -62,3 +62,15 @@ read inside a WAD (`ResolveCaseInsensitive` + `FindArchivePath` per archive-pref
 `Texture.Missing` created a new GPU texture per access (thousands, as `MaterialSlots` pads 16 slots per model).
 Both are now memoized/shared. Remaining big items: LZSS texture decode (~2 s), the ground compose (~2 s), WAD
 directory parsing (~4 s across ~30 archives) — a threaded load would hide them.
+
+## 2026-10-21 — measured, and the texture decode halved
+
+Measured with a stopwatch on `LoadProgress.Report`: the lobby is up 4.2 s after launch (1.5 s of start-up, the
+islands 2.7 s) and a park's own load (terrain, ground, scenery) takes ~2.5 s — the 20–25 s freeze this ticket
+started from is long gone; only the dev park's autoplace (a dozen rides built one after another) adds ~7 s.
+Half of a park's texture time was the `.wct` decode of textures **already uploaded** (228 of 494 in the dev park:
+every ride and stall reloads the shared base-plate / sign textures) — `Texture` now checks its cache before
+decoding. And `Texture.PrefetchWct` decodes a batch in parallel (the files are read on the calling thread — the
+WAD streams aren't thread-safe — then decoded on the thread pool, then uploaded on the render thread as they are
+created): used for the terrain, each ride, and each lobby island (islands 3.35 s → 2.7 s). A fully threaded load
+stays optional.

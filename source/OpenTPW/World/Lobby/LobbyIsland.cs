@@ -17,6 +17,9 @@ public sealed class LobbyIsland : Entity
 		var meshCount = modelFile.Meshes.Count;
 		var meshIndex = 0;
 
+		// Decode the island's textures in parallel up front; each mesh below then only uploads its own (T-030).
+		Texture.PrefetchWct( modelFile.Meshes.SelectMany( m => m.Materials ).Select( m => $"lobby/terrain/textures/{m.Name}.wct" ) );
+
 		foreach ( var mesh in modelFile.Meshes )
 		{
 			LoadProgress.ReportSub( $"Loading island: {themeName}... ({++meshIndex}/{meshCount})", (float)meshIndex / meshCount );

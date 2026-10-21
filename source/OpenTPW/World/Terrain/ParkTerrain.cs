@@ -35,6 +35,10 @@ public sealed class ParkTerrain : Entity
 		// so without this we'd upload hundreds of duplicate GPU textures.
 		var texCache = new Dictionary<string, Texture>( StringComparer.OrdinalIgnoreCase );
 
+		// Decode every terrain texture in parallel first (T-030); the loop below then only uploads them.
+		Texture.PrefetchWct( modelFile.Meshes.SelectMany( m => m.Materials ).Select( m => m.Name.Trim( '\0', ' ' ) )
+			.Distinct().SelectMany( n => new[] { $"{terrainPath}/stexture/{n}.wct", $"{terrainPath}/spathtex/{n}.wct" } ) );
+
 		foreach ( var mesh in modelFile.Meshes )
 		{
 			// Double-sided: the terrain heightfield's triangle winding isn't uniform after the Y/Z
