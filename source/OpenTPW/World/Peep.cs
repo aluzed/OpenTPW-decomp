@@ -177,6 +177,10 @@ public sealed class Peep : ModelEntity
 	private SpriteSheet? sheet;
 	private SpriteSheet? kidSheet;   // the visitor's own sprite (a costume replaces `sheet` until it leaves)
 	private ModelEntity? balloon;    // the balloon it carries once it bought one (Generic/Balloons)
+	private ModelEntity? bubble;     // its thought bubble, shown for a few seconds now and then (Generic/Thoughts)
+	private float bubbleTimer = BubbleGapMin + (float)Random.Shared.NextDouble() * (BubbleGapMax - BubbleGapMin);
+	private bool bubbleShown;
+	private const float BubbleSeconds = 3f, BubbleGapMin = 15f, BubbleGapMax = 45f;
 
 	private readonly ParkTerrain terrain;
 	private readonly IReadOnlyList<RideQueue> queues;
@@ -322,6 +326,7 @@ public sealed class Peep : ModelEntity
 	protected override void OnUpdate()
 	{
 		UpdateShadow();
+		UpdateThoughtBubble();
 
 		// On the ride: hidden, waiting out the ride duration, then reappear at the exit, bank the fun, and
 		// either head home (tired/fed up) or pick another ride.
@@ -582,7 +587,7 @@ public sealed class Peep : ModelEntity
 		DropSouvenirs();
 	}
 
-	// A departing visitor takes its balloon and costume home.
+	// A departing visitor takes its balloon and costume home (and its thought bubble goes with it).
 	private void DropSouvenirs()
 	{
 		if ( balloon != null )
@@ -590,7 +595,39 @@ public sealed class Peep : ModelEntity
 			Entity.All.Remove( balloon );
 			balloon = null;
 		}
+		if ( bubble != null )
+		{
+			Entity.All.Remove( bubble );
+			bubble = null;
+		}
+		bubbleShown = false;
 		sheet = kidSheet;
+	}
+
+	// Now and then the visitor's current thought pops up over its head for a few seconds — the game's own bubble
+	// icons (esprites/Generic/Thoughts/SPR_TB). "Okay" is not worth a bubble.
+	private void UpdateThoughtBubble()
+	{
+		if ( (bubbleTimer -= Time.Delta) > 0f )
+			return;
+		if ( bubbleShown )
+		{
+			bubbleShown = false;
+			bubbleTimer = BubbleGapMin + (float)Random.Shared.NextDouble() * (BubbleGapMax - BubbleGapMin);
+			if ( bubble != null )
+				bubble.Position = Offscreen;
+			return;
+		}
+		bubbleTimer = BubbleSeconds;
+		if ( riding || leaving || Souvenirs.ThoughtBubble( Thought ) is not { } icon )
+		{
+			bubbleTimer = BubbleGapMin;
+			return;
+		}
+		bubble ??= new ModelEntity();
+		bubble.Model = icon;
+		bubbleShown = true;
+		UpdateAttached( bubble, 0.1f );
 	}
 
 	// Show what the visitor just bought: a costume swaps its sprite for the theme's costume set
@@ -608,21 +645,29 @@ public sealed class Peep : ModelEntity
 		}
 	}
 
-	// Keep the balloon on the visitor: same anchor + scale, nudged toward the camera so it draws over the kid.
+	// Keep the balloon and thought bubble on the visitor.
 	private void UpdateBalloon()
 	{
-		if ( balloon == null )
-			return;
+		if ( balloon != null )
+			UpdateAttached( balloon, 0.05f );
+		if ( bubble != null && bubbleShown )
+			UpdateAttached( bubble, 0.1f );
+	}
+
+	// An attached sprite shares the visitor's anchor + scale (its hotspot places it relative to the feet), nudged
+	// toward the camera so it draws over the kid; hidden while the visitor is off on a ride.
+	private void UpdateAttached( ModelEntity e, float towardCamera )
+	{
 		if ( riding || sheet == null )
 		{
-			balloon.Position = Offscreen;
+			e.Position = Offscreen;
 			return;
 		}
 		var toCam = (Camera.Position - Position).WithZ( 0 );
 		float len = toCam.Length;
-		balloon.Position = len > 0f ? Position + toCam * (0.05f / len) : Position;
-		balloon.Rotation = Rotation;
-		balloon.Scale = Scale;
+		e.Position = len > 0f ? Position + toCam * (towardCamera / len) : Position;
+		e.Rotation = Rotation;
+		e.Scale = Scale;
 	}
 
 	// Recycle a departed peep as a fresh arrival, keeping the crowd steady without churning entities.
