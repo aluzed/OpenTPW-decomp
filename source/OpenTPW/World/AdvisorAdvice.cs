@@ -198,6 +198,14 @@ public static class AdvisorAdvice
 		if ( f.Sideshows == 0 )
 			Add( "SideshowsBuildSideshows", P( "SideshowsBuildSideshows", "Score", -70f ) + P( "SideshowsBuildSideshows", "AdditionalPerDay", 2f ) * f.Days );
 
+		// A rich park short of shops / sideshows for its rides (…BuildMore….*PerRideRatio, WealthMoreThan).
+		if ( f.Rides > 0 && f.Shops > 0 && f.Money > P( "ShopsBuildMoreShops", "WealthMoreThan", 20000f )
+			&& f.Shops < P( "ShopsBuildMoreShops", "ShopsPerRideRatio", 0.15f ) * f.Rides )
+			Add( "ShopsBuildMoreShops", P( "ShopsBuildMoreShops", "Score", 70f ) );
+		if ( f.Rides > 0 && f.Sideshows > 0 && f.Money > P( "SideshowsBuildMoreSideshows", "WealthMoreThan", 20000f )
+			&& f.Sideshows < P( "SideshowsBuildMoreSideshows", "SideshowsPerRideRatio", 0.2f ) * f.Rides )
+			Add( "SideshowsBuildMoreSideshows", P( "SideshowsBuildMoreSideshows", "Score", 80f ) );
+
 		// No toilets while enough visitors need one.
 		if ( f.Toilets == 0 && f.NeedingToilet > P( "FeaturesNoToilets", "MorePeopleThanThisNeeding", 25f ) )
 			Add( "FeaturesNoToilets", P( "FeaturesNoToilets", "Score", 90f ) );

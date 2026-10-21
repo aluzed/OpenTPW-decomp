@@ -37,6 +37,8 @@ public static class AdvisorTips
 		["ShopsBuildShops"] = "You haven't built any shops yet.",
 		["SideshowsBuildSideshows"] = "Your park has no sideshows yet.",
 		["FeaturesNoToilets"] = "Your park needs some toilets.",
+		["ShopsBuildMoreShops"] = "A park this size should have more shops.",
+		["SideshowsBuildMoreSideshows"] = "You haven't got many sideshows for a park this size.",
 		["FeaturesDirtyToilets1"] = "Your toilets are getting dirty and you have no cleaners.",
 		["FeaturesDirtyToilets2"] = "Your toilets are getting dirty — make sure a cleaner patrols them.",
 		["FeaturesDirtyToilets3"] = "Your toilets are filthy — hire some cleaners!",
@@ -88,6 +90,8 @@ public static class AdvisorTips
 		["ShopsBuildShops"] = 77,
 		["SideshowsBuildSideshows"] = 81,
 		["FeaturesNoToilets"] = 86,
+		["ShopsBuildMoreShops"] = 78,
+		["SideshowsBuildMoreSideshows"] = 82,
 		["FeaturesDirtyToilets1"] = 89, // "…getting dirty and you have no cleaners…"
 		["FeaturesDirtyToilets2"] = 90, // "…getting dirty. Make sure a cleaner is patrolling them."
 		["FeaturesDirtyToilets3"] = 91, // "People are complaining that your toilets are dirty. You should hire some cleaners!"

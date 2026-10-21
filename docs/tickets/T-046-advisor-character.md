@@ -173,3 +173,5 @@ gather at the gate (`Level.WaitingAtGate`, up to 60) and walk in when the gates 
 
 Money and staff-count advice: `WealthHigh` (> 200 000, TAG 121), `WealthHighRepayLoan` (money > debt × 1.2, TAG 122),
 `MaxHandymen/Entertainers/Mechanics/Guards/Researchers` (> 10 of one kind, TAG 129–133).
+`ShopsBuildMoreShops` / `SideshowsBuildMoreSideshows` (fewer than 0.15 shops / 0.2 sideshows per ride while the park
+has over 20 000; TAG 78 / 82).
