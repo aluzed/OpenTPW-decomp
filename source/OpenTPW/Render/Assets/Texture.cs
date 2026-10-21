@@ -11,7 +11,10 @@ public partial class Texture : Asset
 	public uint Width { get; private set; }
 	public uint Height { get; private set; }
 
-	public static Texture Missing => new Texture( [255, 255, 255, 255], 1, 1 );
+	// One shared white placeholder: this used to create a new GPU texture on every access, and MaterialSlots pads
+	// 16 slots per model with it — thousands of textures per park.
+	public static Texture Missing => missing ??= new Texture( [255, 255, 255, 255], 1, 1 );
+	private static Texture? missing;
 
 	internal Veldrid.Texture NativeTexture = null!;
 	internal TextureView NativeTextureView = null!;

@@ -54,3 +54,11 @@ animates or at least re-presents; the lobby appears when ready.
 
 `source/OpenTPW/Client/Game.cs`, `source/OpenTPW/Client/Renderer.cs`, `source/OpenTPW/World/Level.cs`,
 asset upload paths under `source/OpenTPW/Render/Assets/`.
+
+## 2026-10-21 — load time 19 s → 12 s (jungle dev park)
+
+Profiled with `dotnet-trace` (sampled thread time): the VFS re-listed directories for every path segment on every
+read inside a WAD (`ResolveCaseInsensitive` + `FindArchivePath` per archive-prefix probe, ~7 s), and
+`Texture.Missing` created a new GPU texture per access (thousands, as `MaterialSlots` pads 16 slots per model).
+Both are now memoized/shared. Remaining big items: LZSS texture decode (~2 s), the ground compose (~2 s), WAD
+directory parsing (~4 s across ~30 archives) — a threaded load would hide them.

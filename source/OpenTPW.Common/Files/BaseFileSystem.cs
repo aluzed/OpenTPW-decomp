@@ -9,6 +9,12 @@ public class BaseFileSystem
 	private readonly Dictionary<string, Type> archiveHandlers = new( StringComparer.OrdinalIgnoreCase );
 	private readonly Dictionary<string, IArchive> archiveCache = new();
 
+	// Path resolution is memoized: every read inside a WAD used to re-list directories per path segment (both for
+	// the case-insensitive match and for each archive-prefix probe) — ~7 s of a park load. Game data doesn't change
+	// while running; a miss resolves to the requested path itself, which stays right if that file is created later.
+	private readonly Dictionary<string, string> resolvedCase = new();
+	private readonly Dictionary<string, (string ArchivePath, string InternalPath)> resolvedArchive = new();
+
 	public BaseFileSystem( string relativePath )
 	{
 		if ( !Directory.Exists( relativePath ) )
@@ -164,6 +170,17 @@ public class BaseFileSystem
 
 	private (string ArchivePath, string InternalPath) FindArchivePath( string path )
 	{
+		lock ( resolvedArchive )
+			if ( resolvedArchive.TryGetValue( path, out var known ) )
+				return known;
+		var found = FindArchivePathUncached( path );
+		lock ( resolvedArchive )
+			resolvedArchive[path] = found;
+		return found;
+	}
+
+	private (string ArchivePath, string InternalPath) FindArchivePathUncached( string path )
+	{
 		var parts = path.Split( Path.DirectorySeparatorChar );
 		var currentPath = new StringBuilder();
 
@@ -218,6 +235,19 @@ public class BaseFileSystem
 	/// directory entries. See docs/tickets/T-014.
 	/// </summary>
 	private string ResolveCaseInsensitive( string fullPath )
+	{
+		lock ( resolvedCase )
+			if ( resolvedCase.TryGetValue( fullPath, out var known ) )
+				return known;
+		var resolved = ResolveCaseInsensitiveUncached( fullPath );
+		// Only remember paths that exist: a missing one may be created later (saves, the cache folder).
+		if ( File.Exists( resolved ) || Directory.Exists( resolved ) )
+			lock ( resolvedCase )
+				resolvedCase[fullPath] = resolved;
+		return resolved;
+	}
+
+	private string ResolveCaseInsensitiveUncached( string fullPath )
 	{
 		// Fast path: exact hit (always true on Windows / a correctly-cased FS).
 		if ( File.Exists( fullPath ) || Directory.Exists( fullPath ) )
