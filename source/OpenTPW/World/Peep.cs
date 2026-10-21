@@ -193,6 +193,9 @@ public sealed class Peep : ModelEntity
 
 	private float energy = MaxEnergy;
 	private float energyDrainPerSec = MaxEnergy / 120f; // set per visitor from the ExitLevel stay
+
+	// This peep's walking lane: a fixed offset within a tile (±3 of 10 units) applied to intermediate waypoints.
+	private readonly Vector3 laneOffset = new( ((float)Random.Shared.NextDouble() - 0.5f) * 6f, ((float)Random.Shared.NextDouble() - 0.5f) * 6f, 0f );
 	private float hunger;
 	private float thirst;
 	private float bladder;
@@ -558,7 +561,11 @@ public sealed class Peep : ModelEntity
 		if ( pathPts == null || pathPts.Count == 0 )
 			return WalkToward( goal ); // unreachable / off-grid — head straight there
 
-		bool reachedWaypoint = WalkToward( pathPts[pathIdx] );
+		// Intermediate waypoints are tile centres shared by every peep, so a crowd walked in one perfect single file;
+		// each peep keeps its own small offset inside the tile (the final point stays exact — a queue spot, a stall).
+		bool final = pathIdx >= pathPts.Count - 1;
+		var waypoint = final ? pathPts[pathIdx] : pathPts[pathIdx] + laneOffset;
+		bool reachedWaypoint = WalkToward( waypoint );
 		if ( reachedWaypoint && pathIdx < pathPts.Count - 1 )
 			pathIdx++;
 		return reachedWaypoint && pathIdx >= pathPts.Count - 1;
