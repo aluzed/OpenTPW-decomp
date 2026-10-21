@@ -187,9 +187,7 @@ public sealed class RideEngine : IRideEngine
 				Entity.All.Remove( light.Proxy );
 		lights.Clear();
 
-		foreach ( var p in particleProxies )
-			Entity.All.Remove( p.Entity );
-		particleProxies.Clear();
+		particles.Clear();
 
 		foreach ( var (_, marker) in headProxies.Values )
 			Entity.All.Remove( marker.Entity );
@@ -417,100 +415,10 @@ public sealed class RideEngine : IRideEngine
 	}
 
 	//
-	// Particle effects (opcodes REPAIREFFECT/SPARK, RE'd from op_93/op_105 → the spawner FUN_0051bfc0).
-	// The original instantiates a .PLB effect at a 3D position. Our renderer has no particle system, so we
-	// use the **decoded .PLB** (T-019): look the effect up by its par_lib code, take a representative colour
-	// from its colour ramp, and spawn a short-lived emissive proxy of that colour at the ride. A visible,
-	// .PLB-driven stand-in; a real GPU particle system is a renderer follow-up.
+	// Particle effects (opcodes REPAIREFFECT/SPARK, RE'd from op_93/op_105 → the spawner FUN_0051bfc0): the ride's
+	// bursts live in its own ParticleEmitter (the .PLB-driven proxy system, shared with build/demolish effects).
 	//
-	private static ParticleLibraryFile? particleLib;
-	private static bool particleLibTried;
-	private static ParticleLibraryFile? ParticleLib
-	{
-		get
-		{
-			if ( !particleLibTried )
-			{
-				particleLibTried = true;
-				try
-				{
-					// Through the VFS (rooted at the install's data/), case-insensitive (T-014).
-					using var s = FileSystem.OpenRead( "Particle/Tp2.plb" );
-					if ( s != null )
-						particleLib = new ParticleLibraryFile( s );
-				}
-				catch ( Exception e ) { Log.Warning( $"[ride] particle library load failed: {e.Message}" ); }
-			}
-			return particleLib;
-		}
-	}
-
-	// A single live particle: a soft camera-facing sprite that drifts under its own velocity + the effect's
-	// acceleration and walks the effect's colour ramp until it expires. Driven by the .PLB fields decoded in T-019.
-	private sealed class ParticleProxy
-	{
-		public required ModelEntity Entity;
-		public Vector3 Velocity;
-		public Vector3 Acceleration;
-		public float Expire;
-		public float Born;
-		public required Model[] Ramp; // one billboard model per colour-ramp stop (or a single stop)
-	}
-
-	// Billboard models per effect: a soft round sprite tinted by each of the effect's ramp stops, so a particle can
-	// walk the .PLB colour ramp over its life without a material per particle.
-	private static readonly Dictionary<int, Model[]> rampModels = new();
-
-	private static Model[] RampModels( int effectCode, ParticleEffect? fx, (byte R, byte G, byte B) fallback )
-	{
-		if ( rampModels.TryGetValue( effectCode, out var cached ) )
-			return cached;
-
-		var stops = fx is { ColorRamp.Count: > 0 } && fx.CyclesColorRamp
-			? fx.ColorRamp.ToList()
-			: new List<ParticleColor> { new( fallback.R, fallback.G, fallback.B, 255 ) };
-		var blob = Peep.ShadowBlob( 16 ); // radial alpha falloff (black) — recoloured per stop below
-		var models = stops.Select( stop =>
-		{
-			var rgba = (byte[])blob.Clone();
-			for ( int i = 0; i < rgba.Length; i += 4 )
-			{
-				rgba[i] = stop.R; rgba[i + 1] = stop.G; rgba[i + 2] = stop.B;
-				rgba[i + 3] = (byte)Math.Min( 255f, rgba[i + 3] * 2.3f ); // the blob peaks at ~110: lift it to opaque
-			}
-			var mat = new Material<ObjectUniformBuffer>( "content/shaders/unlit.shader",
-				MaterialFlags.DoubleSided | MaterialFlags.DisableDepthWrite );
-			mat.Set( "Color", new Texture( rgba, 16, 16 ) );
-			return Primitives.Plane.GenerateModel( mat );
-		} ).ToArray();
-		rampModels[effectCode] = models;
-		return models;
-	}
-
-	// The rotation turning a plane (normal +Z) to face the camera.
-	private static System.Numerics.Quaternion FacingCamera( Vector3 position )
-	{
-		var to = (Camera.Position - position).GetSystemVector3();
-		if ( to.LengthSquared() < 1e-6f )
-			return System.Numerics.Quaternion.Identity;
-		to = System.Numerics.Vector3.Normalize( to );
-		var z = System.Numerics.Vector3.UnitZ;
-		float d = System.Numerics.Vector3.Dot( z, to );
-		if ( d < -0.9999f )
-			return System.Numerics.Quaternion.CreateFromAxisAngle( System.Numerics.Vector3.UnitX, MathF.PI );
-		return System.Numerics.Quaternion.Normalize( new System.Numerics.Quaternion( System.Numerics.Vector3.Cross( z, to ), 1f + d ) );
-	}
-
-	private readonly List<ParticleProxy> particleProxies = new();
-	private float lastNow; // most recent Update time, for timing proxy expiry + integration
-
-	// Burst tuning. The .PLB stores velocity/lifetime in engine fixed-point; these map them to world units at
-	// a visible scale (the relative magnitudes + signs are authentic, the absolute scale is a display choice).
-	private const float ParticleProxyLife = 1.2f; // fallback proxy life when the effect has no decoded lifetime
-	private const int MaxBurst = 24;            // cap particles per effect so a big burst stays cheap
-	private const float TickToSeconds = 1f / 200f; // LifetimeTicks → seconds (Sparks 100→0.5s, Smoke 800→4s)
-	private const float VelScale = 0.04f;       // fixed-point velocity → world units/sec
-	private const float SpreadSpeed = 3.5f;     // random outward burst speed added to every particle (units/sec)
+	private readonly ParticleEmitter particles = new();
 
 	// Particle effect at the ride centre (no addressed node) — the Repair() effect + any caller without a
 	// node. Sits high over the ride body, as before.
@@ -543,128 +451,13 @@ public sealed class RideEngine : IRideEngine
 	}
 
 	public void SpawnParticleEffect( int effectCode )
-		=> SpawnParticleEffectAt( effectCode, LightPosition( SelfId ) + Vector3.Up * 8f );
+		=> particles.Spawn( effectCode, LightPosition( SelfId ) + Vector3.Up * 8f );
 
 	// Particle effect at a ride node's world position (REPAIREFFECT/SPARK + EVENT particles — T-048/T-047).
 	// Resolves the node (a live car/seat position, or the footprint layout), lifting it slightly so the
 	// proxy reads above the geometry; falls back to the ride centre when the node can't be placed.
 	public void SpawnParticleEffect( int effectCode, int nodeId )
-		=> SpawnParticleEffectAt( effectCode, NodePosition( nodeId ) + Vector3.Up * 2f );
-
-	private void SpawnParticleEffectAt( int effectCode, Vector3 position )
-	{
-		// Particles render as soft camera-facing sprites walking the effect's .PLB colour ramp (they were coloured
-		// debug cubes, hidden behind the debug overlay — T-066).
-		var (name, r, g, b) = ResolveEffectColour( effectCode );
-		if ( name == "?" )
-		{
-			// Code outside the decoded Tp2.plb (e.g. a per-ride custom/other-pool effect we don't have) —
-			// don't render a meaningless white proxy; just record it. See T-037 (per-type pool mapping).
-			Log.Trace( $"[ride] particle effect {effectCode} (unresolved)" );
-			return;
-		}
-		try
-		{
-			// Drive the burst from the .PLB fields (T-019): how many particles, how long they live, their
-			// emission velocity + acceleration. A continuous emitter (BurstCount 0, e.g. Smoke/Repair) still
-			// shows a small puff. The cube colour is the effect's representative ramp stop.
-			var fx = EffectFor( effectCode );
-			int count = Math.Clamp( fx?.BurstCount ?? 1, 1, MaxBurst );
-			if ( fx is { BurstCount: 0 } )
-				count = 4;
-			float life = fx is { LifetimeTicks: > 0 }
-				? Math.Clamp( fx.LifetimeTicks * TickToSeconds, 0.3f, 4f )
-				: ParticleProxyLife;
-			var baseVel = fx != null
-				? new Vector3( fx.EmissionVelocity.X, fx.EmissionVelocity.Y, fx.EmissionVelocity.Z ) * VelScale
-				: Vector3.Zero;
-			var accel = fx != null
-				? new Vector3( fx.Acceleration.X, fx.Acceleration.Y, fx.Acceleration.Z ) * VelScale
-				: Vector3.Zero;
-
-			var ramp = RampModels( effectCode, fx, (r, g, b) );
-			float scale = count > 1 ? 1.2f : 2.5f; // a lone particle stays chunky; a burst uses small motes
-
-			for ( var i = 0; i < count; i++ )
-			{
-				var proxy = new ModelEntity
-				{
-					Model = ramp[0],
-					Scale = new Vector3( scale ),
-					Position = position,
-					Rotation = FacingCamera( position ),
-				};
-				particleProxies.Add( new ParticleProxy
-				{
-					Entity = proxy,
-					Velocity = baseVel + RandomSpread() * SpreadSpeed,
-					Acceleration = accel,
-					Expire = lastNow + life,
-					Born = lastNow,
-					Ramp = ramp,
-				} );
-			}
-		}
-		catch ( Exception e )
-		{
-			Log.Warning( $"[ride] particle effect {effectCode} proxy failed: {e.Message}" );
-		}
-		Log.Info( $"[ride] particle effect {effectCode} ({name}) @{position}" );
-	}
-
-	// The decoded effect record for a code (for its spawn fields), or null if the library/effect is absent.
-	private static ParticleEffect? EffectFor( int effectCode )
-	{
-		var lib = ParticleLib;
-		return lib != null && effectCode >= 0 && effectCode < lib.Effects.Count ? lib.Effects[effectCode] : null;
-	}
-
-	// A random unit-ish vector biased gently upward, so a burst sprays outward + up rather than sideways only.
-	private static Vector3 RandomSpread()
-	{
-		float a = (float)(Random.Shared.NextDouble() * Math.PI * 2);
-		float r = (float)Random.Shared.NextDouble();
-		return new Vector3( MathF.Cos( a ) * r, MathF.Sin( a ) * r, 0.4f + (float)Random.Shared.NextDouble() * 0.8f );
-	}
-
-	// The effect's name + a representative colour (its brightest ramp stop) from the decoded .PLB (T-019);
-	// a white fallback if the library/effect isn't available.
-	private static (string Name, byte R, byte G, byte B) ResolveEffectColour( int effectCode )
-	{
-		var lib = ParticleLib;
-		if ( lib == null || effectCode < 0 || effectCode >= lib.Effects.Count )
-			return ("?", 255, 255, 255);
-
-		var fx = lib.Effects[effectCode];
-		if ( fx.ColorRamp.Count == 0 )
-			return (fx.Name, 255, 255, 255);
-
-		var stop = fx.ColorRamp.OrderByDescending( c => c.R + c.G + c.B ).First();
-		return (fx.Name, stop.R, stop.G, stop.B);
-	}
-
-	private void ExpireParticleProxies( float now )
-	{
-		float dt = Math.Clamp( now - lastNow, 0f, 0.1f ); // integrate motion; clamp so a long stall can't fling them
-		lastNow = now;
-		for ( var i = particleProxies.Count - 1; i >= 0; i-- )
-		{
-			var p = particleProxies[i];
-			if ( now >= p.Expire )
-			{
-				Entity.All.Remove( p.Entity );
-				particleProxies.RemoveAt( i );
-				continue;
-			}
-			// Drift the mote under its velocity + the effect's acceleration (gravity/buoyancy), keep it facing the
-			// camera, and step through the colour ramp over its life.
-			p.Velocity += p.Acceleration * dt;
-			p.Entity.Position += p.Velocity * dt;
-			p.Entity.Rotation = FacingCamera( p.Entity.Position );
-			float age = (now - p.Born) / MathF.Max( 0.01f, p.Expire - p.Born );
-			p.Entity.Model = p.Ramp[Math.Clamp( (int)(age * p.Ramp.Length), 0, p.Ramp.Length - 1 )];
-		}
-	}
+		=> particles.Spawn( effectCode, NodePosition( nodeId ) + Vector3.Up * 2f );
 
 	//
 	// Walk + head node visuals (T-048). The VM's WALKON/ADDHEAD families keep pure slot tables (RideVM.Walk
@@ -1112,7 +905,7 @@ public sealed class RideEngine : IRideEngine
 		if ( screaming && now - lastScreamAt >= ScreamPeriod )
 			PlayScream( screamCode, screamGain );
 
-		ExpireParticleProxies( now ); // remove finished particle-effect proxies
+		particles.Tick( now ); // drift + expire the particle-effect proxies
 
 		foreach ( var obj in objects.Values )
 		{

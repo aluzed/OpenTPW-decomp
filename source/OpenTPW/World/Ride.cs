@@ -84,7 +84,10 @@ public class Ride : Entity
 	public void ApplyUpgrade()
 	{
 		if ( NextResearched )
+		{
 			UpgradeLevel++;
+			engine.SpawnParticleEffect( ParticleEmitter.Upgrade ); // Rides.sam UpgradeParticleEffect
+		}
 	}
 
 	/// <summary>Restore this ride's progression from a save (T-059): the applied + researched upgrade levels,

@@ -52,6 +52,7 @@ public class Level
 
 	private void SetupEntities()
 	{
+		ParticleEmitter.World.Clear();
 		// Visitor arrivals belong to a loaded park; the lobby (and a park being rebuilt) starts without them (T-074).
 		arrivals = null;
 		Peep.LeaveOnExit = false;
@@ -843,6 +844,11 @@ public class Level
 		if ( charge ) fin?.PayBuild( item.Cost );
 		if ( item.RidePath != null && Entity.All.OfType<Ride>().LastOrDefault() is { Shape.HasTrack: true } )
 			fin?.NoteCoasterBuilt(); // challenge type 18 (T-054)
+		// The build puff (not when a loaded save rebuilds the park).
+		if ( charge && item.RidePath != null && Entity.All.OfType<Ride>().LastOrDefault() is { } built )
+			ParticleEmitter.World.Spawn( built.IsSideshow ? ParticleEmitter.CreateSideshow : ParticleEmitter.CreateRide, built.Position + Vector3.Up * 6f );
+		else if ( charge && item.RidePath == null && Shop.Stalls.LastOrDefault() is { } stall )
+			ParticleEmitter.World.Spawn( stall.IsFree ? ParticleEmitter.CreateFeature : ParticleEmitter.CreateShop, stall.Position + Vector3.Up * 4f );
 		return true;
 	}
 
@@ -889,6 +895,7 @@ public class Level
 
 		var refund = ride.BuildCost * Ride.SellRefundFraction;
 		ParkFinances.Current?.RefundBuild( refund );
+		ParticleEmitter.World.Spawn( ride.IsSideshow ? ParticleEmitter.DestroySideshow : ParticleEmitter.DestroyRide, ride.Position + Vector3.Up * 6f );
 		ride.Despawn();
 		Log.Info( $"[build] sold {ride.Name} for ${refund:0} (built ${ride.BuildCost:0})" );
 	}
@@ -955,6 +962,7 @@ public class Level
 		grid.Clear( shop.TileX, shop.TileY, shop.TileW, shop.TileH );
 		var refund = shop.BuildCost * Ride.SellRefundFraction;
 		ParkFinances.Current?.RefundBuild( refund );
+		ParticleEmitter.World.Spawn( shop.IsFree ? ParticleEmitter.DestroyFeature : ParticleEmitter.DestroyShop, shop.Position + Vector3.Up * 4f );
 		shop.Despawn();
 		Log.Info( $"[build] sold {shop.Name} for ${refund:0} (built ${shop.BuildCost:0})" );
 	}
@@ -1154,6 +1162,7 @@ public class Level
 
 	public void Update()
 	{
+		ParticleEmitter.World.Tick( Time.Now ); // build / demolish puffs
 		// Theme reload is two-phase so a "Loading …" screen shows during the synchronous load (which can't
 		// present its own frames — DoReload runs mid-frame, after PreRender's CommandList.Begin). Phase 1: draw
 		// the overlay this frame. Phase 2 (next frame): tear down + rebuild, so the frozen frame is the overlay,

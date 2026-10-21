@@ -137,3 +137,13 @@ sound), `source/OpenTPW.Tests/CarSimTests.cs` (impact tests),
 `source/OpenTPW/World/Rides/RideEngine.cs` (EVENT/cycle/scream → `PlaySfx3D`), `RideNodePositions.cs` (new),
 `IRideEngine.cs`, `source/OpenTPW/VM/Handlers/Particles.cs`, `source/OpenTPW/World/Ride.cs`/`Level.cs`,
 `source/OpenTPW.Files/Formats/Particle/ParticleLibraryFile.cs`.
+
+## Update (2026-10-21) — park-level effects
+
+The particle proxy system moved out of `RideEngine` into `ParticleEmitter` (each ride engine owns one; a shared
+`ParticleEmitter.World` is ticked by the level). It now plays the build/demolish/upgrade effects every theme's
+category `.sam` declares — `Info.CreateParticleEffect` / `DestroyParticleEffect` in `Rides.sam` (79/75),
+`SideShow.sam` (80/76), `Shops.sam` (81/77), `Features.sam` (82/78), and `Rides.sam`'s `UpgradeParticleEffect` (89):
+`P_EFFECT_Create1..4` / `Destroy1..4` / `Upgrade`. These are continuous emitters (`BurstCount` 0, 4.5–8.5 s) that
+the proxy releases at once as a 14-mote cloud, with the authored emission speed capped so it stays in view.
+
