@@ -144,3 +144,11 @@ assets by iterating screenshot → adjust the anchoring constants in `Advisor.cs
 through the scheduler), `ParkFinances.cs` (`MonthsInRed`), `Peep.cs` (`CountThirstierThan`/`CountHungrierThan`),
 `source/OpenTPW.Tests/AdvisorMessagesTests.cs` + `AdvisorAdviceTests.cs` (new). Earlier passes:
 `source/OpenTPW/UI/Widgets/AdvisorPanel.cs`, the model/render pipeline, `ModelFile.cs` (named-part access).
+
+## 2026-10-21 — original message text, still no per-message voice
+
+The advisor now shows the game's own message text where one matches (`TAG_SYSTEM.str`, 332 entries: thirsty/hungry
+visitors, money warnings, research, happy visitors, golden ticket, challenge won/failed), in the selected language.
+Tested whether the voice clips follow the same numbering: the durations of `global/speech` `sp_NNN` (from the 637
+`.LIP` files) don't correlate with the `TAG_SYSTEM` text lengths at any offset −2…+10 (r ≈ 0.1), so the clips aren't
+indexed by message — consistent with the runtime-assembled message database noted above.
