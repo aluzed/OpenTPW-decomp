@@ -26,7 +26,10 @@ internal sealed class MinimapPanel : HudPanel
 	private const float MapSize = 200f;
 	private static Rectangle MapRect() => new( 1006f - MapSize, 720f - MapSize - 16f, MapSize, MapSize );
 
-	private bool open = true;
+	private bool open;
+
+	/// <summary>Show / hide the map (the handheld's map button, or M).</summary>
+	public void Toggle() => open = !open;
 	private bool wasToggleDown;
 
 	// Per-category layer visibility (toggled from the legend).

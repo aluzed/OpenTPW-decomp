@@ -23,6 +23,9 @@ internal sealed class FinancePanel : HudPanel
 	private bool open;
 	private bool wasToggleDown;
 
+	/// <summary>Show / hide the finances (the handheld's money button, or F11).</summary>
+	public void Toggle() => open = !open;
+
 	private static Texture? bg, axis, income, expense;
 	private static Texture Bg => bg ??= Solid( 18, 18, 28, 225 );
 	private static Texture Axis => axis ??= Solid( 90, 90, 105, 220 );

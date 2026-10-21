@@ -1355,7 +1355,8 @@ public class Level
 		{
 			Hud.AddChild( new DayNightOverlay() ); // day/night wash beneath the weather + HUD (T-056)
 			Hud.AddChild( new WeatherOverlay() );  // rain/snow tint + precipitation under the rest of the HUD (T-056)
-			Hud.AddChild( new ParkStatsPanel() ); // live park finances/visitors readout
+			Hud.AddChild( new ParkHud() );        // the original's HUD: cash, tickets, handheld, hint strip
+			Hud.AddChild( new ParkStatsPanel() ); // park information (handheld info button) / debug readout
 			Hud.AddChild( new BuildPanel() );     // clickable build catalog (T-038)
 			Hud.AddChild( new ManagePanel() );    // clickable economy/ride manage buttons (T-038)
 			Hud.AddChild( new FinancePanel() );   // F11 income/expense graph (T-049)

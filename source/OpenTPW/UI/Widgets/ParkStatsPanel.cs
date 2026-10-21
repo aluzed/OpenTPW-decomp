@@ -25,6 +25,12 @@ internal sealed class ParkStatsPanel : HudPanel
 
 	private bool debugKeyWas;
 
+	/// <summary>Whether the park information readout is open (the handheld's info button); the debug overlay
+	/// (backtick) shows it too.</summary>
+	public static bool InfoOpen { get; private set; }
+
+	public static void ToggleInfo() => InfoOpen = !InfoOpen;
+
 	protected override void OnUpdate()
 	{
 		// Backtick toggles the debug overlay (income breakdown / counts / thoughts / FPS) on/off — off by
@@ -45,9 +51,11 @@ internal sealed class ParkStatsPanel : HudPanel
 		if ( ParkFinances.Current is not { } fin )
 			return;
 
+		bool dbg = GameSettings.Current.ShowDebug;
+		if ( !InfoOpen && !dbg )
+			return;
 		int visitors = Entity.All.Count( e => e is Peep );
 		int staff = Entity.All.Count( e => e is Staff );
-		bool dbg = GameSettings.Current.ShowDebug;
 
 		// The player HUD (always shown): the essentials — money, visitors, admission control. Lines may carry one of the
 		// original's ui.wad icons (b_money, b_svisit…), drawn before the text.

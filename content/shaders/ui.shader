@@ -1,6 +1,7 @@
 common {
   layout( location = 0 ) struct VS_OUT {
     vec2 texCoords;
+    vec3 tint;
   };
 }
 
@@ -13,6 +14,8 @@ vertex {
 
   void main() {
     vs_out.texCoords = texCoords;
+    // The normal is unused in 2D: it carries an optional colour tint (zero = none) — text colours.
+    vs_out.tint = ( normal == vec3( 0.0 ) ) ? vec3( 1.0 ) : normal;
     gl_Position = vec4(position, 1.0);
     gl_Position.z = 0; // We could probably do this better in a dedicated pipeline
   }
@@ -27,6 +30,7 @@ fragment {
 
   void main() {
     out_color = texture( sampler2D( Color, s_Color ), vec2( vs_out.texCoords.x, 1 - vs_out.texCoords.y ) );
+    out_color.rgb *= vs_out.tint;
 
     // Veldrid has no support for native alpha-testing, so we have to pull this shit
     // If it causes too many performance issues I guess we'll have to sort on CPU

@@ -39,7 +39,11 @@ internal sealed class ManagePanel : HudPanel
 			Current = null;
 	}
 
-	private static Rectangle PanelBounds() => new( 12f, 14f, 460f, 76f );
+	// The bar sits right of the handheld (bottom left) and above the hint strip, until its actions move into the
+	// original's windows.
+	private const float OffsetX = 228f, OffsetY = 40f;
+
+	private static Rectangle PanelBounds() => new( 12f + OffsetX, 14f + OffsetY, 460f, 76f );
 
 	public bool ContainsMouse()
 		=> BuildMode.Current != null && ParkFinances.Current != null && Contains( PanelBounds(), MouseBase() );
@@ -122,7 +126,7 @@ internal sealed class ManagePanel : HudPanel
 			list.Add( new Btn( new Rectangle( 16f, RideY, 130f, BtnH ), Level.GatesOpen ? "CLOSE PARK" : "OPEN PARK", true,
 				Level.ToggleGates, Warned: !Level.GatesOpen, Icon: "b_open" ) );
 		}
-		return list;
+		return list.Select( b => b with { Rect = new Rectangle( b.Rect.X + OffsetX, b.Rect.Y + OffsetY, b.Rect.Width, b.Rect.Height ) } ).ToList();
 	}
 
 	// The research/upgrade button mirrors the R/U keyboard logic + states.

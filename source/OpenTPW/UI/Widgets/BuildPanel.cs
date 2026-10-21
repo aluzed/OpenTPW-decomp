@@ -89,13 +89,24 @@ internal sealed class BuildPanel : HudPanel
 		return new Rectangle( Left - 6f, bottom, PanelW + 12f, TopY + 24f - bottom );
 	}
 
+	/// <summary>Whether the catalog is open — the handheld's buy button opens it, as in the original.</summary>
+	public static bool Open { get; private set; }
+
+	/// <summary>Open / close the catalog; closing drops the item being placed.</summary>
+	public static void Toggle()
+	{
+		Open = !Open;
+		if ( !Open && BuildMode.Current is { Selected: >= 0 } build )
+			build.SelectIndex( build.Selected );
+	}
+
 	/// <summary>True when the window mouse (mapped to base space) is over the panel.</summary>
 	public bool ContainsMouse()
-		=> BuildMode.Current is { Catalog.Count: > 0 } && Contains( PanelBounds(), MouseBase() );
+		=> Open && BuildMode.Current is { Catalog.Count: > 0 } && Contains( PanelBounds(), MouseBase() );
 
 	protected override void OnUpdate()
 	{
-		if ( BuildMode.Current is not { } build || build.Catalog.Count == 0 || !Input.MouseLeftPressed )
+		if ( !Open || BuildMode.Current is not { } build || build.Catalog.Count == 0 || !Input.MouseLeftPressed )
 			return;
 
 		var m = MouseBase();
@@ -117,7 +128,7 @@ internal sealed class BuildPanel : HudPanel
 
 	protected override void OnRender()
 	{
-		if ( BuildMode.Current is not { } build || build.Catalog.Count == 0 )
+		if ( !Open || BuildMode.Current is not { } build || build.Catalog.Count == 0 )
 			return;
 
 		var fin = ParkFinances.Current;

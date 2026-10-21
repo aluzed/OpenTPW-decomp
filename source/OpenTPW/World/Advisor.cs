@@ -16,13 +16,16 @@ public sealed class Advisor : Entity
 {
 	public static Advisor? Current { get; private set; }
 
-	// Base parts always shown (the bug face: head + eyes + antennae); everything else (the body — which hangs
-	// off-axis and just clutters a corner overlay — hats, hands, spatula, shut-eyes, inactive mouths) is
-	// hidden so the talking head reads cleanly.
-	private static readonly string[] BaseParts =
+	// The original shows the advisor whole — head, eyes, antennae, the ball body, both gloves and the theme's hat
+	// (docs/10-ui-reference.md). Parts it only shows for a gesture stay hidden: the shut eyes (blink), the golden
+	// ticket and map he holds up, the "mutant" eye, the spatula.
+	private static readonly string[] HiddenParts =
 	{
-		"bug head", "right eye", "left eye", "right antennae", "left antennae",
+		"shuteye", "ticket", "map", "mutant", "spatula", " hat", "hardhat", "btie",
 	};
+
+	private static bool IsHidden( string part )
+		=> Array.Exists( HiddenParts, h => part.Contains( h, StringComparison.OrdinalIgnoreCase ) );
 
 	private sealed class Part
 	{
@@ -47,10 +50,14 @@ public sealed class Advisor : Entity
 	private AdvisorMessages messages = null!;
 	private string activeMessage = "";
 
-	// On-screen anchoring: the bug head sits as a small bottom-right corner overlay, a fixed distance in
-	// front of the camera and offset right + down, scaled down to ~⅓ screen height (tuned on real jungle
-	// assets — see T-046's visual pass). The body part is hidden (BaseParts) so the talking head reads clean.
-	private const float Distance = 26f, RightOffset = 10.5f, UpOffset = -5.2f, GroupScale = 0.15f;
+	// On-screen anchoring, measured on the original (docs/10-ui-reference.md): the head's centre sits ~195 px left of
+	// the right edge and 79 % down a 720-px screen, ~20 % of the screen high; he faces the player squarely.
+	private const float Distance = 26f;
+	private const float HeadFromRight = 215f / 720f;  // in screen heights, so it holds on any aspect
+	private const float HeadDown = 355f / 720f;
+	private const float HeadHeight = 0.16f;           // of the screen height (the parts carry their own scale)
+	private const float HeadUnits = 22f;              // the Bug Head mesh's diameter
+	private const float LeanBack = 0.26f;             // radians (15°)
 
 	/// <summary>The viseme currently shown (for the HUD label); Closed when not speaking.</summary>
 	public MouthShape CurrentShape { get; private set; } = MouthShape.Closed;
@@ -79,10 +86,22 @@ public sealed class Advisor : Entity
 		ModelFile model;
 		try
 		{
-			var wadPath = Path.Join( GameDir.GamePath, "data", "global", "advisor.wad" );
-			var wad = new WadArchive( wadPath );
-			model = new ModelFile( new MemoryStream( wad.GetFile( "Advisor.MD2" ).GetData() ) );
-			Log.Info( $"[advisor] Advisor.MD2 loaded: {model.Meshes.Count} mesh(es)" );
+			// Each world dresses him for the theme (Advisor_JUN: the pith helmet…) — fall back to the plain one.
+			var theme = Level.Current?.Name ?? "";
+			string? themed = theme.Length >= 3 ? $"Advisor_{theme[..3].ToUpperInvariant()}.MD2" : null;
+			var themeWad = Path.Join( GameDir.GamePath, "data", "levels", theme, "advisor.wad" );
+			if ( themed != null && File.Exists( themeWad ) && new WadArchive( themeWad ) is var levelWad
+				&& levelWad.GetFile( themed ) is { } themedFile )
+			{
+				model = new ModelFile( new MemoryStream( themedFile.GetData() ) );
+				themeTextures = $"levels/{theme}/advisor/textures";
+			}
+			else
+			{
+				var wad = new WadArchive( Path.Join( GameDir.GamePath, "data", "global", "advisor.wad" ) );
+				model = new ModelFile( new MemoryStream( wad.GetFile( "Advisor.MD2" ).GetData() ) );
+			}
+			Log.Info( $"[advisor] {themed ?? "Advisor.MD2"} loaded: {model.Meshes.Count} mesh(es): {string.Join( ", ", model.Meshes.Select( m => m.Name.Trim( '\0', ' ' ) ) )}" );
 		}
 		catch ( Exception e )
 		{
@@ -94,9 +113,9 @@ public sealed class Advisor : Entity
 		{
 			var name = (mesh.Name ?? "").Replace( "\0", "" ).Trim();
 			var viseme = VisemeForMesh( name );
-			var isBase = Array.Exists( BaseParts, p => string.Equals( p, name, StringComparison.OrdinalIgnoreCase ) );
-			if ( viseme == null && !isBase )
-				continue; // skip hats/hands/spatula/shut-eyes
+			var isBase = viseme == null;
+			if ( IsHidden( name ) )
+				continue;
 
 			var built = BuildMesh( mesh );
 			if ( built == null )
@@ -126,17 +145,33 @@ public sealed class Advisor : Entity
 		return null;
 	}
 
+	// The theme's own advisor textures (the hat), searched before the shared global ones.
+	private static string? themeTextures;
+
+	private static Texture AdvisorTexture( string name )
+	{
+		foreach ( var dir in new[] { themeTextures, "global/advisor/textures" } )
+		{
+			if ( dir == null )
+				continue;
+			try { return new Texture( $"{dir}/{name}.wct", TextureFlags.Repeat ); }
+			catch { }
+		}
+		return Texture.Missing;
+	}
+
 	// Builds a renderable Model from one MD2 mesh (the Ride.BuildMeshEntities texture/vertex pattern).
 	private static Model? BuildMesh( ModelFile.Mesh mesh )
 	{
 		try
 		{
-			var material = new Material<ObjectUniformBuffer>( "content/shaders/test.shader" );
+			// Double-sided: the gloves are mirrored copies, whose faces would otherwise be culled.
+			var material = new Material<ObjectUniformBuffer>( "content/shaders/test.shader", MaterialFlags.DoubleSided );
 			var textures = new List<Texture>();
 			for ( int i = 0; i < 16; ++i )
 			{
 				if ( mesh.Materials.Length <= i ) { textures.Add( Texture.Missing ); continue; }
-				try { textures.Add( new Texture( $"global/advisor/textures/{mesh.Materials[i].Name}.wct", TextureFlags.Repeat ) ); }
+				try { textures.Add( AdvisorTexture( mesh.Materials[i].Name.Trim( '\0', ' ' ) ) ); }
 				catch { textures.Add( Texture.Missing ); }
 			}
 			material.Set( "Color", [.. textures] );
@@ -406,30 +441,45 @@ public sealed class Advisor : Entity
 				CurrentShape = lip.ShapeAt( TimeSpan.FromSeconds( elapsed ) );
 		}
 
-		// Anchor the whole assembly upright, in front of and facing the camera.
+		// Anchor the assembly at its measured screen spot, a fixed distance in front of the camera, and face the
+		// player squarely: the model faces the camera squarely — not
+		// just turned about world Z, which left him tilted by the park camera's pitch.
 		var cam = Camera.Position;
-		var fwd = Camera.Rotation.Forward;
-		var right = Camera.Rotation.Right;
-		var up = Camera.Rotation.Up;
-		var groupPos = cam + fwd * Distance + right * RightOffset + up * UpOffset;
+		var fwd = Camera.Rotation.Forward.GetSystemVector3();
+		var right = Camera.Rotation.Right.GetSystemVector3();
+		var up = Camera.Rotation.Up.GetSystemVector3();
+		float halfH = Distance * MathF.Tan( Camera.FieldOfView.DegreesToRadians() * 0.5f );
+		float aspect = Screen.Aspect > 0f ? Screen.Aspect : 16f / 9f;
+		float ndcX = 1f - 2f * HeadFromRight / aspect;
+		float ndcY = 1f - 2f * HeadDown;
+		var groupPos = cam + (Vector3)(fwd * Distance + right * (ndcX * halfH * aspect) + up * (ndcY * halfH));
+		float groupScale = HeadHeight * 2f * halfH / HeadUnits;
 
-		// Face the camera horizontally, staying upright (world Z up). +MathF.PI aligns the model's front.
-		var toCam = cam - groupPos;
-		var yaw = MathF.Atan2( toCam.Y, toCam.X ) + MathF.PI / 2f;
-		var groupRot = Quaternion.CreateFromAxisAngle( System.Numerics.Vector3.UnitZ, yaw );
+		// After the loader's Y/Z swap the model stands along +Y and looks along +Z (the eyes): map +Y to the
+		// screen's up and +Z back at the camera.
+		var toViewer = -fwd;
+		var modelX = System.Numerics.Vector3.Cross( up, toViewer );
+		var basis = new Matrix4x4(
+			modelX.X, modelX.Y, modelX.Z, 0f,
+			up.X, up.Y, up.Z, 0f,
+			toViewer.X, toViewer.Y, toViewer.Z, 0f,
+			0f, 0f, 0f, 1f );
+		// Leaning back a little, as in the original, so the face shows under the hat's brim.
+		var groupRot = Quaternion.CreateFromRotationMatrix( basis )
+			* Quaternion.CreateFromAxisAngle( System.Numerics.Vector3.UnitX, -LeanBack );
 
 		foreach ( var part in parts )
 		{
 			// Only the active viseme's mouth is visible.
 			if ( part.Viseme is { } v )
-				part.Entity.Model = v == CurrentShape ? part.Model : null;
+				part.Entity.Model = v == (CurrentShape == MouthShape.Closed ? MouthShape.Normal : CurrentShape) ? part.Model : null; // at rest he smiles
 			else if ( part.AlwaysShown )
 				part.Entity.Model = part.Model;
 
-			var offset = System.Numerics.Vector3.Transform( (part.LocalOffset * GroupScale).GetSystemVector3(), groupRot );
+			var offset = System.Numerics.Vector3.Transform( (part.LocalOffset * groupScale).GetSystemVector3(), groupRot );
 			part.Entity.Position = groupPos + (Vector3)offset;
 			part.Entity.Rotation = groupRot * part.LocalRotation;
-			part.Entity.Scale = part.LocalScale * GroupScale;
+			part.Entity.Scale = part.LocalScale * groupScale;
 		}
 	}
 

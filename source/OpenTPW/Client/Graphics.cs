@@ -64,3 +64,17 @@ internal static partial class Graphics
 		AppendGeometry( material, _quadVertices, _quadIndices );
 	}
 }
+
+internal static partial class Graphics
+{
+	/// <summary>Draw textured triangles given in the 1280×720 base space (Y-up) — a ui.wad widget mesh laid flat
+	/// on the screen (<see cref="UiModel"/>).</summary>
+	public static void Triangles( ReadOnlySpan<System.Numerics.Vector2> positions, ReadOnlySpan<System.Numerics.Vector2> uvs, ReadOnlySpan<uint> indices, Material material )
+	{
+		var screenMatrix = CreateScreenMatrix( BaseScreenSize );
+		var verts = new Vertex[positions.Length];
+		for ( int i = 0; i < positions.Length; i++ )
+			verts[i] = new( new Vector3( positions[i].X, positions[i].Y, 0f ) * screenMatrix, new Vector2( uvs[i].X, uvs[i].Y ) );
+		AppendGeometry( material, verts, indices );
+	}
+}
