@@ -162,6 +162,13 @@ public sealed class BuildMode : Entity
 		SelectedPeep = null;
 	}
 
+	/// <summary>Select <paramref name="shop"/> (opens its window).</summary>
+	public void SelectShop( Shop shop )
+	{
+		ClearSelection();
+		SelectedShop = shop;
+	}
+
 	/// <summary>Select <paramref name="peep"/> (opens their window).</summary>
 	public void SelectPeep( Peep peep )
 	{
@@ -404,6 +411,8 @@ public sealed class BuildMode : Entity
 			if ( Hit( Key.Space ) ) MinimapPanel.Current?.Toggle();
 			if ( Hit( Key.G ) ) Level.ToggleGates();
 			if ( Hit( Key.C ) ) CamcorderCameraMode.Start();
+			// V lists the visitors (the original's A / S lists are the camera's keys here: they open from park information).
+			if ( Hit( Key.V ) ) ParkListWindow.Current?.Toggle( ParkListWindow.Tab.Visitors );
 		}
 		if ( track is CoasterTrack coasterTrack )
 		{

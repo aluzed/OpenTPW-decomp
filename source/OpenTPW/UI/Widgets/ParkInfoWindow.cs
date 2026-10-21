@@ -110,6 +110,14 @@ internal sealed class ParkInfoWindow : GameWindow
 		Text( Small, "Total park visitors", 450f, 418f, 11f );
 		Text( Small, $"{fin.VisitorsTotal}", 660f, 418f, 11f );
 
+		// The lists: all items, all staff, all visitors.
+		if ( RoundButton( At( 784f, 100f, 46f, 46f ), "b_allthings", hint: 126 ) )
+			ParkListWindow.Current?.Toggle( ParkListWindow.Tab.Items );
+		if ( RoundButton( At( 784f, 150f, 46f, 46f ), "b_allstaff", hint: 112 ) )
+			ParkListWindow.Current?.Toggle( ParkListWindow.Tab.Staff );
+		if ( RoundButton( At( 784f, 200f, 46f, 46f ), "b_kids", hint: 113 ) )
+			ParkListWindow.Current?.Toggle( ParkListWindow.Tab.Visitors );
+
 		// The park gates: open / close them (in the original, a click on the gates themselves).
 		if ( RoundButton( Gates, "b_open", selected: !Level.GatesOpen ) )
 			Level.ToggleGates();
