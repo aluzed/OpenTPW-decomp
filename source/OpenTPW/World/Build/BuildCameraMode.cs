@@ -15,6 +15,10 @@ public class BuildCameraMode : CameraMode
 	/// off into the void. Null = unbounded (set by the level).</summary>
 	public static (Vector2 Min, Vector2 Max)? Bounds { get; set; }
 
+	/// <summary>A visitor or member of staff the camera follows round the park (their window's follow button), until
+	/// they leave or the player pans away.</summary>
+	public static Entity? Following { get; set; }
+
 	private const float Pitch = 48f;       // degrees looking down (a park view that shows the rides in profile)
 	private const float MinDist = 90f, MaxDist = 700f;
 
@@ -60,6 +64,14 @@ public class BuildCameraMode : CameraMode
 			dragAnchor = Input.Mouse.Position;
 		}
 		wasRight = Input.Mouse.Right;
+
+		if ( Following is { } followed )
+		{
+			if ( !Entity.All.Contains( followed ) || Input.Forward != 0f || Input.Right != 0f || Input.Mouse.Right )
+				Following = null;
+			else
+				Focus += (followed.Position.WithZ( Focus.Z ) - Focus) * MathF.Min( 1f, 6f * Time.Delta );
+		}
 
 		if ( Bounds is { } b )
 			Focus = new Vector3( Math.Clamp( Focus.X, b.Min.X, b.Max.X ), Math.Clamp( Focus.Y, b.Min.Y, b.Max.Y ), Focus.Z );

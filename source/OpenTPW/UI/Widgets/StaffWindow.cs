@@ -25,6 +25,7 @@ internal sealed class StaffWindow : GameWindow
 	private static readonly Rectangle Preview = At( 165f, 77f, 192f, 191f );
 	private static readonly Rectangle Stats = At( 403f, 77f, 328f, 179f );
 	private static readonly Rectangle Ok = At( 781f, 381f, 42f, 42f );
+	private static readonly Rectangle Up = At( 780f, 60f, 38f, 38f ), Down = At( 780f, 100f, 38f, 38f ), Follow = At( 780f, 150f, 38f, 38f );
 	private const float TrainingStep = 10f; // training points bought per click (100 = one grade)
 
 	private static Rectangle Action( float x ) => At( x - 9f, 367f, 84f, 82f );
@@ -76,17 +77,27 @@ internal sealed class StaffWindow : GameWindow
 		Row( "Training", null, staff.TrainingPoints / 100f );
 		Row( "Patrol", staff.Zone is { } zone ? $"zone, radius {zone.Radius:0}" : "free roam" );
 
-		if ( RoundButton( Action( 143f ), "b_fire" ) )
+		// Right-hand column: previous / next member of staff, follow them round the park.
+		var all = Entity.All.OfType<Staff>().ToList();
+		int at = all.IndexOf( staff );
+		if ( RoundButton( Up, "b_arup", hint: 92, enabled: all.Count > 1 ) )
+			build.SelectStaff( all[(at - 1 + all.Count) % all.Count] );
+		if ( RoundButton( Down, "b_ardown", hint: 91, enabled: all.Count > 1 ) )
+			build.SelectStaff( all[(at + 1) % all.Count] );
+		if ( RoundButton( Follow, "b_gopeep", BuildCameraMode.Following == staff, hint: 90 ) )
+			BuildCameraMode.Following = BuildCameraMode.Following == staff ? null : staff;
+
+		if ( RoundButton( Action( 143f ), "b_fire", hint: 89 ) )
 			build.FireSelectedStaff();
-		if ( RoundButton( Action( 217f ), "b_move", selected: build.IsMovingStaff ) )
+		if ( RoundButton( Action( 217f ), "b_move", selected: build.IsMovingStaff, hint: 88 ) )
 			build.BeginMoveSelectedStaff();
-		if ( RoundButton( Action( 369f ), "b_route", selected: staff.HasPatrolZone ) )
+		if ( RoundButton( Action( 369f ), "b_route", selected: staff.HasPatrolZone, hint: 86 ) )
 			build.SetSelectedStaffZoneHere();
 		if ( RoundButton( At( 446f, 376f, 30f, 30f ), "b_minus", enabled: staff.HasPatrolZone ) )
 			build.AdjustSelectedStaffZone( -1 );
 		if ( RoundButton( At( 446f, 410f, 30f, 30f ), "b_plus" ) )
 			build.AdjustSelectedStaffZone( +1 );
-		if ( RoundButton( Action( 490f ), "b_routeX", enabled: staff.HasPatrolZone ) )
+		if ( RoundButton( Action( 490f ), "b_routeX", enabled: staff.HasPatrolZone, hint: 87 ) )
 			build.ClearSelectedStaffZone();
 		float cost = staff.TrainingCost( TrainingStep );
 		if ( RoundButton( Action( 600f ), "b_staffcost", enabled: staff.CanTrain && fin.CanAfford( cost ) ) )

@@ -24,6 +24,7 @@ internal sealed class VisitorWindow : GameWindow
 	private static readonly Rectangle Thought = At( 262f, 190f, 140f, 160f );
 	private static readonly Rectangle Figures = At( 420f, 190f, 210f, 200f );
 	private static readonly Rectangle Ok = At( 664f, 352f, 40f, 40f );
+	private static readonly Rectangle Up = At( 666f, 190f, 34f, 34f ), Down = At( 666f, 228f, 34f, 34f ), Follow = At( 666f, 274f, 34f, 34f );
 
 	// Dev aid: OPENTPW_UI_OPEN=visitor selects a visitor once one is in the park.
 	private bool devOpened = Environment.GetEnvironmentVariable( "OPENTPW_UI_OPEN" ) != "visitor";
@@ -74,6 +75,16 @@ internal sealed class VisitorWindow : GameWindow
 		Row( "Energy", peep.EnergyLevel );
 		Text( Small, "Money", 428f, y, 11f );
 		Text( Small, $"$ {peep.Cash:0}", 520f, y, 11f );
+
+		// Previous / next visitor, follow them round the park.
+		var all = Entity.All.OfType<Peep>().ToList();
+		int at = all.IndexOf( peep );
+		if ( RoundButton( Up, "b_arup", hint: 98, enabled: all.Count > 1 ) )
+			build.SelectPeep( all[(at - 1 + all.Count) % all.Count] );
+		if ( RoundButton( Down, "b_ardown", hint: 97, enabled: all.Count > 1 ) )
+			build.SelectPeep( all[(at + 1) % all.Count] );
+		if ( RoundButton( Follow, "b_gopeep", BuildCameraMode.Following == peep, hint: 96 ) )
+			BuildCameraMode.Following = BuildCameraMode.Following == peep ? null : peep;
 
 		if ( RoundButton( Ok, "b_okay", hint: 1 ) )
 			build.ClearSelection();
