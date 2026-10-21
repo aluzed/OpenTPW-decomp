@@ -26,6 +26,10 @@
   (every ride broke after 25 s of use, one mechanic couldn't keep up) — wear now follows the level's authored
   `Upgrades[n].WearRate` (5/10 as built → ~250 s of occupied running; 3 and 2 once upgraded). Rides ridden at the
   2-minute mark: 87 → 197. This is the reliability-balance pass the ticket was waiting on.
+  **Pranksters** (`Standard.sam`): `PeepInfo.PrankeryLikelihood` (5) visitors in 100 are pranksters; every 10 s one
+  lets off a stink bomb with `StinkbombLikelihood` (25) % chance — the `P_EFFECT_YellowStink` effect and −5 happiness
+  for every visitor within ~3 tiles — unless a guard is near (counted as deterred). ~9 stink bombs per 2 minutes in
+  the 250-visitor dev park.
 - **Related**: [T-034](T-034-peeps.md) (needs, economy, staff — core done).
 
 ## Context

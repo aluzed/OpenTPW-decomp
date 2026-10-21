@@ -176,6 +176,11 @@ public class Level
 				Peep.GoodRideHappiness = goodRide;
 			if ( float.TryParse( peepSam["PeepInfo.OKRide"], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var okRide ) )
 				Peep.OkRideHappiness = okRide;
+			// Pranksters and their stink bombs.
+			if ( float.TryParse( peepSam["PeepInfo.PrankeryLikelihood"], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var prankery ) )
+				Peep.PrankeryLikelihood = prankery;
+			if ( float.TryParse( peepSam["PeepInfo.StinkbombLikelihood"], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var stinkbomb ) )
+				Peep.StinkbombLikelihood = stinkbomb;
 			// Ride sickness: each ride adds excitement ÷ RideVomitDivisor; at VomitCapacity the visitor is sick.
 			if ( float.TryParse( peepSam["PeepInfo.RideVomitDivisor"], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var vomitDivisor ) && vomitDivisor > 0f )
 				Peep.RideVomitDivisor = vomitDivisor;
@@ -1232,7 +1237,7 @@ public class Level
 		{
 			nextEconLog = Time.Now + 5f;
 			Log.Info( $"[econ] money={f.Money:0}  ride+={f.RideRevenue:0}  entry+={f.EntryRevenue:0}  shop+={f.FoodRevenue:0}  upkeep-={f.UpkeepPaid:0}  wages-={f.WagesPaid:0}"
-				+ $"  vandalism={Peep.VandalismActs} deterred={Peep.VandalismDeterred} rides={f.RidesRidden} toilet={Peep.ToiletVisits} vomit={Peep.VomitCount} refused={Peep.StallsRefused} binned={Shop.LitterBinned} litter={Litter.Active.Count}"
+				+ $"  vandalism={Peep.VandalismActs} deterred={Peep.VandalismDeterred} rides={f.RidesRidden} toilet={Peep.ToiletVisits} vomit={Peep.VomitCount} refused={Peep.StallsRefused} stink={Peep.StinkBombs} binned={Shop.LitterBinned} litter={Litter.Active.Count}"
 				+ $"  breakdowns={Ride.Breakdowns} repairs={Ride.Repairs}"
 				+ $"  sold: {string.Join( ' ', Enum.GetValues<SaleCategory>().Where( c => f.Sold( c ) > 0 ).Select( c => $"{c}={f.Sold( c )}" ) )}" );
 		}

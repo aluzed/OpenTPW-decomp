@@ -97,6 +97,19 @@ public sealed class Peep : ModelEntity
 	/// signal they're used.</summary>
 	public static int ToiletVisits { get; private set; }
 
+	/// <summary><c>PeepInfo.PrankeryLikelihood</c>: visitors per 100 who are pranksters (Standard.sam 5).</summary>
+	public static float PrankeryLikelihood { get; set; } = 5f;
+
+	/// <summary><c>PeepInfo.StinkbombLikelihood</c>: the chance (%) a prankster lets off a stink bomb each time it
+	/// considers it, every <see cref="PrankCheckSeconds"/> (Standard.sam 25).</summary>
+	public static float StinkbombLikelihood { get; set; } = 25f;
+
+	/// <summary>Stink bombs let off (deterred ones count in <see cref="VandalismDeterred"/>).</summary>
+	public static int StinkBombs { get; private set; }
+
+	private bool isPrankster;
+	private float prankTimer = PrankCheckSeconds;
+
 	/// <summary>Purchases refused because the stall's price was far above its authored one.</summary>
 	public static int StallsRefused { get; private set; }
 
@@ -240,6 +253,7 @@ public sealed class Peep : ModelEntity
 	// A fresh arrival's purse, minus the admission it pays at the gate.
 	private void ArriveWithCash()
 	{
+		isPrankster = Random.Shared.NextDouble() * 100f < PrankeryLikelihood;
 		Cash = PeepTypes.CashFor( peepType, Random.Shared.NextDouble() );
 		var fee = ParkFinances.Current?.EntryFee ?? 0f;
 		Cash = MathF.Max( 0f, Cash - fee );
@@ -475,6 +489,20 @@ public sealed class Peep : ModelEntity
 			{
 				Vandalise();
 				VandalismActs++;
+			}
+		}
+
+		// A prankster now and then lets off a stink bomb: the yellow stink, and every visitor around holds its nose
+		// (−5). A guard nearby stops it.
+		if ( isPrankster && (prankTimer -= Time.Delta) <= 0f )
+		{
+			prankTimer = PrankCheckSeconds;
+			if ( Random.Shared.NextDouble() * 100f < StinkbombLikelihood )
+			{
+				if ( Staff.GuardNear( Position ) )
+					VandalismDeterred++;
+				else
+					StinkBomb();
 			}
 		}
 
@@ -890,6 +918,21 @@ public sealed class Peep : ModelEntity
 		Position = seat;
 		FaceCamera();
 	}
+
+	// A stink bomb: the yellow stink effect and a sour mood for every visitor within StinkRadius (the prankster too).
+	private void StinkBomb()
+	{
+		StinkBombs++;
+		ParticleEmitter.World.Spawn( YellowStinkEffect, Position + Vector3.Up * 3f );
+		float r2 = StinkRadius * StinkRadius;
+		foreach ( var e in Entity.All )
+			if ( e is Peep { riding: false } p && (p.Position - Position).LengthSquared <= r2 )
+				p.happiness = MathF.Max( 0f, p.happiness - 5f ); // SmallHappinessChange
+	}
+
+	private const int YellowStinkEffect = 50; // par_lib.h P_EFFECT_YellowStink
+	private const float StinkRadius = 30f;     // ~3 tiles
+	private const float PrankCheckSeconds = 10f;
 
 	// Sick on the ground: a vomit puddle (litter a handyman must clean, which sours visitors standing in it), the
 	// game's green puke effect, and a much worse mood.
