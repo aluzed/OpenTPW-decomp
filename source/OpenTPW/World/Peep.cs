@@ -1050,6 +1050,10 @@ public sealed class Peep : ModelEntity
 	// urgency (need ÷ its threshold) descending — or null if no need is pressing / no matching stall exists.
 	private Shop? NeedDetour()
 	{
+		// Nothing pressing (the usual case): skip the candidate lists — this runs for every visitor every frame.
+		if ( bladder < BladderThreshold && thirst < ThirstThreshold && hunger < HungerThreshold
+			&& illness < CrowdThoughts.SickFraction * VomitCapacity )
+			return null;
 		// Every stall serving a need that has passed its threshold is a candidate, scored by the authored need
 		// weights against the walk (NeedChoiceScorer, T-060).
 		var candidates = new List<(ShopKind Kind, float Urgency, float Distance)>();
