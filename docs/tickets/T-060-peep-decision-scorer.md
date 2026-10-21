@@ -2,7 +2,7 @@
 
 - **Priority**: 🟡 Feature (simulation fidelity)
 - **Type**: Engine / RE
-- **Status**: ⚠️ Core done — the authored `PeepInfo.DecisionVar*` weights load from `levels/Standard.sam`
+- **Status**: ✅ Done (2026-10-21) — previously ⚠️ Core done — the authored `PeepInfo.DecisionVar*` weights load from `levels/Standard.sam`
   (`DecisionWeights`); a pure `RideChoiceScorer` scores each ride by excitement vs distance vs queue length
   (+ a new-ride bonus), and `Peep.PickRoute` now picks a ride **weighted by that score** instead of the
   excitement/rating-only heuristic. **Polish now landed**: (1) **per-peep preferred-excitement** — the authored
@@ -12,8 +12,8 @@
   favours gentle rides, a thrill-seeker intense ones) — `preferredExcitement = -1` keeps the old "more is
   better" behaviour for back-compat. (2) **Ride-age tracking** — `Ride.AgeDays`/`Ride.IsNew` (built-day vs
   `GameClock.TotalDays`, window = `DecisionVariable1`), so the new-ride bonus actually fires for a ride's first
-  days instead of `IsNew=false`. 11 unit tests (5 new). **Remaining**: the need weights (thirst/hunger/…) steer
-  shop choice, not rides — out of scope here.
+  days instead of `IsNew=false`. 11 unit tests (5 new). The need weights (thirst/hunger/…) steer the
+  stall choice instead (`NeedChoiceScorer`), with toilet queues counted as walk (T-039).
 - **Related**: [T-034](T-034-peeps.md)/[T-050](T-050-peep-simulation-depth.md) (peep sim — currently uses a
   simpler excitement-weighted choice).
 

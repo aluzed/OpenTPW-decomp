@@ -2,7 +2,7 @@
 
 - **Priority**: 🟡 Feature (content)
 - **Type**: Engine
-- **Status**: ⚠️ Core done — the park theme is now selectable. Theme Park World ships four themed worlds under
+- **Status**: ✅ Done (2026-10-21) — previously ⚠️ Core done — the park theme is now selectable. Theme Park World ships four themed worlds under
   `levels/<name>/` (jungle / hallow / fantasy / space), each with its own terrain, rides, shops, sideshows and
   `Standard.sam`; only jungle was ever loaded (everything hardcoded `levels/jungle/...`). Now `OPENTPW_LEVEL`
   picks the theme (default + fallback `jungle`), routed through the existing `Level.Name`. The **build catalog is
@@ -51,7 +51,7 @@ from the data rather than a fixed name list.
   = "Space Zone"; falls back to the folder name if the strings are unavailable) — with the active one
   highlighted; clicking one reloads into it. The loading overlay uses the same names. Verified in-game (the panel
   reads "Lost Kingdom (current)" / "Halloween World" / …; `OPENTPW_THEME_PANEL=1` opens it). *Remaining*: ~~a true
-  pre-park **lobby** picker~~ (done by T-063: click an island in the front-end lobby; Space too since T-073), the loading overlay drawing under the HUD panels (UI batches per-texture), and ~~the per-reload
+  pre-park **lobby** picker~~ (done by T-063: click an island in the front-end lobby; Space too since T-073), ~~the loading overlay drawing under the HUD panels~~ (fixed: the UI renders after the world since T-074 and the overlay after the UI — the batch flushes on every material change, so order is kept), and ~~the per-reload
   GPU-resource leak~~ — measured 2026-10-21 with `OPENTPW_THEME_CYCLE=1` over 5 reloads (190 s): GPU memory
   oscillates 365–600 MiB and keeps returning to ~365 MiB, process RSS stays 1.0–1.4 GB — no unbounded leak.
 - ~~Per-theme queue/path strip textures~~ — **done**: the `jpa_que1`/`jpa_str1` filenames turned out to be
