@@ -43,6 +43,7 @@ public sealed class SaveGame
 		public int TileY { get; set; }
 		public int Rotation { get; set; }
 		public float TicketPrice { get; set; }
+		public float Filth { get; set; }         // a toilet's dirtiness (0 clean … 100)
 
 		// Per-ride progression (T-059 v2): research/upgrade level + mechanical condition, so a reloaded park
 		// keeps its researched capacity bumps and a ride's reliability/breakdown state. Defaults match a

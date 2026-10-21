@@ -572,6 +572,7 @@ public class Level
 			{
 				Kind = "shop", Name = sh.CatalogKey, TileX = sh.TileX, TileY = sh.TileY,
 				TicketPrice = sh.Price, // reuse the generic price field for the stall's sale price (T-041)
+				Filth = sh.Filth,
 			} );
 
 		// Staff (T-059 v2): role + wander centre + patrol zone — respawned on load (they roam, so no grid tile).
@@ -671,10 +672,11 @@ public class Level
 						researching.Add( (ride, p.ResearchQueuePos) );
 				}
 			}
-			else if ( p.Kind == "shop" && p.TicketPrice > 0f )
+			else if ( p.Kind == "shop" && Shop.Stalls.FirstOrDefault( sh => sh.TileX == p.TileX && sh.TileY == p.TileY ) is { } shop )
 			{
-				if ( Shop.Stalls.FirstOrDefault( sh => sh.TileX == p.TileX && sh.TileY == p.TileY ) is { } shop )
+				if ( p.TicketPrice > 0f )
 					shop.Price = p.TicketPrice;
+				shop.Filth = p.Filth;
 			}
 		}
 

@@ -11,7 +11,7 @@ public class SaveGameTests
 		var s = new SaveGame { Version = 1, Money = 12345f, EntryFee = 8f, ClockSeconds = 99.5f };
 		s.Loans.Add( new SaveGame.LoanState { Name = "Large", Bought = true, Outstanding = 17700f, Monthly = 1475f } );
 		s.Placements.Add( new SaveGame.Placement { Kind = "ride", Name = "totem", TileX = 10, TileY = 20, Rotation = 2, TicketPrice = 7f } );
-		s.Placements.Add( new SaveGame.Placement { Kind = "shop", Name = "drink", TileX = 5, TileY = 6, TicketPrice = 12f } );
+		s.Placements.Add( new SaveGame.Placement { Kind = "shop", Name = "drink", TileX = 5, TileY = 6, TicketPrice = 12f, Filth = 42f } );
 
 		var back = SaveGame.FromJson( s.ToJson() );
 
@@ -35,6 +35,7 @@ public class SaveGameTests
 		Assert.AreEqual( 7f, ride.TicketPrice );
 		Assert.AreEqual( "drink", back.Placements[1].Name );
 		Assert.AreEqual( 12f, back.Placements[1].TicketPrice, "the stall's sale price round-trips (T-041)" );
+		Assert.AreEqual( 42f, back.Placements[1].Filth, "a toilet's filth round-trips" );
 	}
 
 	[TestMethod]

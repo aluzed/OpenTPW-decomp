@@ -34,8 +34,7 @@
   its patrol zone), before litter. Using one over 60 (`Advisor.sam` `FeaturesDirtyToilets*.FilthierThan`) costs −5
   happiness and makes the visitor queasy (+15 illness, +30 over 90 — `RegionFX` "Dirty Toilet": illness), and it no
   longer settles a sick stomach. The advisor complains (TAG_SYSTEM 89–92, with/without cleaners, dirty/filthy) and
-  challenge type 24 ("keep toilets N% clean", checked at the deadline) measures the average cleanliness. (Filth isn't
-  saved yet.)
+  challenge type 24 ("keep toilets N% clean", checked at the deadline) measures the average cleanliness. Filth is saved with the park.
 - **Related**: [T-034](T-034-peeps.md) (needs, economy, staff — core done).
 
 ## Context
