@@ -76,3 +76,14 @@ A new park now starts **closed** (the original's `mGatesOpen`; the advisor's ope
 gates"): no visitors until the player clicks **OPEN PARK** (bottom-left, highlighted while closed, shown when nothing is
 selected; the HUD says PARK CLOSED). The first opening lets the opening crowd of 30 in; arrivals only run while open;
 CLOSE PARK stops new arrivals. The `OPENTPW_AUTOPLACE` dev park opens at once. Verified with a scripted click.
+
+### bus.RSE (disassembled 2026-10-21)
+
+`VAR_TRIGGER`(0) / `VAR_STATUS`(1) / `VAR_SCRIPTID`(2) / `VAR_TEMP`(3). After `WAIT 2000` it finds the "Traffic Lights"
+script, then cycles: `TRIGANIM 5,0` (arrive; sound object 1 at volume 0→75) → `STATUS=2` → loop until the **game sets
+`VAR_TRIGGER`** → `SETREMOTEVAR` on the traffic lights → `STATUS=3`, `TRIGANIM 5,1` (depart) → `STATUS=4` → wait for the
+trigger again → `STATUS=0`, `WAITANIM 5,2` → `STATUS=6`, `KILLOBJ` → wait for the trigger → restart. So the arrival
+code drives the bus through `VAR_TRIGGER` and reads `VAR_STATUS` (2 = at the stop: offload `mPeopleOnBus`).
+The keyframe files don't carry the drive: `Busm1` (80 ticks) and `Busm3` (60) only **rotate** surfaces (the
+wheels), `Busm2` is empty, and the body mesh sits at (-183, 0, -285) — the road path comes from elsewhere (engine
+waypoints / object 5's track), still to find.
