@@ -213,7 +213,7 @@ internal sealed class ParkHud : HudPanel
 		if ( GameClock.Current is { } clock )
 		{
 			var d = clock.Date;
-			float scale = 17f / MathF.Max( 1f, DateFont.Atlas.LineHeight );
+			float scale = MathF.Max( 1f, MathF.Round( 17f / MathF.Max( 1f, DateFont.Atlas.LineHeight ) ) ); // whole: point-sampled
 			Graphics.DrawText( DateFont, $"{d.Day}.{d.Month}.{d.Year}", Lcd.X + Lcd.Width / 2f, Lcd.Y + Lcd.Height - 4f,
 				LcdInk, TextAlign.Center, scale );
 		}
@@ -286,7 +286,8 @@ internal sealed class ParkHud : HudPanel
 	{
 		if ( HintText() is not { Length: > 0 } text )
 			return;
-		const float Width = 560f, Scale = 1.4f, Pad = 6f;
+		const float Width = 560f, Pad = 6f;
+		float Scale = MathF.Max( 1f, MathF.Round( 13f / MathF.Max( 1f, HintFont.Atlas.LineHeight ) ) ); // whole: point-sampled
 		var lines = Wrap( HintFont, text, (Width - 2f * Pad) / Scale );
 		float lineH = HintFont.Atlas.LineHeight * Scale;
 		float height = lines.Count * lineH + 2f * Pad;

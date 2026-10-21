@@ -91,7 +91,7 @@ internal sealed class ItemInfoWindow : GameWindow
 		Fill( b, BoxBg );
 		DrawGauge( new Rectangle( b.X + 30f, b.Y + 36f, b.Width - 60f, 10f ), fraction );
 		Fill( new Rectangle( b.X + 6f, b.Y + 5f, b.Width - 12f, 19f ), LabelBg );
-		Graphics.DrawText( Small, label, b.X + b.Width / 2f, b.Y + 20f, LabelInk, TextAlign.Center, 11f / MathF.Max( 1f, Small.Atlas.LineHeight ) );
+		Graphics.DrawText( Small, label, b.X + b.Width / 2f, b.Y + 20f, LabelInk, TextAlign.Center, Scale( Small, 11f ) );
 		if ( less != null && RoundButton( new Rectangle( b.X + 4f, b.Y + 30f, 22f, 22f ), "b_minus" ) )
 			less();
 		if ( more != null && RoundButton( new Rectangle( b.X + b.Width - 26f, b.Y + 30f, 22f, 22f ), "b_plus" ) )

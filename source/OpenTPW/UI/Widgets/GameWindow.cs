@@ -47,10 +47,14 @@ internal abstract class GameWindow : HudPanel
 	protected void DrawFrame( string model ) => UiModel.Load( model )?.Draw( Frame );
 
 	protected static void Text( Font font, string text, float x, float top, float height, SVector3 ink = default, TextAlign align = TextAlign.Left )
-		=> Graphics.DrawText( font, text, x + 160f, 720f - top, ink, align, height / MathF.Max( 1f, font.Atlas.LineHeight ) );
+		=> Graphics.DrawText( font, text, x + 160f, 720f - top, ink, align, Scale( font, height ) );
 
 	protected static float Measure( Font font, string text, float height )
-		=> font.Atlas.Measure( text ) * height / MathF.Max( 1f, font.Atlas.LineHeight );
+		=> font.Atlas.Measure( text ) * Scale( font, height );
+
+	/// <summary>The whole-number scale closest to <paramref name="height"/> pixels: the bitmap fonts are point-sampled,
+	/// and a fractional scale drops rows (the dot of "!") or columns (a thin "l").</summary>
+	protected static float Scale( Font font, float height ) => MathF.Max( 1f, MathF.Round( height / MathF.Max( 1f, font.Atlas.LineHeight ) ) );
 
 	/// <summary>A black inset box with the original's thin blue border.</summary>
 	protected static void DrawInset( Rectangle r )
@@ -118,10 +122,10 @@ internal abstract class GameWindow : HudPanel
 		// The text sits inside the black screen, clear of the bezel.
 		float left = r.X + r.Width * 0.1f, width = r.Width * 0.66f, y = r.Y + r.Height * 0.84f;
 		const float LineHeight = 19f;
-		float scale = 15f / MathF.Max( 1f, Medium.Atlas.LineHeight );
+		float scale = Scale( Medium, 15f );
 		if ( title != null )
 		{
-			Graphics.DrawText( Medium, title, left + width / 2f, y, TitleInk, TextAlign.Center, 17f / MathF.Max( 1f, Medium.Atlas.LineHeight ) );
+			Graphics.DrawText( Medium, title, left + width / 2f, y, TitleInk, TextAlign.Center, Scale( Medium, 17f ) );
 			y -= 26f;
 		}
 		foreach ( var paragraph in paragraphs )

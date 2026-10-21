@@ -27,7 +27,9 @@ internal static partial class Graphics
 
 		foreach ( var g in placed )
 		{
-			var rect = new Rectangle( g.X, g.Y, g.Width, g.Height );
+			// Whole pixels: the atlas is point-sampled, so a glyph straddling pixels at a fractional scale lost a row or a
+			// column — the dot of "!", the stem of a thin "l".
+			var rect = new Rectangle( MathF.Round( g.X ), MathF.Round( g.Y ), MathF.Max( 1f, MathF.Round( g.Width ) ), MathF.Max( 1f, MathF.Round( g.Height ) ) );
 			// The UI shader samples (x, 1 - y), so the V we hand it must be 1 - atlasV for the
 			// glyph to land on its own atlas rows (otherwise it samples a different row = garble).
 			var uv = new Rectangle( g.U0, 1f - g.V1, g.U1 - g.U0, g.V1 - g.V0 );
