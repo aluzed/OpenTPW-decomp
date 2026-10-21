@@ -20,7 +20,10 @@ OpenTPW is a re-implementation of Theme Park World, requiring an installation th
 
 ## Status
 
-OpenTPW is currently in a very early stage of development, and is not yet playable.
+This fork is an early but playable build on Linux: the original lobby, the four themed worlds, building and managing
+a park, visitors, economy, challenges and save/load all work, with a text HUD standing in for the original 3D
+interface. See [docs/01-project-status.md](docs/01-project-status.md) for the current state and
+[docs/tickets/README.md](docs/tickets/README.md) for what remains.
 
 ### File Formats
 
@@ -36,6 +39,7 @@ OpenTPW is currently in a very early stage of development, and is not yet playab
 | Strings ([.BFMU](https://opentpw.gu3.me/formats/bfmu.html), [.BFST](https://opentpw.gu3.me/formats/bfst.html), [.BFUM](https://opentpw.gu3.me/formats/bfum.html)) | ✅     |
 | Models ([.MD2](https://opentpw.gu3.me/formats/m3d2.html))                      | ⚠️     |
 | Map Data ([.MAP](https://opentpw.gu3.me/formats/map.html))                    | ⚠️     |
+| Landscape ground (.LND)                                  | ⚠️     |
 | Ride Scripts ([.RSE](https://opentpw.gu3.me/formats/rsse.html))                | ⚠️     |
 | Save Files ([.TPWS](https://opentpw.gu3.me/formats/tpws-ints-lays.html))                | ⚠️     |
 | Fonts ([.BF4](https://opentpw.gu3.me/formats/bf4.html))                      | ✅     |

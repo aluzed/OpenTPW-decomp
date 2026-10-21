@@ -14,6 +14,17 @@ You therefore **need a legal copy of the game** to provide the assets — which 
 
 ## Maturity
 
+> **Snapshot 2026-10-21** — an early but *playable* build on Linux: the original front-end lobby (pick one of the
+> four worlds by clicking its island), then a park with its real ground (`base.lnd`, T-071), scenery, sky/fog and
+> music per world; build rides/shops/staff from a clickable catalog on a correctly-scaled tile grid (T-072); open
+> the gates and visitors arrive in groups sized by the park rating, judge the admission fee, queue, ride, eat,
+> drink, use the toilets and leave (T-074, T-060); economy, loans, research/upgrades, challenges, golden-ticket goals,
+> weather, day/night, save/load, particle effects. ~60 fps with ~100 visitors, ~35–48 with 250; a park loads in
+> ~12 s. **Missing / approximate**: the original 3D-widget UI (we have a text HUD, T-065), the exact arrival /
+> fee / ground-blend formulas (data-driven approximations), arrival buses, coaster loops & curved pieces, ride
+> lights, player profiles. Tests: 334 passing, 1 inconclusive (no `.TPWS` sample) with the game data
+> (`tools/run-integration-tests.sh`). The ticket index (`tickets/README.md`) is the detailed source of truth.
+
 - **Stage: boots, runs & plays on Linux** (window + Vulkan render loop) — the core park loop is live.
   Verified this session by running on an AMD Radeon (Vulkan): the park renders with terrain, placed
   rides + shops, animated peeps, staff and a build/manage HUD, and a placed **bumper ride's dodgem cars
