@@ -376,7 +376,7 @@ public class Ride : Entity
 		{
 			var settings = new SettingsFile( FileSystem.OpenRead( $"{rideArchive}/{rideName}.sam" ) );
 			var rideTitle = settings.Entries.Where( x => x.Key == "Info.Name" ).Select( x => x.Value ).FirstOrDefault();
-			Name = string.IsNullOrEmpty( rideTitle ) ? rideName : rideTitle;
+			Name = string.IsNullOrEmpty( rideTitle ) ? rideName : ObjectNames.Localize( rideTitle );
 
 			// Sub-tile positions within the entrance/exit cells (where peeps stand / appear), default centre.
 			EntryStandPos = (ReadFloat( settings, "UsageInfo.EntryCellStandPosX", 0.5f ), ReadFloat( settings, "UsageInfo.EntryCellStandPosY", 0.5f ));

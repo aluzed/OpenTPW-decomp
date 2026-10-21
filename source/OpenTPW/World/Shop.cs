@@ -73,7 +73,7 @@ public sealed class Shop : ModelEntity
 		// The stall's own price / cost of goods / name from its .sam (a toilet stays free).
 		if ( ShopBuilding.StatsFor( kind, Level.Current.Name ) is { } stats )
 		{
-			title = stats.Name;
+			title = ObjectNames.Localize( stats.Name );
 			if ( kind != ShopKind.Toilet )
 			{
 				Price = stats.Price;
