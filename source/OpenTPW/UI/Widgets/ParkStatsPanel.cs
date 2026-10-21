@@ -3,11 +3,10 @@ using OpenTPW.UI;
 namespace OpenTPW;
 
 /// <summary>
-/// The in-park HUD (T-065): the player-facing essentials (money, visitors, admission, challenge/goals, loan,
-/// park rating + contextual build/manage info) always shown, plus a <b>debug overlay</b> (income breakdown,
-/// counts, crowd-mood thoughts, save-slot hints, FPS) that is OFF by default and toggled with the backtick key
-/// (<see cref="GameSettings.ShowDebug"/>). Renders nothing until a park economy exists, so it's harmless in the
-/// lobby.
+/// The debug readout (T-065): the park's figures as text — money, visitors, admission, goals, loan, rating, the
+/// income breakdown, counts, crowd thoughts, save-slot hints, FPS — toggled with the backtick key
+/// (<see cref="GameSettings.ShowDebug"/>), off by default. The player's HUD is <see cref="ParkHud"/> and the
+/// original's windows. Renders nothing until a park economy exists, so it's harmless in the lobby.
 /// </summary>
 internal sealed class ParkStatsPanel : HudPanel
 {
@@ -24,12 +23,6 @@ internal sealed class ParkStatsPanel : HudPanel
 	private const float LineStep = 28f;
 
 	private bool debugKeyWas;
-
-	/// <summary>Whether the park information readout is open (the handheld's info button); the debug overlay
-	/// (backtick) shows it too.</summary>
-	public static bool InfoOpen { get; private set; }
-
-	public static void ToggleInfo() => InfoOpen = !InfoOpen;
 
 	protected override void OnUpdate()
 	{
@@ -52,7 +45,7 @@ internal sealed class ParkStatsPanel : HudPanel
 			return;
 
 		bool dbg = GameSettings.Current.ShowDebug;
-		if ( !InfoOpen && !dbg )
+		if ( !dbg )
 			return;
 		int visitors = Entity.All.Count( e => e is Peep );
 		int staff = Entity.All.Count( e => e is Staff );

@@ -26,10 +26,11 @@ public sealed class ParkFinances
 	// ── Finance history (T-049): one sample per in-game "month", for the finance graph ─────────────
 	/// <summary>One period's finances: the closing balance, the income / expense that flowed that month, and the
 	/// cumulative visitor count at the close (drives the golden-ticket "recent visitors" window, T-055).</summary>
-	public readonly record struct FinanceSample( float Balance, float Income, float Expense, int Visitors = 0, float Wages = 0f );
+	public readonly record struct FinanceSample( float Balance, float Income, float Expense, int Visitors = 0, float Wages = 0f,
+		int PeopleInPark = 0, float Happiness = 0f );
 
 	/// <summary>How many monthly samples the rolling history keeps (oldest dropped past this).</summary>
-	public const int MaxHistory = 48;
+	public const int MaxHistory = 144; // twelve years: the park information graph's longest range
 
 	private readonly List<FinanceSample> history = new();
 	private float lastIncomeTotal;
@@ -68,7 +69,8 @@ public sealed class ParkFinances
 		float wages = WagesPaid - lastWagesTotal;
 		lastWagesTotal = WagesPaid;
 
-		history.Add( new FinanceSample( Money, income, expense, VisitorsTotal, wages ) );
+		history.Add( new FinanceSample( Money, income, expense, VisitorsTotal, wages,
+			Entity.All.Count( e => e is Peep ), Peep.AverageHappiness ) );
 		if ( history.Count > MaxHistory )
 			history.RemoveRange( 0, history.Count - MaxHistory );
 

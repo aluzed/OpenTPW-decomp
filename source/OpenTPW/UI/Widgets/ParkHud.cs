@@ -45,7 +45,7 @@ internal sealed class ParkHud : HudPanel
 	private static readonly (string Texture, float X, float Y, int Hint, Action? Act)[] Buttons =
 	{
 		("b_buy", 107f, 543f, UiHelp.Buy, () => BuildPanel.Toggle()),
-		("b_info", 163f, 543f, UiHelp.Info, () => ParkStatsPanel.ToggleInfo()),
+		("b_info", 163f, 543f, UiHelp.Info, () => ParkInfoWindow.Current?.Toggle()),
 		("b_money", 102f, 600f, UiHelp.Finance, () => FinancePanel.Current?.Toggle()),
 		("b_resrch", 157f, 600f, UiHelp.Research, null),
 		("b_map", 66f, 655f, UiHelp.Map, () => MinimapPanel.Current?.Toggle()),
