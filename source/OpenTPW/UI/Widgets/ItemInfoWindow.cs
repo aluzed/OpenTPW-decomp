@@ -36,7 +36,7 @@ internal sealed class ItemInfoWindow : GameWindow
 	private static readonly System.Numerics.Vector3 LabelInk = new( 0.05f, 0.18f, 0.05f );
 
 	// Dev aid: OPENTPW_UI_OPEN=ride selects the park's first ride once, to look at the window without clicking.
-	private bool devOpened = Environment.GetEnvironmentVariable( "OPENTPW_UI_OPEN" ) is not ("ride" or "rideit" or "shop" or "queue");
+	private bool devOpened = Environment.GetEnvironmentVariable( "OPENTPW_UI_OPEN" ) is not ("ride" or "rideit" or "shop" or "toilet" or "queue");
 
 	protected override void OnUpdate()
 	{
@@ -48,6 +48,8 @@ internal sealed class ItemInfoWindow : GameWindow
 			var stall = Shop.Stalls.FirstOrDefault( s => s.Stats is { Ingredient: > 0 } ) ?? Shop.Stalls.FirstOrDefault( s => !s.IsFree );
 			if ( Environment.GetEnvironmentVariable( "OPENTPW_UI_OPEN" ) == "shop" && stall != null )
 				build.SelectShop( stall );
+			if ( Environment.GetEnvironmentVariable( "OPENTPW_UI_OPEN" ) == "toilet" && Shop.Stalls.FirstOrDefault( s => s.Kind == ShopKind.Toilet ) is { } loo )
+				build.SelectShop( loo );
 			if ( Environment.GetEnvironmentVariable( "OPENTPW_UI_OPEN" ) == "rideit" )
 			{
 				build.ClearSelection();
@@ -86,13 +88,26 @@ internal sealed class ItemInfoWindow : GameWindow
 		else if ( build.SelectedShop is { } shop )
 			RenderShop( build, fin, shop );
 
-		// Right-hand column: previous / next ride, close.
-		var rides = Entity.All.OfType<Ride>().Where( r => !r.IsFeature ).ToList();
-		int at = build.SelectedRide is { } current ? rides.IndexOf( current ) : -1;
-		if ( RoundButton( Up, "b_arup", hint: 21, enabled: rides.Count > 1 && at >= 0 ) )
-			build.SelectRide( rides[(at - 1 + rides.Count) % rides.Count] );
-		if ( RoundButton( Down, "b_ardown", hint: 20, enabled: rides.Count > 1 && at >= 0 ) )
-			build.SelectRide( rides[(at + 1) % rides.Count] );
+		// Right-hand column: previous / next ride (or stall: toilets among toilets), close.
+		if ( build.SelectedShop is { } stall )
+		{
+			bool toilets = stall.Kind == ShopKind.Toilet;
+			var stalls = Shop.Stalls.Where( s => (s.Kind == ShopKind.Toilet) == toilets ).ToList();
+			int si = stalls.IndexOf( stall );
+			if ( RoundButton( Up, "b_arup", hint: toilets ? 84 : 36, enabled: stalls.Count > 1 && si >= 0 ) )
+				build.SelectShop( stalls[(si - 1 + stalls.Count) % stalls.Count] );
+			if ( RoundButton( Down, "b_ardown", hint: toilets ? 83 : 35, enabled: stalls.Count > 1 && si >= 0 ) )
+				build.SelectShop( stalls[(si + 1) % stalls.Count] );
+		}
+		else
+		{
+			var rides = Entity.All.OfType<Ride>().Where( r => !r.IsFeature ).ToList();
+			int at = build.SelectedRide is { } current ? rides.IndexOf( current ) : -1;
+			if ( RoundButton( Up, "b_arup", hint: 21, enabled: rides.Count > 1 && at >= 0 ) )
+				build.SelectRide( rides[(at - 1 + rides.Count) % rides.Count] );
+			if ( RoundButton( Down, "b_ardown", hint: 20, enabled: rides.Count > 1 && at >= 0 ) )
+				build.SelectRide( rides[(at + 1) % rides.Count] );
+		}
 		if ( RoundButton( Ok, "b_okay", hint: 1 ) )
 			build.ClearSelection();
 	}
@@ -220,8 +235,9 @@ internal sealed class ItemInfoWindow : GameWindow
 		}
 		else
 			StatRow( "Queueing", $"{shop.Waiting}" );
-		if ( shop.Kind == ShopKind.Toilet )
-			StatRow( "Cleanliness", null, 1f - shop.Filth / 100f );
+		bool toilet = shop.Kind == ShopKind.Toilet;
+		if ( toilet )
+			StatRow( Localization.Get( UIStrings.Cleanliness, "Cleanliness" ), null, 1f - shop.Filth / 100f );
 		StatRow( Localization.Get( UIStrings.ScrapValue, "Scrap value" ), $"$ {shop.BuildCost * Ride.SellRefundFraction:0}" );
 
 		if ( !shop.IsFree )
@@ -236,10 +252,18 @@ internal sealed class ItemInfoWindow : GameWindow
 			SettingBox( 2, $"{Localization.Get( UIStrings.SalePrice, "Sale price" )} : $ {shop.Price:0}", Math.Clamp( shop.Price / 10f, 0f, 1f ),
 				() => shop.Price = Math.Max( 1f, shop.Price - 1f ), () => shop.Price += 1f );
 
-		if ( RoundButton( Action( 143f ), "b_delete_login", hint: 33 ) )
+		// A toilet's buttons have their own hints (UIHELPTEXT 77–81), and it can call a cleaner.
+		if ( RoundButton( Action( 143f ), "b_delete_login", hint: toilet ? 81 : 33 ) )
 			build.SellSelected();
-		if ( RoundButton( Action( 217f ), "b_move", hint: 32 ) )
+		if ( RoundButton( Action( 217f ), "b_move", hint: toilet ? 80 : 32 ) )
 			build.BeginMoveSelected();
+		if ( toilet )
+		{
+			bool coming = Staff.CleanerCalledTo( shop );
+			if ( RoundButton( Action( 369f ), "b_callhandy", hint: 77, selected: coming,
+				enabled: !coming && Entity.All.OfType<Staff>().Any( s => s.Role == StaffRole.Handyman ) ) )
+				Staff.CallCleaner( shop );
+		}
 		// Apply these settings (price, open / closed) to every stall of the same kind (UIHELPTEXT 536).
 		var same = Shop.Stalls.Where( s => s != shop && s.CatalogKey == shop.CatalogKey ).ToList();
 		if ( RoundButton( Action( 525f ), "b_applyall", hint: 536, enabled: same.Count > 0 ) )
@@ -250,7 +274,7 @@ internal sealed class ItemInfoWindow : GameWindow
 				s.Quality = shop.Quality;
 				s.IngredientAmount = shop.IngredientAmount;
 			}
-		if ( RoundButton( Action( 672f, 93f ), shop.IsClosed ? "b_doorc" : "b_dooro", hint: shop.IsClosed ? 30 : 31 ) )
+		if ( RoundButton( Action( 672f, 93f ), shop.IsClosed ? "b_doorc" : "b_dooro", hint: toilet ? (shop.IsClosed ? 78 : 79) : shop.IsClosed ? 30 : 31 ) )
 			shop.IsClosed = !shop.IsClosed;
 	}
 }

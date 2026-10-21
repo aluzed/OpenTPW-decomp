@@ -507,7 +507,25 @@ public sealed class Staff : ModelEntity
 		return true;
 	}
 
-	private bool called; // sent to a ride by the player: service it even if it's running
+	private bool called; // sent by the player: service the ride even if it's running, clean the toilet even if it's clean
+
+	/// <summary>Send the nearest cleaner who isn't on strike to clean <paramref name="toilet"/> (the toilet window's
+	/// call-cleaner button); false when there is none.</summary>
+	public static bool CallCleaner( Shop toilet )
+	{
+		if ( StaffStrikes.Current?.IsStriking( StaffRole.Handyman ) == true )
+			return false;
+		var cleaner = Entity.All.OfType<Staff>().Where( s => s.Role == StaffRole.Handyman && !s.called )
+			.OrderBy( s => (s.Position - toilet.Position).WithZ( 0 ).LengthSquared ).FirstOrDefault();
+		if ( cleaner == null )
+			return false;
+		cleaner.toiletTarget = toilet;
+		cleaner.called = true;
+		return true;
+	}
+
+	/// <summary>Whether a cleaner is on the way to <paramref name="toilet"/>.</summary>
+	public static bool CleanerCalledTo( Shop toilet ) => Entity.All.OfType<Staff>().Any( s => s.called && s.toiletTarget == toilet );
 
 	/// <summary>Whether a mechanic is on the way to <paramref name="ride"/>.</summary>
 	public static bool MechanicCalledTo( Ride ride ) => Entity.All.OfType<Staff>().Any( s => s.called && s.repairTarget == ride );
@@ -562,13 +580,16 @@ public sealed class Staff : ModelEntity
 	private void DoHandyman()
 	{
 		// A toilet that needs cleaning comes first (it sickens visitors); otherwise the nearest litter.
-		if ( toiletTarget is { NeedsCleaning: true } || (toiletTarget = DirtiestToilet()) != null )
+		if ( called && (toiletTarget == null || !Shop.Stalls.Contains( toiletTarget )) )
+			called = false; // the toilet it was sent to is gone
+		if ( toiletTarget is { NeedsCleaning: true } || called || (toiletTarget = DirtiestToilet()) != null )
 		{
 			working = true;
 			if ( WalkToward( toiletTarget!.Position ) )
 			{
 				toiletTarget.Filth = 0f;
 				toiletTarget = null;
+				called = false;
 				FinishJob();
 			}
 			return;
