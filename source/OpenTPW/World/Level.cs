@@ -169,6 +169,11 @@ public class Level
 				Peep.ExitLevelSeconds = exitLevel;
 			if ( float.TryParse( peepSam["PeepInfo.ExitLevelVar"], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var exitVar ) )
 				Peep.ExitLevelVarSeconds = exitVar;
+			// Ride sickness: each ride adds excitement ÷ RideVomitDivisor; at VomitCapacity the visitor is sick.
+			if ( float.TryParse( peepSam["PeepInfo.RideVomitDivisor"], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var vomitDivisor ) && vomitDivisor > 0f )
+				Peep.RideVomitDivisor = vomitDivisor;
+			if ( float.TryParse( peepSam["PeepInfo.VomitCapacity"], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var vomitCapacity ) && vomitCapacity > 0f )
+				Peep.VomitCapacity = vomitCapacity;
 			arrivalSettings = ArrivalSettings.Load( peepSam );
 			EntryFeeOpinion.Settings = EntryFeeSettings.Load( peepSam );
 			PeepTypes.Preferences = PeepTypes.Load( peepSam );
@@ -1220,7 +1225,7 @@ public class Level
 		{
 			nextEconLog = Time.Now + 5f;
 			Log.Info( $"[econ] money={f.Money:0}  ride+={f.RideRevenue:0}  entry+={f.EntryRevenue:0}  shop+={f.FoodRevenue:0}  upkeep-={f.UpkeepPaid:0}  wages-={f.WagesPaid:0}"
-				+ $"  vandalism={Peep.VandalismActs} deterred={Peep.VandalismDeterred} toilet={Peep.ToiletVisits} binned={Shop.LitterBinned} litter={Litter.Active.Count}"
+				+ $"  vandalism={Peep.VandalismActs} deterred={Peep.VandalismDeterred} rides={f.RidesRidden} toilet={Peep.ToiletVisits} vomit={Peep.VomitCount} binned={Shop.LitterBinned} litter={Litter.Active.Count}"
 				+ $"  breakdowns={Ride.Breakdowns} repairs={Ride.Repairs}"
 				+ $"  sold: {string.Join( ' ', Enum.GetValues<SaleCategory>().Where( c => f.Sold( c ) > 0 ).Select( c => $"{c}={f.Sold( c )}" ) )}" );
 		}

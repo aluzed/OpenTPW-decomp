@@ -37,4 +37,13 @@ public class CrowdThoughtsTests
 		Assert.IsFalse( s.Contains( "Angry" ), "only the top two" );
 		Assert.AreEqual( "", CrowdThoughts.Summary( new Dictionary<int, int>() ) );
 	}
+
+	[TestMethod]
+	public void RideSicknessShowsBeforeHungerButAfterTheToilet()
+	{
+		Assert.AreEqual( CrowdThoughts.FeelingSick, CrowdThoughts.For( 1.2f, 0f, 0f, 80f, false, false, illness: 0.7f ) );
+		Assert.AreEqual( CrowdThoughts.NeedToilet, CrowdThoughts.For( 0f, 0f, 1.1f, 80f, false, false, illness: 0.9f ) );
+		Assert.AreEqual( CrowdThoughts.Hungry, CrowdThoughts.For( 1.2f, 0f, 0f, 80f, false, false, illness: 0.5f ), "not sick yet" );
+		Assert.AreEqual( 6, Souvenirs.BubbleFrame( CrowdThoughts.FeelingSick ), "green face bubble" );
+	}
 }

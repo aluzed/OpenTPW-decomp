@@ -29,11 +29,22 @@ public sealed class Litter : ModelEntity
 		return true;
 	}
 
-	private Litter( Vector3 groundPos )
+	/// <summary>A sick visitor's vomit puddle (the sheet's last two frames), cleaned up by handymen like litter.</summary>
+	public static bool TryDropVomit( Vector3 groundPos )
+	{
+		if ( Active.Count >= MaxPieces )
+			return false;
+		_ = new Litter( groundPos, vomit: true );
+		return true;
+	}
+
+	private Litter( Vector3 groundPos, bool vomit = false )
 	{
 		if ( Sheet() is { } sheet )
 		{
-			Model = sheet.FrameModel( Random.Shared.Next( Math.Min( DryLitterFrames, sheet.FrameCount ) ) );
+			Model = sheet.FrameModel( vomit && sheet.FrameCount > DryLitterFrames
+				? DryLitterFrames + Random.Shared.Next( sheet.FrameCount - DryLitterFrames )
+				: Random.Shared.Next( Math.Min( DryLitterFrames, sheet.FrameCount ) ) );
 			Position = groundPos;
 			Scale = new Vector3( SpriteScale, 1f, SpriteScale );
 			isSprite = true;

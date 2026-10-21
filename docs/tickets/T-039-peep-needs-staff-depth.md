@@ -12,6 +12,13 @@
   wandering (was one per 25 s, which pinned a 250-visitor park at the 300-piece cap).
   Litter now draws as the game's own rubbish sprites (`esprites/Generic/Litter/SPR_LI`: wrapper, cup, can…, at the
   visitors' pixel scale) instead of a brown square.
+  **Ride sickness** (`Standard.sam`): each ride adds `excitement ÷ PeepInfo.RideVomitDivisor` (10) to the rider's
+  illness; from 60 % of `PeepInfo.VomitCapacity` (100) the visitor thinks "Feeling sick" (THOUGHTS.str 14, green-face
+  bubble) and heads for a toilet (it shares the toilet need, like `DecisionVarIllnessWeight`), where it recovers; one
+  who reaches the capacity is sick at the ride exit — a vomit puddle (the litter sheet's last two frames, cleaned by
+  handymen, souring visitors near it like litter), the `P_EFFECT_GreenPuke` effect and −15 happiness
+  (`MediumHappinessChange`). With the authored values it takes ~10–20 rides, so it shows in long stays on intense
+  rides (verified by forcing the divisor: 66 visitors sick in two minutes, puddles + effect).
 - **Related**: [T-034](T-034-peeps.md) (needs, economy, staff — core done).
 
 ## Context

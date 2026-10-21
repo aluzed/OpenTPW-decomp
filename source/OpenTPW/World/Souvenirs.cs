@@ -45,7 +45,7 @@ internal static class Souvenirs
 		BubbleFrame( thought ) is { } frame && SpriteSheet.Load( "esprites/Generic/Thoughts", "SPR_TB" ) is { } sheet
 			? sheet.FrameModel( frame ) : null;
 
-	/// <summary>Which SPR_TB frame draws a thought: 0 smiling, 1 so-so, 2 angry, 3 sad, 5 laughing, 8 burger, 10 drink,
+	/// <summary>Which SPR_TB frame draws a thought: 0 smiling, 1 so-so, 2 angry, 3 sad, 5 laughing, 6 sick, 8 burger, 10 drink,
 	/// 11 hourglass + thumbs-down, 12 drink + burger, 13 toilet, 14 litter. Pure.</summary>
 	public static int? BubbleFrame( int thought ) => thought switch
 	{
@@ -59,6 +59,7 @@ internal static class Souvenirs
 		CrowdThoughts.Happy => 0,
 		CrowdThoughts.Unhappy => 3,
 		CrowdThoughts.Angry => 2,
+		CrowdThoughts.FeelingSick => 6,
 		_ => null,
 	};
 }

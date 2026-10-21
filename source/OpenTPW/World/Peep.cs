@@ -97,6 +97,16 @@ public sealed class Peep : ModelEntity
 	/// signal they're used.</summary>
 	public static int ToiletVisits { get; private set; }
 
+	/// <summary>Visitors who were sick on the ground (<see cref="VomitCapacity"/> reached away from a toilet).</summary>
+	public static int VomitCount { get; private set; }
+
+	/// <summary><c>PeepInfo.RideVomitDivisor</c>: a ride adds its excitement ÷ this to the rider's illness (Standard.sam 10 —
+	/// an excitement-80 ride adds 8).</summary>
+	public static float RideVomitDivisor { get; set; } = 10f;
+
+	/// <summary><c>PeepInfo.VomitCapacity</c>: the illness at which a visitor is sick (Standard.sam 100).</summary>
+	public static float VomitCapacity { get; set; } = 100f;
+
 	/// <summary>Park-wide tally of ride reactions (T-050): how many riders left with each
 	/// <see cref="RideThought"/>, indexed by the enum. Surfaced on the HUD so the player can read the crowd's
 	/// mood (the thought was computed but invisible before).</summary>
@@ -234,7 +244,7 @@ public sealed class Peep : ModelEntity
 
 	/// <summary>What this visitor is thinking (a <see cref="CrowdThoughts"/> / THOUGHTS.str index).</summary>
 	public int Thought => CrowdThoughts.For( hunger / HungerThreshold, thirst / ThirstThreshold, bladder / BladderThreshold,
-		happiness, amidLitter, route != null && route.PositionOf( this ) >= LongQueue );
+		happiness, amidLitter, route != null && route.PositionOf( this ) >= LongQueue, illness / VomitCapacity );
 	private const int LongQueue = 12; // a place this far back in a line is "Queue too long"
 
 	/// <summary>How many live visitors think each thought (by THOUGHTS.str index).</summary>
@@ -252,6 +262,7 @@ public sealed class Peep : ModelEntity
 	private float hunger;
 	private float thirst;
 	private float bladder;
+	private float illness; // ride sickness, toward VomitCapacity; a toilet settles it
 
 	// Impulse items bought this visit (one of each: a visitor with a balloon doesn't buy another).
 	private readonly HashSet<SaleCategory> bought = new();
@@ -342,12 +353,15 @@ public sealed class Peep : ModelEntity
 				// Happiness change is driven by satisfaction (which already folds in value-for-money +
 				// reliability), centred on 50 so a great ride lifts the mood and a poor one sours it.
 				happiness = Math.Clamp( happiness + (satisfaction - 50f) * RideRewardScale, 0f, 100f );
+				illness += route.Ride.Excitement / MathF.Max( 0.1f, RideVomitDivisor );
 				riding = false;
 				route.Leave();
 				mount?.Unboard( this ); // climb off the coaster train (no-op for ordinary rides)
 				mount = null;
 				Model = billboard;
 				Position = route.ExitPoint;
+				if ( illness >= VomitCapacity )
+					Vomit(); // too much for the stomach: sick right at the ride exit
 				ResetPath(); // teleported to the exit — replan from here
 				if ( WantsToLeave() )
 					BeginLeaving();
@@ -395,6 +409,7 @@ public sealed class Peep : ModelEntity
 				if ( shopTarget.Kind == ShopKind.Toilet )
 				{
 					bladder = 0f; // toilets are free facilities — no income
+					illness = 0f; // a sick visitor who made it to a toilet leaves no puddle
 					ToiletVisits++;
 				}
 				else
@@ -683,6 +698,7 @@ public sealed class Peep : ModelEntity
 		hunger = 0f;
 		thirst = 0f;
 		bladder = 0f;
+		illness = 0f;
 		bought.Clear();
 		DropSouvenirs();
 		wrapperTimer = -1f;
@@ -827,6 +843,19 @@ public sealed class Peep : ModelEntity
 		FaceCamera();
 	}
 
+	// Sick on the ground: a vomit puddle (litter a handyman must clean, which sours visitors standing in it), the
+	// game's green puke effect, and a much worse mood.
+	private void Vomit()
+	{
+		illness = 0f;
+		VomitCount++;
+		Litter.TryDropVomit( Position );
+		ParticleEmitter.World.Spawn( GreenPukeEffect, Position + Vector3.Up * 6f );
+		happiness = MathF.Max( 0f, happiness - 15f ); // Standard.sam MediumHappinessChange
+	}
+
+	private const int GreenPukeEffect = 52; // par_lib.h P_EFFECT_GreenPuke
+
 	// Pay for and consume what a stall sells: the park takes the sale (by product, for the challenges), the
 	// stall's authored effects apply (needs relieved, mood/energy lifted), a drink fills the bladder, a snack
 	// may leave a wrapper, and a souvenir is kept for the rest of the visit.
@@ -889,7 +918,7 @@ public sealed class Peep : ModelEntity
 		var stalls = new List<Shop>();
 		foreach ( var (urgency, kind) in new[]
 		{
-			(bladder / BladderThreshold, ShopKind.Toilet),
+			(MathF.Max( bladder / BladderThreshold, illness / (CrowdThoughts.SickFraction * VomitCapacity) ), ShopKind.Toilet),
 			(thirst / ThirstThreshold, ShopKind.Drink),
 			(hunger / HungerThreshold, ShopKind.Food),
 		} )
