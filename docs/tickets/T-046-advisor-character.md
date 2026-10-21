@@ -170,3 +170,6 @@ Verified: an empty park hears "no rides", "no shops", "no sideshows" in turn; th
 
 `OpenPark` (TAG_SYSTEM 7, `ScorePerWaitingPerson` 20): with the gates shut and at least one ride built, arrivals
 gather at the gate (`Level.WaitingAtGate`, up to 60) and walk in when the gates open; the advisor suggests opening.
+
+Money and staff-count advice: `WealthHigh` (> 200 000, TAG 121), `WealthHighRepayLoan` (money > debt × 1.2, TAG 122),
+`MaxHandymen/Entertainers/Mechanics/Guards/Researchers` (> 10 of one kind, TAG 129–133).

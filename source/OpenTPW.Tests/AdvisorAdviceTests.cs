@@ -154,5 +154,10 @@ CongratVisitorsHappy.Score				60
 		Assert.IsTrue( For( park with { WorstToiletFilth = 70f, Handymen = 0 } ).Any( a => a.Id == "FeaturesDirtyToilets1" ) );
 		Assert.AreEqual( 190f, For( park with { WorstToiletFilth = 95f } ).Single( a => a.Id == "FeaturesDirtyToilets4" ).Score, "filthy: 2 per %" );
 		Assert.IsFalse( For( park with { WorstToiletFilth = 50f } ).Any( a => a.Id.StartsWith( "FeaturesDirty" ) ) );
+		Assert.IsTrue( For( park with { Money = 250000f } ).Any( a => a.Id == "WealthHigh" ) );
+		Assert.IsTrue( For( park with { Money = 50000f, Debt = 30000f } ).Any( a => a.Id == "WealthHighRepayLoan" ), "money > debt × 1.2" );
+		Assert.IsFalse( For( park with { Money = 30000f, Debt = 30000f } ).Any( a => a.Id.StartsWith( "Wealth" ) ) );
+		Assert.IsTrue( For( park with { Guards = 11 } ).Any( a => a.Id == "MaxGuards" ) );
+		Assert.IsFalse( For( park with { Guards = 10 } ).Any( a => a.Id == "MaxGuards" ) );
 	}
 }

@@ -28,7 +28,8 @@ public readonly record struct ParkSnapshot(
 public readonly record struct ParkFacilities(
 	int Mechanics, int Handymen, int Guards, int Entertainers,
 	int Rides, int WornRides, int BrokenRides, int Shops, int Sideshows, int Toilets,
-	int Litter, int Visitors, int NeedingToilet, int Misbehaving, int Days, int WaitingAtGate = 0, float WorstToiletFilth = 0f );
+	int Litter, int Visitors, int NeedingToilet, int Misbehaving, int Days, int WaitingAtGate = 0, float WorstToiletFilth = 0f,
+	int Researchers = 0, float Money = 0f, float Debt = 0f );
 
 /// <summary>
 /// Maps the live park state to advisor message candidates — <c>(id, group, score)</c> for the
@@ -172,6 +173,18 @@ public static class AdvisorAdvice
 				: (f.Handymen == 0 ? "FeaturesDirtyToilets1" : "FeaturesDirtyToilets2");
 			Add( id, P( id, "PointsPerFilthPct", filthy ? 2f : 1f ) * f.WorstToiletFilth );
 		}
+
+		// Money to spare: spend it, or repay what's owed (WealthHigh / WealthHighRepayLoan).
+		if ( f.Debt > 0f && f.Money > f.Debt * P( "WealthHighRepayLoan", "Margin", 1.2f ) )
+			Add( "WealthHighRepayLoan", P( "WealthHighRepayLoan", "Score", 90f ) );
+		else if ( f.Money > P( "WealthHigh", "MoreMoneyThan", 200000f ) )
+			Add( "WealthHigh", P( "WealthHigh", "Score", 40f ) );
+
+		// Too many of one kind of staff (Max*.MoreThan 10).
+		foreach ( var (id, hired) in new[] { ("MaxHandymen", f.Handymen), ("MaxEntertainers", f.Entertainers),
+			("MaxMechanics", f.Mechanics), ("MaxGuards", f.Guards), ("MaxResearchers", f.Researchers) } )
+			if ( hired > P( id, "MoreThan", 10f ) )
+				Add( id, P( id, "Score", 80f ) );
 
 		// People want to come in but the gates are shut.
 		if ( f.WaitingAtGate > 0 )

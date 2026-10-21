@@ -292,6 +292,9 @@ public sealed class Advisor : Entity
 			Misbehaving: Peep.CountUnhappy(),
 			Days: GameClock.Current?.TotalDays ?? 0,
 			WaitingAtGate: Level.WaitingAtGate,
+			Researchers: Hired( StaffRole.Researcher ),
+			Money: ParkFinances.Current?.Money ?? 0f,
+			Debt: ParkFinances.Current?.Debt ?? 0f,
 			WorstToiletFilth: Shop.Stalls.Where( s => s.Kind == ShopKind.Toilet ).Select( s => s.Filth ).DefaultIfEmpty( 0f ).Max() );
 	}
 

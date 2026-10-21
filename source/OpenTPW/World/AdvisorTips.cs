@@ -41,6 +41,13 @@ public static class AdvisorTips
 		["FeaturesDirtyToilets2"] = "Your toilets are getting dirty — make sure a cleaner patrols them.",
 		["FeaturesDirtyToilets3"] = "Your toilets are filthy — hire some cleaners!",
 		["FeaturesDirtyToilets4"] = "Your toilets are so filthy they're making people sick.",
+		["WealthHigh"] = "You could spend some of your money to improve your park.",
+		["WealthHighRepayLoan"] = "You've plenty of money — why not repay your loan?",
+		["MaxHandymen"] = "Do you really need so many cleaners?",
+		["MaxEntertainers"] = "You have a lot of entertainers for a park this size.",
+		["MaxMechanics"] = "You have too many mechanics for a park this size.",
+		["MaxGuards"] = "You don't need so many guards in a park this size.",
+		["MaxResearchers"] = "You could manage with fewer scientists.",
 		["PricingTicketTooExpensive"] = "Visitors think your ticket price is too high.",
 		["PricingTicketTooCheap"] = "Visitors think your ticket price is cheap — you could raise it.",
 		["PricingFoodTooExpensive"] = "Your food is too expensive.",
@@ -83,6 +90,13 @@ public static class AdvisorTips
 		["FeaturesDirtyToilets2"] = 90, // "…getting dirty. Make sure a cleaner is patrolling them."
 		["FeaturesDirtyToilets3"] = 91, // "People are complaining that your toilets are dirty. You should hire some cleaners!"
 		["FeaturesDirtyToilets4"] = 92, // "…so filthy they are making people sick…"
+		["WealthHigh"] = 121,
+		["WealthHighRepayLoan"] = 122,
+		["MaxHandymen"] = 129,
+		["MaxEntertainers"] = 130,
+		["MaxMechanics"] = 131,
+		["MaxGuards"] = 132,
+		["MaxResearchers"] = 133,
 		["PricingTicketTooExpensive"] = 94,
 		["PricingTicketTooCheap"] = 95,
 		["PricingFoodTooExpensive"] = 96,
