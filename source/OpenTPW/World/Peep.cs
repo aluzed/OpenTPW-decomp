@@ -249,6 +249,7 @@ public sealed class Peep : ModelEntity
 		// ~0.7 of a 10-unit tile across (it was sized for the old 16-unit grid and read as a dark square — T-072).
 		shadow = new ModelEntity { Model = ShadowModel(), Scale = new Vector3( spriteHeight * 0.22f, spriteHeight * 0.22f, 1f ) };
 		ParkFinances.Current?.TakeEntryFee(); // pays the gate on arrival
+		happiness = EntryFeeOpinion.ArrivalHappinessNow(); // how the fee compares with what the park offers
 		energyDrainPerSec = DrainForStay();
 		PickRoute();
 		DropToGround();
@@ -508,7 +509,7 @@ public sealed class Peep : ModelEntity
 		leaving = false;
 		shopTarget = null;
 		ResetPath();
-		happiness = StartHappiness;
+		happiness = EntryFeeOpinion.ArrivalHappinessNow();
 		energy = MaxEnergy;
 		energyDrainPerSec = DrainForStay();
 		hunger = 0f;

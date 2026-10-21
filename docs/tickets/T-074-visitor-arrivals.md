@@ -46,3 +46,12 @@ stays) and the entry-fee opinion block (`PeepInfo.MinimumEntryFee`, `*PriceMulti
 2. Replace the fixed 30 with an arrival scheduler (buses offloading at the gate), departures after
    `ExitLevel ± ExitLevelVar`, entry-fee refusals from the opinion block.
 3. Keep the visitor count + admissions feeding `ParkFinances` / golden-ticket goals.
+
+## Entry-fee opinion (2026-10-21)
+
+`EntryFeeOpinion` reads the `PeepInfo` price block: ideal fee = total ride excitement ÷ `ExcitementToCostDivisor`;
+below `MinimumEntryFee` or ≤ `Cheap × ideal` → `OpinionForTooLow` (100), ≤ `Average × ideal` → `AboutRight` (50),
+below `Expensive × ideal` → `TooHigh` (20), else `MuchTooHigh` (0). The opinion is used as the visitor's **arrival
+happiness** — `AboutRight` 50 is exactly the old fixed `StartHappiness`, and a 0 leaves at once (below
+`LeaveHappiness`). Interpretation until reversed. So FEE± now matters: a cheap park arrives happy (in the 130 s
+dev-park run vandalism fell from 69–351 to 0), an overpriced one turns visitors away. Unit-tested.

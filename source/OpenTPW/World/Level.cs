@@ -151,6 +151,7 @@ public class Level
 			if ( float.TryParse( peepSam["PeepInfo.ExitLevelVar"], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var exitVar ) )
 				Peep.ExitLevelVarSeconds = exitVar;
 			arrivalSettings = ArrivalSettings.Load( peepSam );
+			EntryFeeOpinion.Settings = EntryFeeSettings.Load( peepSam );
 			PeepTypes.Preferences = PeepTypes.Load( peepSam );
 		}
 		catch ( Exception e ) { Log.Warning( $"[peep] decision weights load failed: {e.Message}" ); }
