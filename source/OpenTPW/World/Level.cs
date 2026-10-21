@@ -331,7 +331,7 @@ public class Level
 				+ $"mech={CommitPlacement( Item( "mechanic" ), grid, terrain, cx + 4, cy )} "
 				+ $"guard={CommitPlacement( Item( "guard" ), grid, terrain, cx, cy )}" ); // guard patrols the centre (T-039 vandalism deterrence)
 			// Souvenir stalls by the paths, so visitors make impulse buys (balloons, gifts), and a few litter bins.
-			foreach ( var (name, dx, dy) in new[] { ("balloon", 10, 1), ("giftshop", 10, 4), ("bin", 4, 6), ("bin", -2, 2), ("bin", 6, -1) } )
+			foreach ( var (name, dx, dy) in new[] { ("balloon", 10, 1), ("giftshop", 10, 4), ("cost_shp", 10, 7), ("bin", 4, 6), ("bin", -2, 2), ("bin", 6, -1) } )
 				if ( catalog.FirstOrDefault( c => c.Name == name ) is { Name: not null } souvenir )
 					CommitPlacementNear( souvenir, grid, terrain, cx + dx, cy + dy, radius: 4 );
 

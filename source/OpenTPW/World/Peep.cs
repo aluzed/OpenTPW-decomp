@@ -83,7 +83,7 @@ public sealed class Peep : ModelEntity
 	private const float IndoorShelterBias = 1.5f;      // ride-choice bonus for an indoor attraction in bad weather (T-056)
 	private const float ImpulseRadius = 40f;           // a gift/balloon/costume shop this close can tempt a passer-by
 	private const float ImpulseCheckSeconds = 2f;      // how often a wandering peep considers an impulse buy
-	private const float ImpulseChance = 0.25f;         // per check, scaled by mood (a happy peep splurges more)
+	private const float ImpulseChance = 0.06f;         // per check, scaled by mood (a happy peep splurges more)
 	private const float VandalHappiness = 28f;        // a peep this unhappy may vandalise (well above LeaveHappiness, so there's a window to act before giving up)
 	private const float VandalChancePerSec = 0.14f;   // ~1 act every ~7 s while unhappy and unwatched
 	private const float WalkFps = 8f;                // walk-cycle frames per second
@@ -174,7 +174,9 @@ public sealed class Peep : ModelEntity
 	internal static string KidSpriteName( int index ) =>
 		KidSprites[((index % KidSprites.Length) + KidSprites.Length) % KidSprites.Length];
 
-	private readonly SpriteSheet? sheet;
+	private SpriteSheet? sheet;
+	private SpriteSheet? kidSheet;   // the visitor's own sprite (a costume replaces `sheet` until it leaves)
+	private ModelEntity? balloon;    // the balloon it carries once it bought one (Generic/Balloons)
 
 	private readonly ParkTerrain terrain;
 	private readonly IReadOnlyList<RideQueue> queues;
@@ -292,7 +294,7 @@ public sealed class Peep : ModelEntity
 		// ~1 tile tall (was 15–18 units, sized for the old 16-unit grid — next to true-scale rides a visitor stood
 		// 1.5 tiles tall, T-072).
 		spriteHeight = 9.4f + (float)Random.Shared.NextDouble() * 1.9f;
-		sheet = SpriteSheet.Load( KidSpriteDir, KidSprites[Random.Shared.Next( KidSprites.Length )] );
+		sheet = kidSheet = SpriteSheet.Load( KidSpriteDir, KidSprites[Random.Shared.Next( KidSprites.Length )] );
 		if ( sheet != null )
 		{
 			billboard = sheet.FrameModel( 0 );
@@ -577,6 +579,50 @@ public sealed class Peep : ModelEntity
 		Entity.All.Remove( this );
 		if ( shadow != null )
 			Entity.All.Remove( shadow );
+		DropSouvenirs();
+	}
+
+	// A departing visitor takes its balloon and costume home.
+	private void DropSouvenirs()
+	{
+		if ( balloon != null )
+		{
+			Entity.All.Remove( balloon );
+			balloon = null;
+		}
+		sheet = kidSheet;
+	}
+
+	// Show what the visitor just bought: a costume swaps its sprite for the theme's costume set
+	// (esprites/<Theme>/Costumes), a balloon floats from its hand (esprites/Generic/Balloons, drawn with the same
+	// hotspot/scale as the kid so it lines up with the arm).
+	private void ShowSouvenir( SaleCategory category )
+	{
+		if ( category == SaleCategory.Costume && Souvenirs.Costume() is { } costume )
+			sheet = costume;
+		else if ( category == SaleCategory.Balloon && balloon == null && Souvenirs.Balloon() is { } b )
+		{
+			// SPR_BL holds four colours (blue, green, red, yellow) as pairs of frames; the first of each pair is the clean one.
+			balloon = new ModelEntity { Model = b.FrameModel( 2 * Random.Shared.Next( Math.Max( 1, b.FrameCount / 2 ) ) ) };
+			UpdateBalloon();
+		}
+	}
+
+	// Keep the balloon on the visitor: same anchor + scale, nudged toward the camera so it draws over the kid.
+	private void UpdateBalloon()
+	{
+		if ( balloon == null )
+			return;
+		if ( riding || sheet == null )
+		{
+			balloon.Position = Offscreen;
+			return;
+		}
+		var toCam = (Camera.Position - Position).WithZ( 0 );
+		float len = toCam.Length;
+		balloon.Position = len > 0f ? Position + toCam * (0.05f / len) : Position;
+		balloon.Rotation = Rotation;
+		balloon.Scale = Scale;
 	}
 
 	// Recycle a departed peep as a fresh arrival, keeping the crowd steady without churning entities.
@@ -593,6 +639,7 @@ public sealed class Peep : ModelEntity
 		thirst = 0f;
 		bladder = 0f;
 		bought.Clear();
+		DropSouvenirs();
 		wrapperTimer = -1f;
 		lastRoute = null;
 		ParkFinances.Current?.TakeEntryFee(); // a fresh visitor pays the gate
@@ -676,6 +723,7 @@ public sealed class Peep : ModelEntity
 		Model = sheet.FrameModel( frame );
 		float p2w = spriteHeight / sheet.RefHeight; // one px→world factor for the whole sheet (no jitter)
 		Scale = new Vector3( p2w, 1f, p2w );
+		UpdateBalloon();
 	}
 
 	// Keep the soft ground shadow under the peep (hidden while it's riding / off the ground).
@@ -686,6 +734,8 @@ public sealed class Peep : ModelEntity
 		shadow.Position = riding
 			? Offscreen
 			: Position.WithZ( terrain.SampleHeight( Position.X, Position.Y ) + 0.12f );
+		if ( riding )
+			UpdateBalloon();
 	}
 
 	// A shared flat dark translucent ground decal, so adding peeps/staff allocates nothing extra.
@@ -753,7 +803,10 @@ public sealed class Peep : ModelEntity
 		if ( shop.Kind == ShopKind.Drink )
 			bladder = MathF.Min( 100f, bladder + DrinkBladderBump );
 		if ( shop.Kind == ShopKind.Item )
+		{
 			bought.Add( category );
+			ShowSouvenir( category );
+		}
 	}
 
 	// Now and then a wandering visitor passing a gift / balloon / costume shop goes in — if it hasn't bought

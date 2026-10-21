@@ -13,6 +13,10 @@
   wrapper); gift/balloon/costume shops are impulse buys a passing visitor makes once per visit. Saves keep the
   stall's catalog key. Each theme's toilet resolves (`loo`/`horloo`), the dev park no longer sells its only
   food stall in the sell-test, and the generic autoplace places its stalls near the wanted tile.
+  **Souvenirs show**: a visitor who buys a costume walks in the theme's costume sprite set
+  (`esprites/<Theme>/Costumes` — jungle tiger SPR_TI, hallow SPR_HK, fantasy SPR_BK, space SPR_SK) and one who buys
+  a balloon carries one (`esprites/Generic/Balloons/SPR_BL`: four colours × two frames, hotspot ~74 px above the
+  feet, drawn at the kid's scale) until they leave.
 - **Parent**: [T-038](T-038-park-management-ui.md). **Needs**: [T-040](T-040-build-mode-foundation.md).
   **Couples with**: [T-036](T-036-peep-pathfinding.md) (paths/queues).
 
