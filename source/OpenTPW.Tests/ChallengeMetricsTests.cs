@@ -11,10 +11,10 @@ public class ChallengeMetricsTests
 	[TestMethod]
 	public void SupportsTheDecodedTypes()
 	{
-		foreach ( var t in new[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 16, 17, 18, 19, 20, 21, 24, 25, 27, 28, 29, 30, 31, 33 } )
+		foreach ( var t in new[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16, 17, 18, 19, 20, 21, 24, 25, 27, 28, 29, 30, 31, 33 } )
 			Assert.IsTrue( ChallengeMetrics.IsSupported( t ), $"type {t} is decoded + tracked" );
 		// Still-opaque types stay unsupported (skipped by the manager).
-		foreach ( var t in new[] { 15 } ) // kart crossroads
+		foreach ( var t in new[] { 14, 22, 23, 26 } ) // no challenge in the file uses these
 			Assert.IsFalse( ChallengeMetrics.IsSupported( t ), $"type {t} has no counter yet" );
 	}
 

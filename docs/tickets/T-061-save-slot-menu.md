@@ -2,7 +2,7 @@
 
 - **Priority**: 🟢 Low (UX) — builds directly on [T-059](T-059-save-load.md).
 - **Type**: Engine / UI
-- **Status**: ☐ To do → ⚠️ Core done — a clickable **save/load menu** over the 3 slots from T-059, each row
+- **Status**: ✅ Done — a clickable **save/load menu** over the 3 slots from T-059, each row
   showing a one-line **summary** of the saved park (money, in-game date, ride/shop counts, total visitors) so
   the player can tell slots apart at a glance, with per-slot **SAVE** / **LOAD** buttons. The summary is driven
   by a new `SaveGame.Meta` block captured at save time + a pure `SaveGame.Summary()` (older saves fall back to a

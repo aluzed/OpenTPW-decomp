@@ -22,7 +22,8 @@ public sealed class SaveGame
 	public List<LoanState> Loans { get; set; } = new();
 	public List<Placement> Placements { get; set; } = new();
 	public List<StaffState> Staff { get; set; } = new();
-	public List<TrackState> Tracks { get; set; } = new(); // player-built coaster tracks (one per coaster)
+	public List<TrackState> Tracks { get; set; } = new();
+	public List<TileTrackState> TileTracks { get; set; } = new(); // player-built coaster tracks (one per coaster)
 	public ChallengeState? Challenge { get; set; }    // active/offered challenge progress (null = none)
 	public bool GoldenTicketAwarded { get; set; }     // the level-win flag (T-055), so a won park stays won
 	public MetaInfo? Meta { get; set; }               // at-a-glance slot summary (T-061; null on pre-Meta saves)
@@ -99,6 +100,15 @@ public sealed class SaveGame
 		public List<TrackTile> Tiles { get; set; } = new();
 		/// <summary>The tiles carrying a vertical loop (indices into <see cref="Tiles"/>).</summary>
 		public List<int> Loops { get; set; } = new();
+	}
+
+	/// <summary>A go-kart / water ride's piece-built track: the ride's tile and the direction of each piece laid
+	/// (0 +X, 1 +Y, 2 −X, 3 −Y), replayed in order on load.</summary>
+	public sealed class TileTrackState
+	{
+		public int RideTileX { get; set; }
+		public int RideTileY { get; set; }
+		public List<int> Directions { get; set; } = new();
 	}
 
 	/// <summary>One laid track tile: grid position + its height offset above the base track height.</summary>

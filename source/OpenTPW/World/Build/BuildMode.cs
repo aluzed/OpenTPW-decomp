@@ -128,8 +128,8 @@ public sealed class BuildMode : Entity
 	{
 		if ( SelectedRide is { } ride )
 		{
-			if ( track?.Coaster == ride )
-				track = null; // the coaster's track is owned by the ride; Ride.Despawn tears it down
+			if ( track?.Owner == ride )
+				track = null; // the track is owned by the ride; Ride.Despawn tears it down
 			demolish( ride );
 			SelectedRide = null;
 		}
@@ -190,7 +190,7 @@ public sealed class BuildMode : Entity
 	/// <summary>The ride currently selected (clicked) in the Default tool — its price is adjustable.</summary>
 	public Ride? SelectedRide { get; private set; }
 
-	private CoasterTrack? track;
+	private ITrackTool? track;
 	/// <summary>Whether the coaster track-laying tool is active, and how many segments are laid (T-045).</summary>
 	public bool LayingTrack => track != null;
 	public int TrackSegments => track?.SegmentCount ?? 0;
@@ -205,13 +205,13 @@ public sealed class BuildMode : Entity
 			highlight.Position = Offscreen;
 			return;
 		}
-		bool ok = track!.CanExtend( tx, ty );
+		bool ok = track!.CanExtend( tx, ty ) && (track is not TileTrack tt || (ParkFinances.Current?.CanAfford( tt.PieceCost ) ?? true));
 		mat.Set( "Color", ok ? green : red );
 		highlight.Scale = new Vector3( grid.TileSize / 2f );
 		var c = grid.TileToWorld( tx, ty );
 		highlight.Position = c.WithZ( terrain.SampleHeight( c.X, c.Y ) + 0.3f );
-		if ( Input.MouseLeftPressed && ok )
-			track.Extend( tx, ty );
+		if ( Input.MouseLeftPressed && ok && track.Extend( tx, ty ) && track is TileTrack laid )
+			ParkFinances.Current?.PayBuild( laid.PieceCost ); // Costs.KartTrackCell / WaterTrackCell per piece
 	}
 
 	// Number keys pick a catalog item; Esc/0 cancels; economy keys adjust prices/fee/loans (T-042).
@@ -287,18 +287,23 @@ public sealed class BuildMode : Entity
 			if ( track != null )
 				track = null;
 			else if ( SelectedRide is { } cr && cr.Shape.HasTrack )
-				track = new CoasterTrack( cr, grid, terrain );
+				track = cr.Track ?? new CoasterTrack( cr, grid, terrain );
+			else if ( SelectedRide is { } kr && (kr.TileTrack ?? Level.NewTileTrack( kr )) is { } tileTrack )
+				track = tileTrack; // a go-kart / water ride's piece-built track
 		}
 		if ( track != null )
 		{
 			if ( Hit( Key.B ) ) track.Backtrack();
-			if ( Hit( Key.PageUp ) ) track.StackHead( +1 );   // raise the head segment (build a hill)
-			if ( Hit( Key.PageDown ) ) track.StackHead( -1 ); // lower it (build a dip)
+		}
+		if ( track is CoasterTrack coasterTrack )
+		{
+			if ( Hit( Key.PageUp ) ) coasterTrack.StackHead( +1 );   // raise the head segment (build a hill)
+			if ( Hit( Key.PageDown ) ) coasterTrack.StackHead( -1 ); // lower it (build a dip)
 			// O: a vertical loop on the straight just laid (three level tiles in a row), paid like a build.
-			if ( Hit( Key.O ) && track.CanLoopAtHead() && ParkFinances.Current is { } loopFin && loopFin.CanAfford( CoasterTrack.LoopCost ) )
+			if ( Hit( Key.O ) && coasterTrack.CanLoopAtHead() && ParkFinances.Current is { } loopFin && loopFin.CanAfford( CoasterTrack.LoopCost ) )
 			{
 				loopFin.PayBuild( CoasterTrack.LoopCost );
-				track.AddLoopAtHead();
+				coasterTrack.AddLoopAtHead();
 			}
 		}
 

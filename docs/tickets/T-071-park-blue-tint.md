@@ -55,3 +55,10 @@ set from `Fog.Color`: for a park, the average non-white colour of its `sky/sky_c
 flat `Sky` backdrop takes the same colour. (Note: `sky.tga` is the cloud layer, `sky_rgb.tga` the zenith; a sky
 dome isn't worth drawing — at the build camera's 48° pitch and 60° FOV the top of the view stays 18° below the
 horizon.) `water.shader` is unchanged (its `Water` entity is unused and has its own UBO struct).
+
+## RE note (2026-10-21, night)
+
+`base.lnd` is loaded by `FUN_004504c0` → `FUN_0056dfe0` → `FUN_0056e550` ("procedural textures"): a tile cache
+(`FUN_00572110`: 16-byte ring entries, tile size 16/32/64 picked from the video memory — the three LODs) whose tiles
+are generated on demand; the per-pixel blend lives below `FUN_00590a80` (tile init) and wasn't reached. The blend
+stays approximated.

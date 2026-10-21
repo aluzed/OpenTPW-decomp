@@ -34,9 +34,9 @@ public sealed class RideVehicle : Entity
 
 	private readonly Ride ride;
 	private readonly int seatCount;
-	private readonly Vector3[] loop; // closed ring of ground points
-	private readonly float[] cum;    // cumulative arc length
-	private readonly float length;
+	private Vector3[] loop; // closed ring of ground points
+	private float[] cum;    // cumulative arc length
+	private float length;
 	private readonly ModelEntity car;
 	private readonly ModelEntity[] seats;
 	private readonly IReadOnlyList<int> seatNodeIds; // car/seat node ids this vehicle drives (T-048)
@@ -204,6 +204,18 @@ public sealed class RideVehicle : Entity
 	}
 
 	/// <summary>Despawn the car + rider markers (called when the ride is sold/demolished).</summary>
+	/// <summary>Drive a laid circuit instead of the footprint loop (a kart / water ride's <see cref="TileTrack"/>).</summary>
+	public void SetLoop( Vector3[] ring )
+	{
+		if ( ring.Length < 3 || carSim != null )
+			return;
+		loop = ring[0].Distance( ring[^1] ) < 1e-3f ? ring : [.. ring, ring[0]]; // a closed ring
+		cum = new float[loop.Length];
+		for ( int i = 1; i < loop.Length; i++ )
+			cum[i] = cum[i - 1] + loop[i].Distance( loop[i - 1] );
+		length = cum[^1];
+	}
+
 	public void Despawn()
 	{
 		Entity.All.Remove( car );

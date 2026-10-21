@@ -359,6 +359,9 @@ public class Ride : Entity
 	/// down with the ride on sell/demolish.</summary>
 	public CoasterTrack? Track { get; internal set; }
 
+	/// <summary>A go-kart / water ride's piece-built track (null until laid, and for other rides).</summary>
+	public TileTrack? TileTrack { get; internal set; }
+
 	/// <summary>A generic moving car for "car" rides (set by the placement code) — torn down with the ride.</summary>
 	public RideVehicle? Vehicle { get; internal set; }
 
@@ -443,6 +446,7 @@ public class Ride : Entity
 		Features.Remove( this );
 		engine.Despawn();
 		Track?.Despawn();           // coaster: pylons + ribbon + train (no-op if none)
+		TileTrack?.Despawn();       // kart / water track pieces
 		Vehicle?.Despawn();         // car rides: the moving wagon (no-op if none)
 		foreach ( var e in OwnedEntities )
 			Entity.All.Remove( e );

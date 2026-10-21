@@ -7,7 +7,7 @@ namespace OpenTPW;
 /// smooth elevated ribbon (the real <c>Trak_sec</c> texture) following that same spline, on support
 /// pylons. 3D curved piece *meshes* from the <c>.hmp</c> templates + peep boarding are slice 3b.
 /// </summary>
-public sealed class CoasterTrack
+public sealed class CoasterTrack : ITrackTool
 {
 	private const float TrackHeight = 10f; // track elevation above the ground
 
@@ -52,6 +52,8 @@ public sealed class CoasterTrack
 
 	/// <summary>The coaster this track belongs to (the train uses it to start/stop the rider scream).</summary>
 	public Ride Coaster => coaster;
+
+	public Ride Owner => coaster;
 
 	public CoasterTrack( Ride coaster, PlacementGrid grid, ParkTerrain terrain )
 	{

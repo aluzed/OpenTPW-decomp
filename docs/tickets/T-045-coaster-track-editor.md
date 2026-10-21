@@ -177,3 +177,21 @@ cars keep their side axis through the loop (over the top the travel runs backwar
 perpendicular would flip), so the track and the train turn over; banking is off on steep stretches. Loops are
 saved with the track, counted for challenge type 19 ("build that triple loop", T-054), and the dev park's
 autotrack puts one on its top straight (`OPENTPW_COASTER_DEMO=1` points the camera at it).
+
+## Go-kart and water-ride tracks (2026-10-21, night)
+
+The kart (`gokarts`, every world) and water (`wateride`) rides are built from track **pieces** in the original: the
+ride's own `gk_trck*` / `wr_trck*` meshes — `S` a straight, `B` a quarter-turn (joining its +Y and +X edges), `X` a
+crossroads, `H*` hill pieces — each 20×20 units, i.e. 2×2 map cells (their `.hmp` templates are 2×2). The station
+carries its own stretch of track along its length (`gk_TRACK01` in the jungle station), centred on its middle rows.
+
+`TileTrack` (with the coaster's `CoasterTrack` behind one `ITrackTool` interface for the build mode's **T** tool):
+select a kart / water ride, press T, click the piece next to the head to lay it (`Costs.KartTrackCell` 400 /
+`Costs.WaterTrackCell` 500 a piece), B takes the last one back. The circuit leaves past the station's far end and
+closes when laid back into its near end; it may cross itself at right angles over a straight (that piece becomes the
+`X`), but not turn inside a crossroads. Each piece is drawn with its mesh, turned to its entry/exit directions; once
+closed, the ride's cars drive the circuit (`RideVehicle.SetLoop`). Saved as the list of directions laid. Challenge
+**15** ("a GoKart track with 4 crossroads") now counts `TileTrack.Crossings`, and **21** ("the Crypt Kart with 20
+sections") its pieces — it was unwinnable before (only coasters had a track). The dev park builds a second kart
+station in open ground and lays an 8-piece circuit round it (`OPENTPW_KART_DEMO=1` looks at it). Not done: the hill
+pieces, the end caps at an open end, rotated stations beyond the footprint mapping (untested).

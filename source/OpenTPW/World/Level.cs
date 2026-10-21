@@ -489,6 +489,47 @@ public class Level
 				float refund = ParkFinances.Current?.Money - moneyBefore ?? 0f;
 				Log.Info( $"[build] sell-test shop {shopToSell.Name}: shops {shopsBefore}->{Shop.Stalls.Count}, refund {refund:0}" );
 			}
+
+			// Lay a go-kart circuit (a ride built from track pieces) round a second kart station in open ground: out of
+			// the station's far end, round it and back into its near end — below the station, else above it.
+			// (The spot: the first one, spiralling out from the park centre, with room for the station and a circuit
+			// two pieces wide all round it.)
+			(int X, int Y)? kartSpot = null;
+			if ( catalog.FirstOrDefault( c => c.RidePath != null && c.RidePath.EndsWith( "/gokarts", StringComparison.OrdinalIgnoreCase ) ) is { Name: not null } kartItem0 )
+				for ( int r = 6; r <= 40 && kartSpot == null; r += 2 )
+					for ( int a = 0; a < 16 && kartSpot == null; a++ )
+					{
+						int kx = cx + (int)(MathF.Cos( a * MathF.Tau / 16 ) * r), ky = cy + (int)(MathF.Sin( a * MathF.Tau / 16 ) * r);
+						if ( grid.CanPlace( kx - 3, ky - 5, kartItem0.Width + 6, kartItem0.Height + 10 ) )
+							kartSpot = (kx, ky);
+					}
+			if ( kartSpot is { } spot
+				&& catalog.FirstOrDefault( c => c.RidePath != null && c.RidePath.EndsWith( "/gokarts", StringComparison.OrdinalIgnoreCase ) ) is { Name: not null } kartItem
+				&& CommitPlacement( kartItem, grid, terrain, spot.X, spot.Y )
+				&& Entity.All.OfType<Ride>().LastOrDefault() is { Rotation: 0 } kart )
+			{
+				foreach ( int side in new[] { -1, 1 } )
+				{
+					if ( NewTileTrack( kart ) is not { } kartTrack )
+						break;
+					int across = (kart.Shape.Width + 2) / TileTrack.PieceTiles;
+					var steps = new List<(int X, int Y)> { (1, 0), (0, side), (0, side) };
+					steps.AddRange( Enumerable.Repeat( (-1, 0), across ) );
+					steps.AddRange( new[] { (0, -side), (0, -side) } );
+					foreach ( var d in steps )
+						if ( !kartTrack.Extend( d ) )
+							break;
+					Log.Info( $"[build] kart track: {kartTrack.SegmentCount} pieces, closed={kartTrack.IsClosed}" );
+					if ( kartTrack.IsClosed )
+					{
+						if ( Environment.GetEnvironmentVariable( "OPENTPW_KART_DEMO" ) == "1" )
+							BuildCameraMode.Focus = kart.Position; // look at the circuit
+						break;
+					}
+					while ( kartTrack.SegmentCount > 0 )
+						kartTrack.Backtrack();
+				}
+			}
 		}
 
 		// Spawn a crowd at the park's real entrance gate (T-050): peeps enter and leave through the gate
@@ -645,6 +686,9 @@ public class Level
 				ts.Tiles.Add( new SaveGame.TrackTile { X = tr.Tiles[i].X, Y = tr.Tiles[i].Y, Rise = i < tr.Rises.Count ? tr.Rises[i] : 0f } );
 			s.Tracks.Add( ts );
 		}
+		foreach ( var r in Entity.All.OfType<Ride>() )
+			if ( r.TileTrack is { SegmentCount: > 0 } tt )
+				s.TileTracks.Add( new SaveGame.TileTrackState { RideTileX = r.TileX, RideTileY = r.TileY, Directions = tt.Directions.ToList() } );
 
 		// Progression (T-059): the active/offered challenge (T-054) + the golden-ticket win flag (T-055), so a
 		// reloaded park resumes its goals mid-flight instead of restarting them.
@@ -743,6 +787,11 @@ public class Level
 			var savedRises = ts.Tiles.Select( t => t.Rise ).ToList();
 			new CoasterTrack( coaster, grid, terrain ).Restore( savedTiles, savedRises, ts.Closed, ts.Loops );
 		}
+
+		// Kart / water tracks: replay their pieces.
+		foreach ( var kt in s.TileTracks )
+			if ( Entity.All.OfType<Ride>().FirstOrDefault( r => r.TileX == kt.RideTileX && r.TileY == kt.RideTileY && r.TileTrack == null ) is { } kartRide )
+				NewTileTrack( kartRide )?.Restore( kt.Directions );
 
 		// Respawn staff at their saved wander centres, re-applying any patrol zone (T-059 v2).
 		foreach ( var ss in s.Staff )
@@ -914,6 +963,18 @@ public class Level
 		float.TryParse( s[key], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out value );
 
 	// A ride's build cost (Upgrades[0].CostOfUpgrade) and its display name (Info.Name, localized) from its .sam.
+	/// <summary>Start a go-kart / water ride's piece-built track (<see cref="TileTrack"/>), or null for a ride that
+	/// isn't built from track pieces. A piece costs <c>Costs.KartTrackCell</c> / <c>Costs.WaterTrackCell</c>.</summary>
+	public static TileTrack? NewTileTrack( Ride ride )
+	{
+		if ( saveGrid is not { } grid || saveTerrain is not { } terrain || TileTrack.PiecePrefix( ride ) is not { } prefix )
+			return null;
+		var standard = new SettingsFile( $"/levels/{Current.Name}/Standard.sam" );
+		string key = prefix == "wr_" ? "Costs.WaterTrackCell" : "Costs.KartTrackCell";
+		float cost = float.TryParse( standard[key], out var c ) ? c : (prefix == "wr_" ? 500f : 400f);
+		return new TileTrack( ride, prefix, grid, terrain, cost );
+	}
+
 	// The theme's buildable rides and sideshows by Info.Id → (localized) name, for challenges about one ride.
 	private static Dictionary<int, string> ThemeObjects( string theme )
 	{
