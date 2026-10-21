@@ -117,8 +117,10 @@ existing physics:
 
 ## Remaining
 
-1. **`COAST`/`ADDOBJ` sound residue**: COAST's direct triggers + the ADDOBJ object-sound binding (needs the
-   `.MAP`/EventMap code→asset catalog — T-016/T-032).
+1. **`ADDOBJ` sound residue**: the object-sound binding of `ADDOBJ` types 1–2 stays deferred — the operand roles
+   don't agree across scripts (`bus.RSE`'s `ADDOBJ 8,1,6,1` then `SETOBJPARAM 1,20,vol` addresses the object by
+   its *second* operand), and guessing would bring back the wrong-clip bugs T-037 fixed. (`COAST` has no sound
+   trigger: its decoded sub-commands are load / can-load / wants-off / state / mode / capacity / worn / init.)
 2. A finer pass on the 3-4-vs-5-9 split's *audible* character (e.g. per-category gain/reverb buses). (The scream now
    comes from the moving train / car — `RideEngine.RiderPosition`, the lead car of a coaster train or a car ride's
    vehicle — and from the ride body only when it has none, 2026-10-21.)
