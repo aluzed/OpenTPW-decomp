@@ -2,8 +2,8 @@
 
 - **Priority**: 🟡 Feature
 - **Type**: Engine wiring / audio
-- **Status**: ⚠️ Mostly done — music per world, ambience, SFX, volume UI and one shared decoder; only the CI-built
-  Windows/macOS `libtpwmp3` binaries remain.
+- **Status**: ✅ Done — music per world, ambience, SFX, volume UI and one shared decoder; the Windows/macOS
+  `libtpwmp3` binaries are now committed (cross-compiled with zig; not yet run on those OSes).
 - **Related**: [T-003](T-003-naudio-not-portable.md) (portable audio stack), [01-project-status](../01-project-status.md).
 
 ## Problem
@@ -52,7 +52,10 @@ strings were unwired labels.
    `OpenTPW.Common.MpegDecoder` (2026-10-21); NLayer stays only as its fallback where the native lib isn't built.
 4. ✅ **Track selection** — each park world plays its own `Music/MusicHD.sdt` (`LevelSoundscape`); the lobby keeps
    the global `level4c`.
-5. ☐ Commit the CI-built Windows/macOS `libtpwmp3` binaries so those platforms ship audio.
+5. ✅ Windows/macOS `libtpwmp3` binaries committed (2026-10-21): `build.sh` cross-compiles them from Linux with zig
+   0.13 (`x86_64-windows-gnu` DLL exporting `tpw_mp3_decode`/`tpw_mp3_free`; a universal x86_64 + arm64 dylib joined
+   by `fatmacho.py`, the arm64 slice ad-hoc signed by zig's linker). Checked structurally (PE export table, Mach-O
+   slices + code signature); a run on real Windows / macOS hardware is still to be confirmed.
 
 ## Affected files
 

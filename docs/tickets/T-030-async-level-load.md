@@ -2,8 +2,9 @@
 
 - **Priority**: 🟠 Medium (the window is frozen ~20-25s during load)
 - **Type**: Rendering / UX
-- **Status**: ⚠️ Mostly — the load freeze is resolved (responsive, per-step + per-mesh progress with
-  a progress bar); only the optional 60 fps fully-threaded load remains.
+- **Status**: ✅ Done — the acceptance is met: the load freeze is resolved (responsive, per-step + per-mesh
+  progress with a progress bar; lobby in ~4 s, a park in ~2.5 s). The 60 fps fully-threaded load (To do 1–2) stays
+  an optional follow-up, not needed for the acceptance.
 - **Follow-up of**: [T-024](T-024-linux-black-screen.md) (promotes its informal follow-up to a ticket).
 
 ## Problem

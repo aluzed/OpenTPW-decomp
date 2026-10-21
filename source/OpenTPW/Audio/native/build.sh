@@ -15,6 +15,20 @@ else
 	echo "skip linux-x64: gcc not found"
 fi
 
+# zig (https://ziglang.org, a self-contained tarball) cross-compiles both the Windows DLL and the macOS dylibs
+# from Linux; set ZIG to its binary.
+ZIG=${ZIG:-$(command -v zig || true)}
+if [ -n "$ZIG" ]; then
+	"$ZIG" cc -target x86_64-windows-gnu -O2 -shared tpwmp3.c -o win-x64/tpwmp3.dll
+	rm -f win-x64/tpwmp3.lib win-x64/tpwmp3.pdb
+	echo "built win-x64/tpwmp3.dll (zig)"
+	"$ZIG" cc -target x86_64-macos -O2 -dynamiclib tpwmp3.c -o osx/x64.dylib
+	"$ZIG" cc -target aarch64-macos -O2 -dynamiclib tpwmp3.c -o osx/arm64.dylib # ad-hoc signed by zig's linker
+	python3 fatmacho.py osx/libtpwmp3.dylib osx/x64.dylib osx/arm64.dylib && rm osx/x64.dylib osx/arm64.dylib
+	echo "built osx/libtpwmp3.dylib (zig, universal x86_64 + arm64)"
+	exit 0
+fi
+
 # Windows (.dll) via mingw-w64 cross-compiler
 if command -v x86_64-w64-mingw32-gcc >/dev/null 2>&1; then
 	x86_64-w64-mingw32-gcc -O2 -shared tpwmp3.c -o win-x64/tpwmp3.dll

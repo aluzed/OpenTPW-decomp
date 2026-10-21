@@ -11,7 +11,9 @@ minimp3 decodes it correctly — see [T-031](../../../../docs/tickets/T-031-game
 - `minimp3.h`, `minimp3_ex.h` — the upstream decoder (vendored).
 - `build.sh` — builds the lib for whichever toolchains are present.
 - `linux-x64/libtpwmp3.so` — committed Linux build.
-- `win-x64/tpwmp3.dll`, `osx/libtpwmp3.dylib` — produced by CI (not committed by default).
+- `win-x64/tpwmp3.dll`, `osx/libtpwmp3.dylib` — committed; cross-compiled from Linux with zig (the dylib is
+  universal x86_64 + arm64, the arm64 slice ad-hoc signed). Not yet run on Windows / macOS.
+- `fatmacho.py` — joins thin Mach-O files into a universal one (a `lipo -create` stand-in).
 
 `OpenTPW.csproj` copies the per-OS lib next to the executable; .NET resolves `DllImport("tpwmp3")`
 to `libtpwmp3.so` / `tpwmp3.dll` / `libtpwmp3.dylib`. If the lib for the current OS is absent, audio
@@ -20,7 +22,8 @@ disables itself gracefully (no crash).
 ## Building
 
 ```bash
-./build.sh          # Linux (gcc); also Windows (mingw-w64) / macOS (clang|osxcross) if present
+./build.sh                        # Linux (gcc); also Windows (mingw-w64) / macOS (clang|osxcross) if present
+ZIG=~/zig/zig ./build.sh          # + Windows and macOS, cross-compiled by zig
 ```
 
 Per-platform commands (also in `.github/workflows/native-audio.yml`):
