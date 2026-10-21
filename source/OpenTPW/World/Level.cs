@@ -7,6 +7,7 @@ public class Level
 	internal static Level Current { get; set; } = null!;
 
 	public RootPanel Hud { get; set; } = null!;
+	private Sky? sky;
 	public Sun SunLight { get; set; } = null!;
 
 	/// <summary>True once a park has loaded — selects the in-park HUD over the lobby front-end (T-038).</summary>
@@ -37,6 +38,11 @@ public class Level
 
 		SetupEntities();
 		SetupHud();
+		if ( InPark )
+			Fog.UseSkyOf( Name ); // distance fog toward the park's own horizon colour
+		else
+			Fog.Color = Fog.Default;
+		sky?.SetColor( Fog.Color ); // and a backdrop that matches it
 		LevelSoundscape.Start( InPark ? Name : null ); // the park's own music + ambience, or the front-end's
 	}
 
@@ -55,7 +61,7 @@ public class Level
 		SunLight = new Sun() { Position = new( 0, 100, 100 ) };
 
 		LoadProgress.Report( "Loading sky...", 0.12f );
-		_ = new Sky();
+		sky = new Sky();
 
 		// Front-end lobby (the game's real menu — restored in T-063 after a dev park had replaced it): the four
 		// themed islands float over the sky, orbited by the lobby camera, with the logo + menu UI on top

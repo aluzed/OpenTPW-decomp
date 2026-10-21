@@ -45,3 +45,13 @@ overlay (`DayNightOverlay`) — or a missing terrain texture.
 ## Acceptance criteria
 
 - The jungle park reads green/brown in daylight, and night is clearly darker without being a flat blue.
+
+## Per-world fog + backdrop (2026-10-21)
+
+The fog colour was a hard-coded jungle cyan in `test.shader`/`3d.shader`, so zoomed-out Halloween/Space parks drowned
+in cyan haze. It is now a uniform (`ObjectUniformBuffer.g_vFogColor`, std140 offset 240 — the old `_padding2` slot)
+set from `Fog.Color`: for a park, the average non-white colour of its `sky/sky_cyl.tga` horizon gradient (jungle
+(0.34, 0.84, 1.0) — matching the old constant —, hallow navy, space orange); the front-end keeps the default. The
+flat `Sky` backdrop takes the same colour. (Note: `sky.tga` is the cloud layer, `sky_rgb.tga` the zenith; a sky
+dome isn't worth drawing — at the build camera's 48° pitch and 60° FOV the top of the view stays 18° below the
+horizon.) `water.shader` is unchanged (its `Water` entity is unused and has its own UBO struct).

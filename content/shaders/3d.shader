@@ -9,6 +9,8 @@ common {
     vec3 g_vLightPos;
     vec3 g_vLightColor;
     vec3 g_vCameraPos;
+    float g_flTime;
+    vec4 g_vFogColor;
   } g_oUbo;
 }
 
@@ -63,7 +65,7 @@ fragment {
     vec4 vColor = texture( sampler2D( Color, s_Color ), vs_out.vTexCoords ) * 0.75;
     vColor.z *= 1.25;
 
-    vec3 fogColor = vec3( 0.28, 0.88, 1.0 );
+    vec3 fogColor = g_oUbo.g_vFogColor.rgb; // the park's horizon colour (Fog.cs)
     float fogStart = 2.0;
     float fogEnd = 30.0;
 
