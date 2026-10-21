@@ -43,7 +43,7 @@ All format/VM decoding and the core gameplay loop are done. Open work falls into
 | [T-001](T-001-backslash-paths-linux.md) | 🔴 High | ✅ Done | Hardcoded `\` paths break everything on Linux |
 | [T-002](T-002-tests-absolute-paths.md) | 🔴 High | ✅ Done | Tests: hardcoded absolute paths + dependency on a game install |
 | [T-003](T-003-naudio-not-portable.md) | 🟠 Medium | ✅ Done | NAudio (audio) not portable off Windows |
-| [T-004](T-004-system-drawing-modkit.md) | 🟠 Medium | ✅ Mostly | `System.Drawing.Common` is Windows-only in the ModKit |
+| [T-004](T-004-system-drawing-modkit.md) | 🟠 Medium | ✅ Done | `System.Drawing.Common` is Windows-only in the ModKit |
 | [T-005](T-005-vulnerable-dependencies.md) | 🟠 Medium | ✅ Done | Vulnerable dependencies (direct + transitive) |
 | [T-006](T-006-gamepath-config.md) | 🟡 Low | ✅ Done | Windows default `GamePath` + no portable override |
 | [T-007](T-007-vm-opcodes-rse.md) | 🟡 Feature | ✅ Done | Ride VM: **106/106 (100%)** — Batch A (43 pure) + all of Batch B (objects incl. ADDOBJ_EXT/anim/`WAIT*`/sound/scream, limbo/cross-VM/walk/head pure-VM families, TURBO, the **light** & **particle** (.PLB-driven) subsystems, and the three car-object multiplexers **COAST/TOUR/BUMP**, RE'd as fixed 2-operand `(sub,arg)` switches; queries return 0 / commands no-op without a car engine — the faithful `0x4a454647`-magic-absent path) |

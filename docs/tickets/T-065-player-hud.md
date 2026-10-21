@@ -11,7 +11,10 @@
 ## Remaining
 
 - The HUD is still text lines; a graphical TPW-style HUD (money counter, icons, the original panel art) is a
-  larger follow-up.
+  larger follow-up. **Finding (2026-10-21)**: the original UI is built from 3D widgets — `ui.wad` holds hundreds of
+  `.MD2` models (one per button: `b_finance`, `b_loans`, `b_map`, `b_buystaff`…, frames `!frame`/`!f_plain`, sliders
+  `slider_*`, windows `w_small/w_med/w_big/w_dialog`, panels `mainpanel`/`panel`/`res_panel`) with ~460 textures,
+  and no layout file — positions/behaviour live in the executable. Rebuilding it means reversing the UI layer.
 
 ## Affected files
 

@@ -2,7 +2,8 @@
 
 - **Priority**: 🟠 Medium
 - **Type**: Portability
-- **Status**: ✅ Mostly resolved — `System.Drawing.Common` was an **unused** reference
+- **Status**: ✅ Done (closed 2026-10-21: the ModKit is a class library (`OutputType Library`) loaded by the game,
+  which runs on Linux with 0 exceptions; nothing to launch separately) — `System.Drawing.Common` was an **unused** reference
   (no GDI+ types used anywhere) and is now Windows-only in `OpenTPW.ModKit.csproj`, so
   the Linux build excludes it. Note: a **transitive** `System.Drawing.Common 6.0.0`
   still enters the main project via `System.Configuration.ConfigurationManager` →
