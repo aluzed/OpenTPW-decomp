@@ -59,10 +59,14 @@ internal sealed class ManagePanel : HudPanel
 		// Selected-ride row (only when a ride is selected via the Default tool).
 		if ( BuildMode.Current?.SelectedRide is { } ride )
 		{
-			list.Add( new Btn( new Rectangle( 16f, RideY, 64f, BtnH ), "PRICE-", ride.TicketPrice > 1f,
-				() => ride.TicketPrice = System.Math.Max( 1f, ride.TicketPrice - 1f ) ) );
-			list.Add( new Btn( new Rectangle( 84f, RideY, 88f, BtnH ), $"PRICE+ {ride.TicketPrice:0}", true,
-				() => ride.TicketPrice += 1f ) );
+			// Only sideshows charge (the price of a game); rides are free in TPW.
+			if ( ride.IsSideshow )
+			{
+				list.Add( new Btn( new Rectangle( 16f, RideY, 64f, BtnH ), "PRICE-", ride.TicketPrice > 1f,
+					() => ride.TicketPrice = System.Math.Max( 1f, ride.TicketPrice - 1f ) ) );
+				list.Add( new Btn( new Rectangle( 84f, RideY, 88f, BtnH ), $"PRICE+ {ride.TicketPrice:0}", true,
+					() => ride.TicketPrice += 1f ) );
+			}
 			list.Add( ResearchButton( fin, ride ) );
 			list.Add( new Btn( new Rectangle( 350f, RideY, 116f, BtnH ),
 				$"SELL ${ride.BuildCost * Ride.SellRefundFraction:0}", true,

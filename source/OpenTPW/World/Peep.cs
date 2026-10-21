@@ -476,14 +476,16 @@ public sealed class Peep : ModelEntity
 	/// <summary>
 	/// Rates a ride experience (T-050) → a satisfaction score 0..100 + the peep's thought. Pure so it can
 	/// be unit-tested. Satisfaction blends the ride's excitement with value-for-money (its price vs the
-	/// "fair" price ≈ excitement/10) and its reliability; the thought names the dominant factor.
+	/// "fair" price ≈ excitement/10) and its reliability; the thought names the dominant factor. A free ride
+	/// (<paramref name="ticketPrice"/> ≤ 0 — every ride in TPW; only sideshows charge) has no value-for-money term.
 	/// </summary>
 	public static (float Satisfaction, RideThought Thought) RateRide( int excitement, float ticketPrice, float reliability )
 	{
 		float fairPrice = MathF.Max( 1f, excitement / 10f );
 		// +1 fair → +0 value; each unit cheaper adds, each unit dearer subtracts (scaled by fair price).
-		float valueRatio = ticketPrice / fairPrice;                 // 1 = fair, <1 cheap, >1 dear
-		float valueDelta = (1f - valueRatio) * 30f;                 // ±; cheap rides feel better
+		bool free = ticketPrice <= 0f;
+		float valueRatio = free ? 1f : ticketPrice / fairPrice;     // 1 = fair, <1 cheap, >1 dear
+		float valueDelta = (1f - valueRatio) * 30f;                 // ±; cheap rides feel better (0 when free)
 		float reliabilityPenalty = (1f - Math.Clamp( reliability, 0f, 1f )) * 60f;
 
 		float satisfaction = Math.Clamp( excitement + valueDelta - reliabilityPenalty, 0f, 100f );
@@ -491,7 +493,7 @@ public sealed class Peep : ModelEntity
 		RideThought thought =
 			reliability < 0.5f ? RideThought.Unreliable :
 			valueRatio > 1.5f ? RideThought.TooExpensive :
-			valueRatio < 0.6f && satisfaction >= 50f ? RideThought.GoodValue :
+			!free && valueRatio < 0.6f && satisfaction >= 50f ? RideThought.GoodValue :
 			satisfaction >= 70f ? RideThought.GreatRide :
 			satisfaction <= 30f ? RideThought.Rubbish :
 			RideThought.Mediocre;

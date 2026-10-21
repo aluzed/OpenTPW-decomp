@@ -1,10 +1,9 @@
 namespace OpenTPW;
 
 /// <summary>
-/// The park's bank balance and the money flows that move it: ride tickets and the gate entry fee bring
-/// money in, ride upkeep drains it. In the original the player sets ride prices and the entry fee at
-/// runtime (they aren't in the ride <c>.sam</c>), so the per-ride <see cref="Ride.TicketPrice"/> and
-/// <see cref="Ride.UpkeepPerSecond"/> are sensible derived defaults for now. Cumulative flow totals are
+/// The park's bank balance and the money flows that move it: the gate entry fee, shop sales and sideshow games
+/// bring money in (rides are free in TPW — <see cref="TakeRideTicket"/> just counts a ride at price 0), ride
+/// upkeep and staff wages drain it. <see cref="Ride.UpkeepPerSecond"/> is a sensible derived default for now. Cumulative flow totals are
 /// kept for diagnostics and a future finances HUD.
 /// </summary>
 public sealed class ParkFinances

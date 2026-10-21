@@ -74,3 +74,11 @@ offer. The park also opens with `BankAccountInfo.InitialCash` (50 000) and `Init
 hard-coded 30 000 / 10; as that fee equals `PeepInfo.MinimumEntryFee`, the "pays up happily" band is now inclusive.
 Saves made before this name their loans "Small"/"Large", which no longer match an offer (the loan is dropped on load).
 Unit-tested (`LoanOffersTests`); verified in-game.
+
+## 2026-10-21 — rides are free (as in TPW)
+
+The original's ride window (UITEXT 17–31: users, age, excitement, reliability, state of repair, scrap value,
+upgrades) has no price; only shops ("Sale price") and sideshows ("Price of game") charge, and the gate fee's ideal is
+derived from the park's total ride excitement. OpenTPW charged a per-ride ticket (excitement/10). Rides are now free:
+`Ride.TicketPrice` is 0 except for sideshows, the ride PRICE± buttons / `,` `.` keys apply to sideshows only, and a
+free ride has no value-for-money term in `Peep.RateRide`. A 130 s autoplace run still gains money (gate + shops).

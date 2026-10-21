@@ -237,8 +237,8 @@ public sealed class BuildMode : Entity
 			// Only in the Default tool (Selected < 0); while placing (Selected ≥ 0), R rotates instead.
 			if ( SelectedRide is { } sel && Selected < 0 )
 			{
-				if ( Hit( Key.Comma ) ) sel.TicketPrice = MathF.Max( 1f, sel.TicketPrice - 1f );
-				if ( Hit( Key.Period ) ) sel.TicketPrice += 1f;
+				if ( sel.IsSideshow && Hit( Key.Comma ) ) sel.TicketPrice = MathF.Max( 1f, sel.TicketPrice - 1f );
+				if ( sel.IsSideshow && Hit( Key.Period ) ) sel.TicketPrice += 1f;
 				if ( Hit( Key.R ) && sel.HasNextLevel && !sel.NextResearched && !sel.IsResearching
 					&& fin.CanAfford( sel.NextResearchCost ) )
 				{

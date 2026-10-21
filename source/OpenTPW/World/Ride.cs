@@ -146,9 +146,10 @@ public class Ride : Entity
 	/// <summary>The ride's base attraction value (<c>Info.AttractionValue</c>).</summary>
 	public int Attraction { get; private set; } = 25;
 
-	/// <summary>What a peep pays to board, in coins. Player-settable (T-042); defaults to a value
-	/// derived from the ride's excitement (more exciting rides can charge more).</summary>
-	public float TicketPrice { get; set; } = 5f;
+	/// <summary>What a peep pays to board, in coins. Rides are free in Theme Park World — the original's ride window
+	/// has no price, only shops ("Sale price") and sideshows ("Price of game") charge, and the gate fee is what a
+	/// park's rides are worth (<see cref="EntryFeeOpinion"/>) — so this is 0 except for sideshows (player-settable).</summary>
+	public float TicketPrice { get; set; } = 0f;
 
 	/// <summary>The ride's running cost per second (its money sink), scaled by how many it seats.</summary>
 	public float UpkeepPerSecond => Capacity * 0.1f;
@@ -395,7 +396,6 @@ public class Ride : Entity
 			}
 			Excitement = Math.Max( 1, ReadInt( settings, "UsageInfo.ExcitementLevel", 50 ) );
 			Attraction = ReadInt( settings, "Info.AttractionValue", 25 );
-			TicketPrice = MathF.Max( 1f, MathF.Round( Excitement / 10f ) );
 			IsIndoors = ReadInt( settings, "UsageInfo.ISIndoors", 0 ) != 0; // under cover → shelter in bad weather
 
 			// Sideshow takings (T-058): a stall is pay-to-play with a chance of winning a prize; load its

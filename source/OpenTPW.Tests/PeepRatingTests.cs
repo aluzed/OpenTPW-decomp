@@ -76,4 +76,14 @@ public class PeepRatingTests
 		Assert.AreEqual( "Unsafe", RideThoughtText.Tag( RideThought.Unreliable ) );
 		Assert.AreEqual( "Great", RideThoughtText.Tag( RideThought.GreatRide ) );
 	}
+
+	[TestMethod]
+	public void AFreeRideHasNoValueForMoneyTerm()
+	{
+		// Rides are free in TPW: satisfaction is the excitement (minus unreliability), never "good value".
+		var (sat, thought) = Peep.RateRide( 60, 0f, 1f );
+		Assert.AreEqual( 60f, sat, 1e-3f );
+		Assert.AreNotEqual( RideThought.GoodValue, thought );
+		Assert.AreNotEqual( RideThought.TooExpensive, thought );
+	}
 }

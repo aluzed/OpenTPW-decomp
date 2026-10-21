@@ -139,7 +139,9 @@ internal sealed class ParkStatsPanel : HudPanel
 
 			if ( build.SelectedRide is { } sel )
 			{
-				lines.Add( $"RIDE {sel.Name} L{sel.UpgradeLevel} cap {sel.Capacity}  price {sel.TicketPrice:0} (,.)" );
+				lines.Add( sel.IsSideshow
+					? $"SIDESHOW {sel.Name}  price {sel.TicketPrice:0} (,.)"
+					: $"RIDE {sel.Name} L{sel.UpgradeLevel} cap {sel.Capacity}  {Localization.Get( UIStrings.Excitement, "Excitement" )} {sel.Excitement}" );
 				if ( sel.IsResearching )
 					lines.Add( $"  researching... {sel.ResearchFraction * 100f:0}%" );
 				else if ( sel.NextResearched )
