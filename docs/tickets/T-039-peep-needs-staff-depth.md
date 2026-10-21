@@ -95,3 +95,13 @@ Build clean, 74/0 tests.
 ## Affected files
 
 `source/OpenTPW/World/Peep.cs`, `Staff.cs`, `Shop.cs`, `Level.cs`.
+
+## Toilet places and queues (2026-10-21)
+
+A toilet seats `Upgrades[0].InitCapacity` visitors at a time (small toilet 1, super toilet 5 — `Shop.Capacity`);
+each spends 2 s inside (`Shop.ToiletSeconds`), the others queue (`Shop.Waiting`) and give up after 20 s, upset
+(MediumHappinessChange) and not trying that toilet again. A toilet's queue counts as extra walk when a visitor
+picks one (20 units per visitor ahead, shared over its places), so a crowd spreads over the park's toilets. The
+advisor says "A park this size should have more toilets" (TAG_SYSTEM 88, `FeaturesNotEnoughToilets`) when the
+average queue passes `AverageQueueLongerThan` 2.5. Jungle's super toilet (`supbog`) is now in the catalog like the
+other worlds', and the dev park builds one. `OPENTPW_ECON_DEBUG` prints `toiletQueue`.

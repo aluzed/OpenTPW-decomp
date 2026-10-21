@@ -377,9 +377,9 @@ public class Level
 				+ $"mech={CommitPlacement( Item( "mechanic" ), grid, terrain, cx + 4, cy )} "
 				+ $"guard={CommitPlacement( Item( "guard" ), grid, terrain, cx, cy )}" ); // guard patrols the centre (T-039 vandalism deterrence)
 			// Souvenir stalls by the paths, so visitors make impulse buys (balloons, gifts), and a few litter bins.
-			foreach ( var (name, dx, dy) in new[] { ("balloon", 10, 1), ("giftshop", 10, 4), ("cost_shp", 10, 7), ("bin", 4, 6), ("bin", -2, 2), ("bin", 6, -1) } )
+			foreach ( var (name, dx, dy) in new[] { ("balloon", 10, 1), ("giftshop", 10, 4), ("cost_shp", 10, 7), ("bin", 4, 6), ("bin", -2, 2), ("bin", 6, -1), ("bigtoilet", 8, 8) } )
 				if ( catalog.FirstOrDefault( c => c.Name == name ) is { Name: not null } souvenir )
-					CommitPlacementNear( souvenir, grid, terrain, cx + dx, cy + dy, radius: 4 );
+					CommitPlacementNear( souvenir, grid, terrain, cx + dx, cy + dy, radius: name == "bigtoilet" ? 12 : 4 );
 			AutoplaceFeatures( catalog, grid, terrain, cx, cy );
 
 			// Rotation (T-041): place a totem rotated 90° and confirm its footprint dims swapped (3x4 -> 4x3).
@@ -1387,7 +1387,7 @@ public class Level
 		{
 			nextEconLog = Time.Now + 5f;
 			Log.Info( $"[econ] money={f.Money:0}  ride+={f.RideRevenue:0}  entry+={f.EntryRevenue:0}  shop+={f.FoodRevenue:0}  upkeep-={f.UpkeepPaid:0}  wages-={f.WagesPaid:0}"
-				+ $"  vandalism={Peep.VandalismActs} deterred={Peep.VandalismDeterred} rides={f.RidesRidden} toilet={Peep.ToiletVisits} vomit={Peep.VomitCount} refused={Peep.StallsRefused} stink={Peep.StinkBombs} binned={Shop.LitterBinned} litter={Litter.Active.Count} waiting={WaitingAtGate} toiletClean={Shop.ToiletCleanliness():0}"
+				+ $"  vandalism={Peep.VandalismActs} deterred={Peep.VandalismDeterred} rides={f.RidesRidden} toilet={Peep.ToiletVisits} vomit={Peep.VomitCount} refused={Peep.StallsRefused} stink={Peep.StinkBombs} binned={Shop.LitterBinned} litter={Litter.Active.Count} waiting={WaitingAtGate} toiletClean={Shop.ToiletCleanliness():0} toiletQueue={Shop.AverageToiletQueue():0.0}"
 				+ $"  breakdowns={Ride.Breakdowns} repairs={Ride.Repairs}"
 				+ $"  sold: {string.Join( ' ', Enum.GetValues<SaleCategory>().Where( c => f.Sold( c ) > 0 ).Select( c => $"{c}={f.Sold( c )}" ) )}" );
 		}

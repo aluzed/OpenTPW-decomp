@@ -38,4 +38,12 @@ public class FeatureAdviceTests
 		Assert.AreEqual( BuildCategory.Shops, new BuildCatalogItem( "drink", null, null, 2, 2, 650f ).Category );
 		Assert.AreEqual( BuildCategory.Staff, new BuildCatalogItem( "guard", null, StaffRole.Guard, 1, 1, 1000f ).Category );
 	}
+
+	[TestMethod]
+	public void LongToiletQueuesAskForMoreToilets()
+	{
+		var f = new ParkFacilities( 1, 1, 1, 1, 3, 0, 0, 2, 0, Toilets: 1, Litter: 0, Visitors: 80, NeedingToilet: 0, Misbehaving: 0, Days: 10, Features: 2, ToiletQueue: 3f );
+		CollectionAssert.Contains( Ids( f ), "FeaturesNotEnoughToilets" );
+		CollectionAssert.DoesNotContain( Ids( f with { ToiletQueue = 1f } ), "FeaturesNotEnoughToilets" );
+	}
 }

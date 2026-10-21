@@ -44,6 +44,27 @@ public sealed class Shop : ModelEntity
 	/// advisor complains (Advisor.sam FeaturesDirtyToilets*.FilthierThan 60 / 90).</summary>
 	public float Filth { get; set; }
 
+	// ---- Occupancy (toilets): Upgrades[0].InitCapacity cubicles; visitors queue for a free one ----
+
+	/// <summary>How many visitors can use it at once (<c>Upgrades[0].InitCapacity</c>: a small toilet 1, a super toilet 5).</summary>
+	public int Capacity => Stats?.Capacity ?? 1;
+
+	/// <summary>Visitors using it right now.</summary>
+	public int InUse { get; set; }
+
+	/// <summary>Visitors waiting for a free place.</summary>
+	public int Waiting { get; set; }
+
+	/// <summary>Seconds a visitor spends in a toilet cubicle.</summary>
+	public const float ToiletSeconds = 2f;
+
+	/// <summary>The average toilet queue (FeaturesNotEnoughToilets.AverageQueueLongerThan 2.5).</summary>
+	public static float AverageToiletQueue()
+	{
+		var toilets = Stalls.Where( s => s.Kind == ShopKind.Toilet ).ToList();
+		return toilets.Count == 0 ? 0f : toilets.Average( s => (float)s.Waiting );
+	}
+
 	public const float FilthPerVisit = 1f, DirtyFilth = 60f, FilthyFilth = 90f;
 
 	/// <summary>Whether a handyman should come and clean this toilet.</summary>

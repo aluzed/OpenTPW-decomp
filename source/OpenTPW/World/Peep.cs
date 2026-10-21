@@ -300,6 +300,68 @@ public sealed class Peep : ModelEntity
 	private float bladder;
 	private float illness; // ride sickness, toward VomitCapacity; a toilet settles it
 
+	// Toilet occupancy: a visitor waits (counted in Shop.Waiting) for one of its Capacity cubicles, spends
+	// ToiletSeconds in it, and gives up after ToiletPatience seconds of queueing.
+	private Shop? toiletQueued, toiletInside;
+	private float toiletTimer;
+	private const float ToiletPatience = 20f;
+	private const float QueueWalkPerVisitor = 20f; // a visitor ahead in a toilet queue is worth this much walking
+
+	// True once the visit is over (go on to its effects); false while still queueing or inside.
+	private bool UseToiletCubicle( Shop toilet )
+	{
+		if ( toiletInside == toilet )
+		{
+			if ( (toiletTimer -= Time.Delta) > 0f )
+				return false;
+			toilet.InUse = Math.Max( 0, toilet.InUse - 1 );
+			toiletInside = null;
+			return true;
+		}
+		if ( toilet.InUse < toilet.Capacity )
+		{
+			LeaveToiletQueue();
+			toilet.InUse++;
+			toiletInside = toilet;
+			toiletTimer = Shop.ToiletSeconds;
+			return false;
+		}
+		if ( toiletQueued != toilet )
+		{
+			LeaveToiletQueue();
+			toilet.Waiting++;
+			toiletQueued = toilet;
+			toiletTimer = ToiletPatience;
+		}
+		if ( (toiletTimer -= Time.Delta) <= 0f )
+		{
+			// Waited too long: off to find another, in a worse mood (MediumHappinessChange).
+			LeaveToiletQueue();
+			happiness = MathF.Max( 0f, happiness - 15f );
+			refusedStalls.Add( toilet );
+			shopTarget = null;
+			ResetPath();
+			PickRoute();
+		}
+		return false;
+	}
+
+	private void LeaveToiletQueue()
+	{
+		if ( toiletQueued != null )
+			toiletQueued.Waiting = Math.Max( 0, toiletQueued.Waiting - 1 );
+		toiletQueued = null;
+	}
+
+	// A visitor removed mid-visit (leaving the park, demolished toilet) frees its place in the queue / cubicle.
+	private void ReleaseToilet()
+	{
+		LeaveToiletQueue();
+		if ( toiletInside != null )
+			toiletInside.InUse = Math.Max( 0, toiletInside.InUse - 1 );
+		toiletInside = null;
+	}
+
 	// Impulse items bought this visit (one of each: a visitor with a balloon doesn't buy another).
 	private readonly HashSet<SaleCategory> bought = new();
 	// Stalls this visitor found far too dear this visit (it won't walk back to them).
@@ -427,6 +489,8 @@ public sealed class Peep : ModelEntity
 
 		// Detouring to a stall: walk there (routing around rides), use it, satisfy the matching need
 		// (food → hunger, drink → thirst but fills the bladder, toilet → bladder, free), then resume riding.
+		if ( (toiletQueued ?? toiletInside) is { } heldToilet && heldToilet != shopTarget )
+			ReleaseToilet(); // headed elsewhere now: give up the place
 		if ( shopTarget != null )
 		{
 			if ( MoveTo( shopTarget.Position ) )
@@ -461,6 +525,12 @@ public sealed class Peep : ModelEntity
 					ResetPath();
 					PickRoute();
 					return;
+				}
+				if ( shopTarget.Kind == ShopKind.Toilet && !UseToiletCubicle( shopTarget ) )
+				{
+					FaceCamera();
+					ApplySprite();
+					return; // queueing for a free cubicle, or inside one
 				}
 				if ( shopTarget.Kind == ShopKind.Toilet )
 				{
@@ -703,6 +773,7 @@ public sealed class Peep : ModelEntity
 
 	private void BeginLeaving()
 	{
+		ReleaseToilet();
 		route?.Dequeue( this );
 		route = null;
 		ResetPath();
@@ -719,6 +790,7 @@ public sealed class Peep : ModelEntity
 	// A departed visitor leaves the park for good (arrivals running, T-074): drop it and its shadow.
 	private void LeavePark()
 	{
+		ReleaseToilet();
 		Entity.All.Remove( this );
 		if ( shadow != null )
 			Entity.All.Remove( shadow );
@@ -1076,7 +1148,11 @@ public sealed class Peep : ModelEntity
 			foreach ( var stall in Shop.Stalls )
 				if ( stall.Kind == kind && !refusedStalls.Contains( stall ) )
 				{
-					candidates.Add( (kind, urgency, (stall.Position - Position).Length) );
+					// A toilet's queue counts as extra walk (per waiting visitor, shared over its places), so the
+					// crowd spreads over the park's toilets instead of all queueing at the nearest.
+					float queue = stall.Kind == ShopKind.Toilet
+						? MathF.Max( 0f, stall.Waiting + stall.InUse - stall.Capacity + 1 ) / stall.Capacity * QueueWalkPerVisitor : 0f;
+					candidates.Add( (kind, urgency, (stall.Position - Position).Length + queue) );
 					stalls.Add( stall );
 				}
 		}

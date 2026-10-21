@@ -96,6 +96,7 @@ public static class AdvisorTips
 		["ShopsBuildShops"] = 77,
 		["SideshowsBuildSideshows"] = 81,
 		["FeaturesNoToilets"] = 86,
+		["FeaturesNotEnoughToilets"] = 88, // "A park this size should have more toilets."
 		["ShopsBuildMoreShops"] = 78,
 		["SideshowsBuildMoreSideshows"] = 82,
 		["FeaturesDirtyToilets1"] = 89, // "…getting dirty and you have no cleaners…"

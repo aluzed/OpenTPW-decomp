@@ -309,7 +309,8 @@ public sealed class Advisor : Entity
 			WorstToiletFilth: Shop.Stalls.Where( s => s.Kind == ShopKind.Toilet ).Select( s => s.Filth ).DefaultIfEmpty( 0f ).Max(),
 			AverageGrades: StaffStrikes.Roles.Select( r => staff.Where( s => s.Role == r ).Select( s => (float)s.Grade ).DefaultIfEmpty( float.NaN ).Average() ).ToArray(),
 			StaffNotices: PendingStaffNotices(),
-			Features: Ride.Features.Count, Cameras: Ride.Features.Count( r => r.ProvidesSecurity ) );
+			Features: Ride.Features.Count, Cameras: Ride.Features.Count( r => r.ProvidesSecurity ),
+			ToiletQueue: Shop.AverageToiletQueue() );
 	}
 
 	// Strike announcements wait up to StaffNoticeLife seconds for the advisor to have a free moment.

@@ -35,7 +35,9 @@ public readonly record struct ParkFacilities(
 	// and the strike announcements (StaffStrikes notices) still to be made.
 	float[]? AverageGrades = null, IReadOnlyCollection<string>? StaffNotices = null,
 	// Features (scenery) placed, and how many of them are security cameras; -1 = not counted (older callers).
-	int Features = -1, int Cameras = 0 );
+	int Features = -1, int Cameras = 0,
+	// The average number of visitors queueing at a toilet (FeaturesNotEnoughToilets).
+	float ToiletQueue = 0f );
 
 /// <summary>
 /// Maps the live park state to advisor message candidates — <c>(id, group, score)</c> for the
@@ -183,6 +185,10 @@ public static class AdvisorAdvice
 				: (f.Handymen == 0 ? "FeaturesDirtyToilets1" : "FeaturesDirtyToilets2");
 			Add( id, P( id, "PointsPerFilthPct", filthy ? 2f : 1f ) * f.WorstToiletFilth );
 		}
+
+		// Toilet queues (FeaturesNotEnoughToilets.AverageQueueLongerThan 2.5): "a park this size should have more".
+		if ( f.Toilets > 0 && f.ToiletQueue > P( "FeaturesNotEnoughToilets", "AverageQueueLongerThan", 2.5f ) )
+			Add( "FeaturesNotEnoughToilets", P( "FeaturesNotEnoughToilets", "Score", 100f ) );
 
 		// Money to spare: spend it, or repay what's owed (WealthHigh / WealthHighRepayLoan).
 		if ( f.Debt > 0f && f.Money > f.Debt * P( "WealthHighRepayLoan", "Margin", 1.2f ) )

@@ -31,7 +31,7 @@ internal static class ShopBuilding
 	/// rides) and the <c>UsageInfo.*Effect</c> values a purchase has on the visitor.</summary>
 	public readonly record struct Stats( string Name, float Price, float CostOfGoods, float BuildCost,
 		int ShopType = 2, float HungerEffect = 0f, float ThirstEffect = 0f, float HappinessEffect = 0f,
-		float FatigueEffect = 0f, float LitterEffect = 0f );
+		float FatigueEffect = 0f, float LitterEffect = 0f, int Capacity = 1 );
 
 	/// <summary>Which need a <c>UsageInfo.ShopType</c> serves: 2 snacks / 3 restaurant → food, 4 → drinks, 1 gifts /
 	/// 5 costumes / 6 balloons → impulse items.</summary>
@@ -89,10 +89,10 @@ internal static class ShopBuilding
 		catch { return Array.Empty<string>(); }
 	}
 
-	/// <summary>The theme's big toilet feature ("Super Toilet": space loo_big, fantasy royaloo, hallow horsuloo — jungle
-	/// has none), or null.</summary>
+	/// <summary>The theme's big toilet feature ("Super Toilet": jungle supbog, space loo_big, fantasy royaloo, hallow
+	/// horsuloo — five places), or null.</summary>
 	public static string? BigToiletArchive( string theme ) =>
-		new[] { "loo_big", "royaloo", "horsuloo" }.Select( n => $"levels/{theme}/features/{n}" ).FirstOrDefault( a => StatsOf( a ) != null );
+		new[] { "supbog", "loo_big", "royaloo", "horsuloo" }.Select( n => $"levels/{theme}/features/{n}" ).FirstOrDefault( a => StatsOf( a ) != null );
 
 	/// <summary>The first stall archive of a kind this theme ships (the generic "shop"/"drink"/"toilet" items), or null.</summary>
 	public static string? DefaultArchive( ShopKind kind, string theme )
@@ -152,7 +152,8 @@ internal static class ShopBuilding
 			F( "UsageInfo.ThirstEffect", 0f ),
 			F( "UsageInfo.HappinessEffect", 0f ),
 			F( "UsageInfo.FatigueEffect", 0f ),
-			F( "UsageInfo.LitterEffect", 0f ) );
+			F( "UsageInfo.LitterEffect", 0f ),
+			Math.Max( 1, (int)F( "Upgrades[0].InitCapacity", 1f ) ) ); // a small toilet seats 1, a super toilet 5
 	}
 
 	/// <summary>Try to build the real shop model centred on <paramref name="origin"/> and scaled to fill a
