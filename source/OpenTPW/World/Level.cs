@@ -37,6 +37,7 @@ public class Level
 
 		SetupEntities();
 		SetupHud();
+		LevelSoundscape.Start( InPark ? Name : null ); // the park's own music + ambience, or the front-end's
 	}
 
 	/// <summary>The front-end menu (T-063): a sky backdrop + the world-select screen, no park. Selecting a world
@@ -1119,6 +1120,7 @@ public class Level
 			entity.Update();
 
 		GameClock.Current?.Tick( Time.Delta ); // advances the calendar; fires OnNewMonth → finances settle (T-053)
+		LevelSoundscape.Update();               // the park's ambient one-shots
 
 		// Visitor arrivals (T-074): a group at the gate every interval, sized by the park rating.
 		if ( arrivals != null )

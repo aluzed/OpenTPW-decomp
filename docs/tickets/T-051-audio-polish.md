@@ -53,3 +53,14 @@ device or game data, consistent with the rest of the audio layer.
 `source/OpenTPW/UI/Widgets/OptionsPanel.cs` (new), `source/OpenTPW/UI/Widgets/HudPanel.cs`,
 `source/OpenTPW/Client/Game.cs`, `source/OpenTPW/Client/Renderer.cs`, `source/OpenTPW/World/Level.cs`,
 `source/OpenTPW/World/Advisor.cs`, `source/OpenTPW.Tests/GameSettingsTests.cs` (new).
+
+## 2026-10-21 — per-world music + ambience
+
+Every park world ships its own `Music/MusicHD.sdt` (numbered segment series: jungle `Level1-1..9`, hallow
+`level1a..`, fantasy/space `Level2a..`) and `Sound/AmbientHD.sdt` (one-shots: frogs/screeches, bats/owls, clown
+horns/fairy shimmers, alien chatter/morse), but every park played the global front-end track and looped the first
+global ambient clip (a flapping flag). `LevelSoundscape` (started by the `Level` constructor, so on entry and on
+every reload): a park plays its lowest-numbered music series as one looped track (MPEG frames concatenate; ≤ 9
+segments) and a random ambient one-shot every 4–11 s at 0.35 × SFX volume; the front-end keeps the global music +
+ambient bed. Verified: all four worlds load + decode their series (logs, no warnings) — not listened to (no audio
+output in the test session). Pure series grouping unit-tested (`LevelSoundscapeTests`).

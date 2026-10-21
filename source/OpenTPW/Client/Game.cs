@@ -129,46 +129,7 @@ internal static class Game
 		LoadProgress.Done();
 		Render.ClearColor = RgbaFloat.Black;
 
-		//
-		// Background music (T-031): play the calm track from the global music archive, looping.
-		//
-		try
-		{
-			var musicPath = Path.Join( gamePath, "data", "global", "sound", "MusicHD.sdt" );
-			if ( File.Exists( musicPath ) )
-			{
-				var music = new SdtArchive( musicPath );
-				var track = music.soundFiles.FirstOrDefault( x => x.Name.StartsWith( "level4c", StringComparison.OrdinalIgnoreCase ) )
-							?? music.soundFiles.FirstOrDefault();
-				if ( track != null )
-					Audio.PlayMusic( track.SoundData, loop: true );
-			}
-		}
-		catch ( Exception e )
-		{
-			Log.Warning( $"Background music unavailable: {e.Message}" );
-		}
-
-		//
-		// Ambient bed (T-051): a level ambience loop playing quietly under the music, from the global
-		// ambience archive. Optional — a missing archive just leaves the music playing alone.
-		//
-		try
-		{
-			var ambientPath = Path.Join( gamePath, "data", "global", "sound", "AmbientHD.sdt" );
-			if ( File.Exists( ambientPath ) )
-			{
-				var ambience = new SdtArchive( ambientPath );
-				var amb = ambience.soundFiles.FirstOrDefault( x => x.Name.StartsWith( "jungle", StringComparison.OrdinalIgnoreCase ) )
-							?? ambience.soundFiles.FirstOrDefault();
-				if ( amb != null )
-					Audio.PlayAmbient( amb.SoundData, loop: true );
-			}
-		}
-		catch ( Exception e )
-		{
-			Log.Warning( $"Ambient audio unavailable: {e.Message}" );
-		}
+		// Music + ambience are started by the level (LevelSoundscape): the front-end's here, a park's own on entry.
 
 		//
 		// SIGTERM / SIGINT (T-069): the runtime's default handling exits the process while the render
