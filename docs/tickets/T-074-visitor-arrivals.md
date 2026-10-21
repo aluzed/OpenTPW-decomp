@@ -64,5 +64,8 @@ keyframes `Busm1..3` (one `ANIM_Main` channel, 4 animated surfaces, duration 80)
 pos") — i.e. its keyframes *are* the drive along the entrance road. The global `AmbientHD.sdt` has the matching
 sounds (`nl_bus_go/idle/stop`, `mk_bus_1..4`, ferry/plane sets). A quick experiment spawning it as a `Ride` at
 (0,0,0) loaded the model, script and keyframes, but the bus wasn't visible: `Ride` applies keyframes relative to
-the object and re-centres the footprint (T-072). Needs a `DontApplyOffset` path in `Ride`/`RideEngine`, then
-syncing a group's spawn to the bus's stop.
+the object and re-centres the footprint (T-072). Logging its parts: the body rests at world (-188,-290,0) — south-west, outside the fence
+— and doesn't move: the engine reports the `ANIM_Main` loop as "idle rest", so the bus script is presumably waiting
+for a game trigger (the arrival). Needs that trigger reversed (bus.RSE + the arrival object), a `DontApplyOffset`
+path in `Ride`/`RideEngine` (no footprint re-centring, keyframes in world space), then syncing a group's spawn to
+the bus's stop.
