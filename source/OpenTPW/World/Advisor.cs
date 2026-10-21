@@ -267,7 +267,30 @@ public sealed class Advisor : Entity
 			TicketSatisfaction: EntryFeeOpinion.ArrivalHappinessNow(),
 			FeeAboveMinimum: (fin?.EntryFee ?? 0f) > EntryFeeOpinion.Settings.MinimumEntryFee,
 			PriceComplaints: complaints,
-			PriceBargains: bargains );
+			PriceBargains: bargains,
+			Facilities: Facilities() );
+	}
+
+	// What the park has built and hired, for the staffing / building advice.
+	private static ParkFacilities Facilities()
+	{
+		var staff = Entity.All.OfType<Staff>().ToList();
+		int Hired( StaffRole r ) => staff.Count( s => s.Role == r );
+		var rides = Entity.All.OfType<Ride>().ToList();
+		return new ParkFacilities(
+			Mechanics: Hired( StaffRole.Mechanic ), Handymen: Hired( StaffRole.Handyman ),
+			Guards: Hired( StaffRole.Guard ), Entertainers: Hired( StaffRole.Entertainer ),
+			Rides: rides.Count( r => !r.IsSideshow ),
+			WornRides: rides.Count( r => !r.IsBroken && r.Reliability < 0.25f ), // StaffHireMechanics1.PoorerStateThan 25
+			BrokenRides: rides.Count( r => r.IsBroken ),
+			Shops: Shop.Stalls.Count( s => !s.IsFree ),
+			Sideshows: rides.Count( r => r.IsSideshow ),
+			Toilets: Shop.Stalls.Count( s => s.Kind == ShopKind.Toilet ),
+			Litter: Litter.Active.Count,
+			Visitors: Entity.All.Count( e => e is Peep ),
+			NeedingToilet: Peep.CountNeedingToilet(),
+			Misbehaving: Peep.CountUnhappy(),
+			Days: GameClock.Current?.TotalDays ?? 0 );
 	}
 
 	protected override void OnUpdate()

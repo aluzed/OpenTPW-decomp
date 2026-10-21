@@ -21,7 +21,14 @@ public readonly record struct ParkSnapshot(
 	float TicketSatisfaction = 50f,
 	bool FeeAboveMinimum = false,
 	int[]? PriceComplaints = null,
-	int[]? PriceBargains = null );
+	int[]? PriceBargains = null,
+	ParkFacilities? Facilities = null );
+
+/// <summary>What the park has built and hired, for the staffing / building advice (T-046).</summary>
+public readonly record struct ParkFacilities(
+	int Mechanics, int Handymen, int Guards, int Entertainers,
+	int Rides, int WornRides, int BrokenRides, int Shops, int Sideshows, int Toilets,
+	int Litter, int Visitors, int NeedingToilet, int Misbehaving, int Days );
 
 /// <summary>
 /// Maps the live park state to advisor message candidates — <c>(id, group, score)</c> for the
@@ -103,6 +110,9 @@ public static class AdvisorAdvice
 				list.Add( ($"Pricing{PriceGroups[g]}TooCheap", GroupGeneral, MathF.Min( PriceScoreCap, bargains * PriceScorePerVerdict )) );
 		}
 
+		if ( s.Facilities is { } f )
+			AddFacilityAdvice( list, f, c );
+
 		// New research finished and ready to apply.
 		if ( s.ResearchAvailable )
 			list.Add( ("NewResearchGroupRide", GroupResearch, c.Param( "NewResearchGroupRide", "Score" ) ?? ResearchScore) );
@@ -121,4 +131,51 @@ public static class AdvisorAdvice
 
 		return list;
 	}
+
+	// Staffing / building advice, with Advisor.sam's thresholds and scores (defaults = the shipped file). The ids
+	// are the .sam's; their texts are TAG_SYSTEM.str 11–20 / 67 / 77 / 81 / 86 (AdvisorTips).
+	private static void AddFacilityAdvice( List<(string, int, float)> list, ParkFacilities f, AdvisorConfig c )
+	{
+		float P( string id, string key, float fallback ) => c.Param( id, key ) ?? fallback;
+		void Add( string id, float score ) { if ( score > 0f ) list.Add( (id, GroupGeneral, score) ); }
+
+		// Mechanics: none while rides wear out / break down; too few for the rides.
+		if ( f.Mechanics == 0 && f.BrokenRides > 0 )
+			Add( "StaffHireMechanics2", P( "StaffHireMechanics2", "ScorePerBrokenRide", 10f ) * f.BrokenRides );
+		else if ( f.Mechanics == 0 && f.WornRides > 0 )
+			Add( "StaffHireMechanics1", P( "StaffHireMechanics1", "ScorePerWornRide", 5f ) * f.WornRides );
+		else if ( f.Mechanics > 0 )
+		{
+			float extra = f.Rides - P( "StaffHireMechanics3", "IdealNumberOfRidesPerMechanic", 4f ) * f.Mechanics;
+			if ( extra > 0f )
+				Add( "StaffHireMechanics3", P( "StaffHireMechanics3", "ScorePerExtraRide", 10f ) * extra );
+		}
+
+		// Cleaners: none while litter builds up (a little → a hint, a lot → an order).
+		if ( f.Handymen == 0 && f.Litter >= P( "StaffHireHandymen2", "LitterPointCutoffLow", 26f ) )
+			Add( "StaffHireHandymen2", P( "StaffHireHandymen2", "ScorePerLitterPoint", 3f ) * f.Litter );
+		else if ( f.Handymen == 0 && f.Litter >= P( "StaffHireHandymen1", "LitterPointCutoffLow", 3f ) )
+			Add( "StaffHireHandymen1", P( "StaffHireHandymen1", "ScorePerLitterPoint", 3f ) * f.Litter );
+
+		// Guards: none while visitors misbehave. Entertainers: none in a busy park.
+		if ( f.Guards == 0 && f.Misbehaving > 0 )
+			Add( "StaffHireGuards2", P( "StaffHireGuards2", "Score", 10f ) + P( "StaffHireGuards2", "AdditionalPerMisbehavingKid", 5f ) * f.Misbehaving );
+		float busy = P( "StaffHireEntertainers1", "AtLeastThisBusy", 35f );
+		if ( f.Entertainers == 0 && f.Visitors >= busy )
+			Add( "StaffHireEntertainers1", MathF.Min( FacilityScoreCap, P( "StaffHireEntertainers1", "ScorePerExtraBusyPoint", 3f ) * (f.Visitors - busy + 1) ) );
+
+		// Nothing built yet: the nudge grows by the day (the .sam's negative base delays it).
+		if ( f.Rides == 0 )
+			Add( "RidesBuildRides", P( "RidesBuildRides", "Score", -50f ) + P( "RidesBuildRides", "AdditionalPerDay", 3f ) * f.Days );
+		if ( f.Shops == 0 )
+			Add( "ShopsBuildShops", P( "ShopsBuildShops", "Score", 50f ) + P( "ShopsBuildShops", "AdditionalPerDay", 2f ) * f.Days );
+		if ( f.Sideshows == 0 )
+			Add( "SideshowsBuildSideshows", P( "SideshowsBuildSideshows", "Score", -70f ) + P( "SideshowsBuildSideshows", "AdditionalPerDay", 2f ) * f.Days );
+
+		// No toilets while enough visitors need one.
+		if ( f.Toilets == 0 && f.NeedingToilet > P( "FeaturesNoToilets", "MorePeopleThanThisNeeding", 25f ) )
+			Add( "FeaturesNoToilets", P( "FeaturesNoToilets", "Score", 90f ) );
+	}
+
+	private const float FacilityScoreCap = 300f;
 }

@@ -167,6 +167,12 @@ public sealed class Peep : ModelEntity
 
 	/// <summary>How many live visitors are thirstier than <paramref name="threshold"/> (0–100) — feeds the
 	/// advisor's "visitors thirsty" advice (T-046).</summary>
+	/// <summary>Visitors whose bladder has passed the toilet threshold (FeaturesNoToilets.NeedingMoreThan 60 %).</summary>
+	public static int CountNeedingToilet() => Entity.All.Count( e => e is Peep { riding: false } p && p.bladder >= BladderThreshold );
+
+	/// <summary>Visitors unhappy enough to misbehave (see <see cref="Unhappy"/>).</summary>
+	public static int CountUnhappy() => Entity.All.Count( e => e is Peep { Unhappy: true } );
+
 	public static int CountThirstierThan( float threshold ) => CountNeedAbove( threshold, thirst: true );
 
 	/// <summary>How many live visitors are hungrier than <paramref name="threshold"/> (0–100, T-046).</summary>

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Linq;
 
@@ -126,5 +127,27 @@ CongratVisitorsHappy.Score				60
 		Assert.IsTrue( stalls.Any( a => a.Id == "PricingDrinksTooCheap" ) );
 		Assert.IsFalse( stalls.Any( a => a.Id.StartsWith( "PricingShops" ) ), "2 complaints aren't enough" );
 		Assert.AreEqual( 3, AdvisorAdvice.PriceGroupOf( SaleCategory.Balloon ) );
+	}
+
+	[TestMethod]
+	public void StaffingAndBuildingAdviceUseTheSamThresholds()
+	{
+		var c = new AdvisorConfig( System.Array.Empty<SettingsPair>() );
+		List<(string Id, int Group, float Score)> For( ParkFacilities f ) =>
+			AdvisorAdvice.Evaluate( new ParkSnapshot( 1000f, 0, 0, 0, 50f, false, Facilities: f ), c );
+		var park = new ParkFacilities( Mechanics: 1, Handymen: 1, Guards: 1, Entertainers: 1, Rides: 3, WornRides: 0,
+			BrokenRides: 0, Shops: 2, Sideshows: 1, Toilets: 1, Litter: 10, Visitors: 100, NeedingToilet: 0, Misbehaving: 0, Days: 30 );
+		Assert.AreEqual( 0, For( park ).Count( a => a.Id.StartsWith( "Staff" ) || a.Id.EndsWith( "Build" + "Rides" ) ), "a staffed park" );
+
+		Assert.AreEqual( 20f, For( park with { Mechanics = 0, BrokenRides = 2 } ).Single( a => a.Id == "StaffHireMechanics2" ).Score );
+		Assert.AreEqual( 20f, For( park with { Rides = 6 } ).Single( a => a.Id == "StaffHireMechanics3" ).Score, "2 rides over 4 per mechanic" );
+		Assert.AreEqual( 30f, For( park with { Handymen = 0 } ).Single( a => a.Id == "StaffHireHandymen1" ).Score );
+		Assert.IsTrue( For( park with { Handymen = 0, Litter = 40 } ).Any( a => a.Id == "StaffHireHandymen2" ) );
+		Assert.AreEqual( 25f, For( park with { Guards = 0, Misbehaving = 3 } ).Single( a => a.Id == "StaffHireGuards2" ).Score );
+		Assert.IsTrue( For( park with { Entertainers = 0 } ).Any( a => a.Id == "StaffHireEntertainers1" ) );
+		Assert.AreEqual( 40f, For( park with { Rides = 0 } ).Single( a => a.Id == "RidesBuildRides" ).Score, "-50 + 3/day" );
+		Assert.IsFalse( For( park with { Rides = 0, Days = 10 } ).Any( a => a.Id == "RidesBuildRides" ), "too early" );
+		Assert.IsTrue( For( park with { Toilets = 0, NeedingToilet = 30 } ).Any( a => a.Id == "FeaturesNoToilets" ) );
+		Assert.IsFalse( For( park with { Toilets = 0, NeedingToilet = 10 } ).Any( a => a.Id == "FeaturesNoToilets" ) );
 	}
 }

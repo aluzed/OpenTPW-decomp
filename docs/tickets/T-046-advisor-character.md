@@ -160,3 +160,10 @@ visitors' entry-fee opinion against `Advisor.sam`'s `TicketSatisfactionUnder 30`
 only above the always-happy minimum fee), and per stall group — food, drinks, restaurant, souvenir shops — when
 buyers' price verdicts (`EntryFeeOpinion.StallPriceMood`) pile up (≥ 5 in a ~30 s fading tally): TAG_SYSTEM.str
 94–103 in the selected language. Long messages wrap onto two lines in the advisor panel.
+
+Staffing / building advice with `Advisor.sam`'s own thresholds and scores: `StaffHireMechanics1/2/3` (worn rides
+under 25 %, broken rides, more than 4 rides per mechanic), `StaffHireHandymen1/2` (litter 3–25 / ≥ 26 with no
+cleaners), `StaffHireGuards2` (misbehaving visitors, no guards), `StaffHireEntertainers1` (≥ 35 visitors, none hired),
+`RidesBuildRides` / `ShopsBuildShops` / `SideshowsBuildSideshows` (nothing built; the nudge grows per day from the
+.sam's base) and `FeaturesNoToilets` (> 25 visitors needing one) — TAG_SYSTEM.str 11–20 / 67 / 77 / 81 / 86.
+Verified: an empty park hears "no rides", "no shops", "no sideshows" in turn; the staffed dev park hears none.
