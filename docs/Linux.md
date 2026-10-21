@@ -201,5 +201,6 @@ see [03-disc-compatibility.md](03-disc-compatibility.md).
 
 The game logs to stdout. Verbose trace lines (every ride-script event, animation and boarding cycle) are off by
 default; set **`OPENTPW_TRACE=1`** to see them. `OPENTPW_ECON_DEBUG=1` adds a periodic economy line (balance,
-income/cost flows, products sold).
+income/cost flows, products sold). `OPENTPW_FAST_CLOCK=1` runs the calendar at a dev pace (a month in 8 s instead
+of the original's ~3 minutes) to exercise monthly settlement, challenges and seasons quickly.
 

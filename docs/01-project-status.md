@@ -32,8 +32,8 @@ You therefore **need a legal copy of the game** to provide the assets — which 
 > stink bombs, selection arrows and build/demolish puffs use the game's own sprites/effects; ride throughput
 > doubled (visitors join a line at its back; wear follows the authored `WearRate`); more `Standard.sam` rules
 > (ride sickness, ride mood by taste, pranksters, stall price opinion, staff pay ratios) and `Advisor.sam` advice
-> (pricing, staffing, building, open the park). The in-game calendar's dev pace (8 s/month) is the next balance
-> issue ([T-076](tickets/T-076-calendar-pace.md)).
+> (pricing, staffing, building, open the park). The in-game calendar now runs at the original's pace, reversed from
+> `tp.exe`: a day lasts 5.76 s, Gregorian from 1 January 2000 ([T-076](tickets/T-076-calendar-pace.md)).
 
 - **Stage: boots, runs & plays on Linux** (window + Vulkan render loop) — the core park loop is live.
   Verified this session by running on an AMD Radeon (Vulkan): the park renders with terrain, placed
