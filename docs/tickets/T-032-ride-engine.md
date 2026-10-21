@@ -2,7 +2,7 @@
 
 - **Priority**: 🟡 Feature (the central unlock — backs Batch B of the VM and real gameplay)
 - **Type**: Engine
-- **Status**: ⚠️ In progress — the seam + object lifecycle + channel-aware keyframe animation + scream +
+- **Status**: ✅ Done (2026-10-21) — previously ⚠️ In progress — the seam + object lifecycle + channel-aware keyframe animation + scream +
   queue→VM boarding bridge + VM tick fix are done, and the engine now backs almost the whole VM:
   **lights**, **particle effects** (decoded `.PLB`), **limbo**, **walk** (slot scheduler) and **heads**
   all landed via T-007 (**106/106 opcodes** — the `COAST`/`TOUR`/`BUMP` car-object multiplexers are in too,
@@ -158,7 +158,9 @@ is what makes a ride *do* anything, and it backs the remaining VM opcodes (T-007
    reserved on the grid and rendered on the terrain with the queue path texture (`queue.wad`); the 3D
    queue-fence meshes are placed too since 2026-10-21 (`QueuePieces`: `questra` railings along the run, the
    torch-lit `queend` at the outer end where visitors join; each world's own `queue.wad`).
-7. ☐ Sound-code→asset mapping via `.MAP` ([T-016]); fold `EVENT`/`SETREVERB`/`DIPMUSIC` into sound.
+7. ✅ Sound-code→asset mapping: done by T-037 (the global sound registry, `RideSoundBank`, and the whole `EVENT`
+   type switch); `DIPMUSIC` now ducks the music by its percentage for 2 s (`Audio.DipMusic`). `SETREVERB` stays a
+   trace (no reverb effect on the OpenAL path).
 
 ## Affected files
 

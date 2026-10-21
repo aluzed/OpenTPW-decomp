@@ -608,7 +608,14 @@ public sealed class RideEngine : IRideEngine
 
 	public void SetReverb( int level ) => Log.Trace( $"[ride] SETREVERB {level}" );
 
-	public void DipMusic( int amount ) => Log.Trace( $"[ride] DIPMUSIC {amount}" );
+	// DIPMUSIC: the music ducks by `amount` percent for a couple of seconds.
+	public void DipMusic( int amount )
+	{
+		Log.Trace( $"[ride] DIPMUSIC {amount}" );
+		Audio.DipMusic( amount / 100f, MusicDipSeconds );
+	}
+
+	private const float MusicDipSeconds = 2f;
 
 	//
 	// Ride lights (opcodes ENABLELIGHT/DISABLELIGHT/SETLIGHT/COLOURLIGHT, RE'd from op_82..op_85). The

@@ -191,6 +191,19 @@ internal static unsafe class Audio
 		}
 	}
 
+	private static float duckUntil;
+
+	/// <summary>Dip the background music by <paramref name="fraction"/> (0–1) for <paramref name="seconds"/> — a ride
+	/// script's <c>DIPMUSIC</c>, so a big moment (a splash, a scream) cuts through.</summary>
+	public static void DipMusic( float fraction, float seconds )
+	{
+		if ( !available )
+			return;
+		duckUntil = Time.Now + MathF.Max( 0.1f, seconds );
+		try { al.SetSourceProperty( musicSource, SourceFloat.Gain, musicVolume * (1f - Math.Clamp( fraction, 0f, 1f )) ); }
+		catch ( Exception e ) { Log.Warning( $"Music dip failed: {e.Message}" ); }
+	}
+
 	/// <summary>
 	/// Moves the 3D-audio listener to the camera each frame (T-047): position + orientation (forward/up), so
 	/// positioned effects (<see cref="PlaySfx3D"/>) pan and fade as the view moves. No device → no-op.
@@ -199,6 +212,14 @@ internal static unsafe class Audio
 	{
 		if ( !available )
 			return;
+
+		// A dipped music track (DIPMUSIC) comes back up once the dip is over.
+		if ( duckUntil > 0f && Time.Now >= duckUntil )
+		{
+			duckUntil = 0f;
+			try { al.SetSourceProperty( musicSource, SourceFloat.Gain, musicVolume ); }
+			catch ( Exception e ) { Log.Warning( $"Music restore failed: {e.Message}" ); }
+		}
 
 		try
 		{
