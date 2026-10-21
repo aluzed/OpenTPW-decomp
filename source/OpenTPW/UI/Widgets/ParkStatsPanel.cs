@@ -110,16 +110,7 @@ internal sealed class ParkStatsPanel : HudPanel
 				InsertLine( 1, $"{seasonName[weather.Season % 4]}  {sky} (q{weather.Quality})" );
 			}
 
-		// Challenge status (T-054): offered (Y/N), active (progress + days), or the last result.
-		if ( ChallengeManager.Current is { } cm )
-		{
-			if ( cm.State == ChallengeManager.Phase.Offered && cm.Active is { } off )
-				lines.Add( $"CHALLENGE: {ChallengeMetrics.Describe( off )}  (Y accept / N decline)" );
-			else if ( cm.State == ChallengeManager.Phase.Active && cm.Active is { } act )
-				lines.Add( $"CHALLENGE: {ChallengeMetrics.Describe( act )}  [{cm.Progress:0}/{ChallengeMetrics.Target( act ):0}, {cm.DaysLeft}d left]" );
-			else if ( cm.LastResult is { } r )
-				lines.Add( r.Won ? $"CHALLENGE WON! +${r.Challenge.Prize:0}" : "CHALLENGE FAILED" );
-		}
+		// (The challenge has its own window: ChallengePanel, T-054.)
 
 		// Golden-ticket goals (T-055): the level win condition — goals met, or the win banner.
 		if ( GoldenTicketGoals.Current is { } gt && gt.Total > 0 )

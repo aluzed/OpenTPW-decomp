@@ -1301,6 +1301,7 @@ public class Level
 			Hud.AddChild( new SavePanel() );      // F8 save/load slot menu with park summaries (T-061)
 			Hud.AddChild( new LoanPanel() );      // L / LOANS: the level's loan offers (T-042)
 			Hud.AddChild( new ThemePanel() );     // F12 theme picker (jungle/hallow/fantasy/space) (T-062)
+			Hud.AddChild( new ChallengePanel() ); // offered / running / finished challenge, ACCEPT / DECLINE (T-054)
 			Hud.AddChild( new BankruptPanel() );  // six months in the red: the end screen + Restart Park (T-042)
 		}
 		else

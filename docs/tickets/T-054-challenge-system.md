@@ -2,7 +2,7 @@
 
 - **Priority**: 🟡 Feature (headline gameplay)
 - **Type**: Engine / UI
-- **Status**: ⚠️ Core done — `Challenges.sam` parses; a `ChallengeManager` state machine offers/accepts/
+- **Status**: ✅ Done (2026-10-21) — previously ⚠️ Core done — `Challenges.sam` parses; a `ChallengeManager` state machine offers/accepts/
   declines, tracks the metric gain vs `TargetVal` over `TargetTime` days (on `GameClock.OnNewDay`), wins/loses,
   pays the prize and chains `FollowupType`; the HUD shows the challenge (Y accept / N decline). Verified
   in-game (load → offer → accept → day countdown → timeout → next). The **advisor now reacts to a win/loss**
@@ -84,3 +84,12 @@ hooks in `ParkFinances`/`Shop`/`Ride`/`Level`, `source/OpenTPW.Tests/ChallengeTe
 - Every type the file uses is tracked: 19 (coaster loops) since loops can be built, 15 (kart crossroads) and 21 (kart
   sections) since kart tracks can be laid (T-045). Unit-tested
   (`ChallengeTypesTests`).
+
+## The challenge window (2026-10-21, night)
+
+`ChallengePanel` (top centre) replaces the HUD's challenge line: an offered challenge shows the game's own headline
+and prize line — `TAG_SYSTEM.str` keeps four lines per challenge of `Challenges.sam` (offer "Here's a challenge! /
+You could win $", progress "Challenge progress: / Prize: $", completed "You've won $", failed), from entry
+192 + 4 × (challenge − 1) — with the goal, and clickable **ACCEPT** / **DECLINE** buttons (the original's `b_okay` /
+`b_ignore`; Y / N still work); a running one shows its progress bar and days left; a finished one its result for
+8 s. Verified in game (offer → click ACCEPT → progress).
