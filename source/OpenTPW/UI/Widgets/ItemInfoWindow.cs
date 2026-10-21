@@ -195,6 +195,14 @@ internal sealed class ItemInfoWindow : GameWindow
 			build.SellSelected();
 		if ( RoundButton( Action( 217f ), "b_move", hint: 32 ) )
 			build.BeginMoveSelected();
+		// Apply these settings (price, open / closed) to every stall of the same kind (UIHELPTEXT 536).
+		var same = Shop.Stalls.Where( s => s != shop && s.CatalogKey == shop.CatalogKey ).ToList();
+		if ( RoundButton( Action( 525f ), "b_applyall", hint: 536, enabled: same.Count > 0 ) )
+			foreach ( var s in same )
+			{
+				s.Price = shop.Price;
+				s.IsClosed = shop.IsClosed;
+			}
 		if ( RoundButton( Action( 672f, 93f ), shop.IsClosed ? "b_doorc" : "b_dooro", hint: shop.IsClosed ? 30 : 31 ) )
 			shop.IsClosed = !shop.IsClosed;
 	}
