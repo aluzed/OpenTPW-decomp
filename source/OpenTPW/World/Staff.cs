@@ -60,7 +60,7 @@ public sealed class Staff : ModelEntity
 		float m = i < PayMultipliers.Length ? PayMultipliers[i] : AveragePayMultiplier;
 		return AverageWagePerSecond * m / AveragePayMultiplier;
 	}
-	private const float CheerRadius = 35f;     // entertainer reach
+	private const float CheerRadius = 30f;     // entertainer reach: EntertainerConstsPerGrade[0].ActivationDistance 3 cells × 10 units
 	private const float CheerPerSecond = 8f;   // happiness lifted per second for visitors in range
 	private const float ReachDistance = 3f;    // how close counts as "arrived" / "picked up"
 	private const float WalkFps = 8f;          // walk-cycle frames per second
