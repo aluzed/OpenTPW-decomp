@@ -1480,6 +1480,7 @@ public class Level
 			Hud.AddChild( new MessageTags() );    // the message tags down the right edge
 			Hud.AddChild( new ParkListWindow() ); // all items / staff / visitors (park information, V)
 			Hud.AddChild( new TrainingWindow() ); // staff training budgets (from the staff list)
+			Hud.AddChild( new GatesWindow() );    // the park gates: ticket price, open / close (G)
 			Hud.AddChild( new RenameDialog() );   // renaming a ride, stall or staff member (click their name)
 			Hud.AddChild( new FinancePanel() );   // F11 income/expense graph (T-049)
 			Hud.AddChild( new MinimapPanel() );   // corner minimap (M toggles, click pans) (T-057)

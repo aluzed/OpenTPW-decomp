@@ -424,6 +424,8 @@ public sealed class BuildMode : Entity
 				track = cr.Track ?? new CoasterTrack( cr, grid, terrain );
 			else if ( SelectedRide is { } kr && (kr.TileTrack ?? Level.NewTileTrack( kr )) is { } tileTrack )
 				track = tileTrack; // a go-kart / water ride's piece-built track
+			else if ( SelectedRide == null && Selected < 0 )
+				TrainingWindow.Current?.Toggle(); // the original's T: staff training budgets (UIHELPTEXT 195)
 		}
 		if ( track != null )
 		{
@@ -439,8 +441,12 @@ public sealed class BuildMode : Entity
 			if ( Hit( Key.I ) ) ParkInfoWindow.Current?.Toggle();
 			if ( Hit( Key.R ) && SelectedRide == null ) ResearchWindow.Current?.Toggle();
 			if ( Hit( Key.Space ) ) MinimapPanel.Current?.Toggle();
-			if ( Hit( Key.G ) ) Level.ToggleGates();
-			if ( Hit( Key.C ) ) CamcorderCameraMode.Start();
+			// G the gates window; Ctrl-O / Ctrl-C open / close the park straight away.
+			bool ctrlDown = down.Contains( Key.ControlLeft ) || down.Contains( Key.ControlRight );
+			if ( Hit( Key.G ) ) GatesWindow.Current?.Toggle();
+			if ( ctrlDown && Hit( Key.O ) && !Level.GatesOpen ) Level.ToggleGates();
+			if ( ctrlDown && Hit( Key.C ) && Level.GatesOpen ) Level.ToggleGates();
+			if ( Hit( Key.C ) && !ctrlDown ) CamcorderCameraMode.Start();
 			// V lists the visitors (the original's A / S lists are the camera's keys here: they open from park information);
 			// Ctrl-V / Ctrl-S locate the visitors / the staff.
 			bool ctrl = down.Contains( Key.ControlLeft ) || down.Contains( Key.ControlRight );

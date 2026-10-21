@@ -120,9 +120,9 @@ internal sealed class ParkInfoWindow : GameWindow
 		if ( RoundButton( At( 784f, 200f, 46f, 46f ), "b_kids", hint: 113 ) )
 			ParkListWindow.Current?.Toggle( ParkListWindow.Tab.Visitors );
 
-		// The park gates: open / close them (in the original, a click on the gates themselves).
-		if ( RoundButton( Gates, "b_open", selected: !Level.GatesOpen ) )
-			Level.ToggleGates();
+		// The park gates' window: open / close, the ticket price (UIHELPTEXT 176).
+		if ( RoundButton( Gates, "b_open", selected: !Level.GatesOpen, hint: 176 ) )
+			GatesWindow.Current?.Toggle();
 		Text( Small, Level.GatesOpen ? "Park open" : "Park closed", 810f, 336f, 11f, Level.GatesOpen ? default : LockedInk, TextAlign.Center );
 		if ( RoundButton( Ok, "b_okay", hint: 1 ) )
 			IsOpen = false;
