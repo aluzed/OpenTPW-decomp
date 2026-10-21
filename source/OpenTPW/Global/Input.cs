@@ -13,6 +13,10 @@ public static partial class Input
 
 	/// <summary>True for the single frame the left mouse button transitions from up to down.</summary>
 	public static bool MouseLeftPressed { get; private set; }
+
+	/// <summary>The right button went down this frame (a quick click included, like <see cref="MouseLeftPressed"/>).</summary>
+	public static bool MouseRightPressed { get; private set; }
+	private static bool _lastMouseRight;
 	private static bool _lastMouseLeft;
 
 	internal static List<InputButton> LastKeysDown { get; set; } = new();
@@ -145,6 +149,9 @@ public static partial class Input
 		MouseLeftPressed = (mouseInfo.Left && !_lastMouseLeft)
 			|| inputSnapshot.MouseEvents.Any( e => e.MouseButton == MouseButton.Left && e.Down );
 		_lastMouseLeft = mouseInfo.Left;
+		MouseRightPressed = (mouseInfo.Right && !_lastMouseRight)
+			|| inputSnapshot.MouseEvents.Any( e => e.MouseButton == MouseButton.Right && e.Down );
+		_lastMouseRight = mouseInfo.Right;
 
 		Right = 0;
 		Forward = 0;

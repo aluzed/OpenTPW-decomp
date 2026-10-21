@@ -158,6 +158,12 @@ internal sealed class ParkHud : HudPanel
 	{
 		if ( ParkFinances.Current is not { } fin )
 			return;
+		if ( RideItCameraMode.Target != null )
+		{
+			// Riding: only the way back.
+			DrawStrip( "Right-click or press Esc to get off the ride" );
+			return;
+		}
 
 		DrawCash( fin );
 		DrawTickets();
@@ -284,8 +290,12 @@ internal sealed class ParkHud : HudPanel
 	// The translucent strip at the bottom centre; a long line wraps onto more rows and the strip grows with it.
 	private static void DrawHint()
 	{
-		if ( HintText() is not { Length: > 0 } text )
-			return;
+		if ( HintText() is { Length: > 0 } text )
+			DrawStrip( text );
+	}
+
+	private static void DrawStrip( string text )
+	{
 		const float Width = 560f, Pad = 6f;
 		float Scale = MathF.Max( 1f, MathF.Round( 13f / MathF.Max( 1f, HintFont.Atlas.LineHeight ) ) ); // whole: point-sampled
 		var lines = Wrap( HintFont, text, (Width - 2f * Pad) / Scale );

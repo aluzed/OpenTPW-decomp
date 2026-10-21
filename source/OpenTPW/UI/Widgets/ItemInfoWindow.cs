@@ -34,7 +34,7 @@ internal sealed class ItemInfoWindow : GameWindow
 	private static readonly System.Numerics.Vector3 LabelInk = new( 0.05f, 0.18f, 0.05f );
 
 	// Dev aid: OPENTPW_UI_OPEN=ride selects the park's first ride once, to look at the window without clicking.
-	private bool devOpened = Environment.GetEnvironmentVariable( "OPENTPW_UI_OPEN" ) != "ride";
+	private bool devOpened = Environment.GetEnvironmentVariable( "OPENTPW_UI_OPEN" ) is not ("ride" or "rideit");
 
 	protected override void OnUpdate()
 	{
@@ -43,6 +43,11 @@ internal sealed class ItemInfoWindow : GameWindow
 		{
 			devOpened = true;
 			build.SelectRide( first );
+			if ( Environment.GetEnvironmentVariable( "OPENTPW_UI_OPEN" ) == "rideit" )
+			{
+				build.ClearSelection();
+				RideItCameraMode.Start( Entity.All.OfType<Ride>().FirstOrDefault( r => r.RiderPosition != null ) ?? first );
+			}
 		}
 		IsOpen = build?.SelectedRide != null || build?.SelectedShop != null;
 	}
@@ -128,7 +133,11 @@ internal sealed class ItemInfoWindow : GameWindow
 			build.SellSelected();
 		RoundButton( Action( 217f ), "b_move", enabled: false );
 		RoundButton( Action( 369f ), "b_queue", enabled: false );
-		RoundButton( Action( 450f ), "b_rideit", enabled: false );
+		if ( RoundButton( Action( 450f ), "b_rideit" ) )
+		{
+			build.ClearSelection();
+			RideItCameraMode.Start( ride );
+		}
 		// Call a mechanic: the nearest one comes to service the ride (lit while one is on the way).
 		bool coming = Staff.MechanicCalledTo( ride );
 		if ( RoundButton( Action( 525f ), "b_callmech", selected: coming, enabled: !coming && Entity.All.OfType<Staff>().Any( s => s.Role == StaffRole.Mechanic ) ) )

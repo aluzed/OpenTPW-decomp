@@ -470,10 +470,14 @@ public sealed class Advisor : Entity
 		var groupRot = Quaternion.CreateFromRotationMatrix( basis )
 			* Quaternion.CreateFromAxisAngle( System.Numerics.Vector3.UnitX, -LeanBack );
 
+		// He steps out of view while the player rides a ride (the scenery is close and would cut through him).
+		bool hidden = RideItCameraMode.Target != null;
 		foreach ( var part in parts )
 		{
 			// Only the active viseme's mouth is visible.
-			if ( part.Viseme is { } v )
+			if ( hidden )
+				part.Entity.Model = null;
+			else if ( part.Viseme is { } v )
 				part.Entity.Model = v == (CurrentShape == MouthShape.Closed ? MouthShape.Normal : CurrentShape) ? part.Model : null; // at rest he smiles
 			else if ( part.AlwaysShown )
 				part.Entity.Model = part.Model;

@@ -478,6 +478,9 @@ public class Ride : Entity
 	private readonly RideEngine engine = new();
 
 	// The engine places the riders' screams at the moving train / car (T-047).
+	/// <summary>Where the riders are now (the lead car / train), null for a ride without a vehicle.</summary>
+	public Vector3? RiderPosition => Train?.LeadPosition ?? Vehicle?.LeadPosition;
+
 	private void BindRiderPosition() => engine.RiderPosition = () => Train?.LeadPosition ?? Vehicle?.LeadPosition;
 
 	/// <summary>The ride's WAD path (e.g. <c>levels/jungle/rides/coaster1</c>) — used to load extra
