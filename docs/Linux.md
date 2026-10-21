@@ -75,8 +75,8 @@ dotnet test OpenTPW.Tests/OpenTPW.Tests.csproj --no-build
 > (`WINDOWS` / `LINUX` / `OSX`) so platform-specific code can be guarded with
 > `#if LINUX` once the Windows locks are addressed (see the tickets).
 
-> Current state: the build succeeds (0 errors) and `dotnet test` is green
-> (0 failed, 2 passed, 6 inconclusive — the inconclusive ones need a game install).
+> Current state (2026-10-21): the build succeeds (0 errors) and `dotnet test` is green
+> (0 failed, 282 passed, 19 inconclusive — the inconclusive ones need the game data, see §5).
 
 ### Runtime libraries (to actually launch the game window)
 
@@ -173,8 +173,18 @@ The same variable drives the integration tests:
 OPENTPW_GAMEPATH="$HOME/games/theme-park-world" ./build-linux.sh test
 ```
 
-On a case-sensitive Linux FS, copy/normalize the disc's `DATA/` folder to lowercase
-`data/` (and lowercase the asset paths) — see [03-disc-compatibility.md](03-disc-compatibility.md).
+To also run the per-format sample tests (`TPW_*_SAMPLE`), use the dedicated runner: it
+points every sample variable at a real file, extracts the ones that live inside a WAD or
+outside `Data/` on the disc into `install/.samples`, then runs the suite
+(300 passed / 1 inconclusive — no original `.TPWS` save exists on the disc):
+
+```bash
+tools/run-integration-tests.sh
+```
+
+On a case-sensitive Linux FS the runtime checks for a lowercase `data/`, while the disc
+ships `Data/` — add `ln -s Data install/data` (the asset VFS itself is case-insensitive) —
+see [03-disc-compatibility.md](03-disc-compatibility.md).
 
 ---
 
