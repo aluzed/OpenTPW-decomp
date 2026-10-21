@@ -294,13 +294,20 @@ public partial class ModelFile : BaseFormat
 				{
 					// start at texIdOffset, divide by 8 to get index
 					uint frameId = (material.FrameOffset - textureListOffset) / 8;
-					var frame = frameData[(int)frameId];
 
-					reader.BaseStream.Seek( frame.FrameNameOff, SeekOrigin.Begin );
-					var texName = Encoding.ASCII.GetString( reader.ReadBytes( 20 ) );
-					var texture = Path.GetFileNameWithoutExtension( texName );
-
-					material.Name = texture;
+					// The Space lobby island has a material pointing past the texture list; leave it unnamed (drawn
+					// with the missing texture) rather than failing the whole model.
+					if ( frameId < frameData.Count )
+					{
+						var frame = frameData[(int)frameId];
+						reader.BaseStream.Seek( frame.FrameNameOff, SeekOrigin.Begin );
+						var texName = Encoding.ASCII.GetString( reader.ReadBytes( 20 ) );
+						material.Name = Path.GetFileNameWithoutExtension( texName );
+					}
+					else
+					{
+						material.Name = "";
+					}
 
 					reader.BaseStream.Seek( material.FrameOffset, SeekOrigin.Begin );
 					material.Flags = reader.ReadUInt32();

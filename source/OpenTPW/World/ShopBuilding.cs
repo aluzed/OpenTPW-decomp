@@ -74,11 +74,7 @@ internal static class ShopBuilding
 
 		foreach ( var mesh in meshes )
 		{
-			var material = new Material<ObjectUniformBuffer>( "content/shaders/test.shader" );
-			var textures = new List<Texture>();
-			for ( int i = 0; i < 16; ++i )
-				textures.Add( mesh.Materials.Length <= i ? Texture.Missing : Ride.LoadRideTexture( archive, mesh.Materials[i].Name ) );
-			material.Set( "Color", [.. textures] );
+			var textures = mesh.Materials.Select( m => Ride.LoadRideTexture( archive, m.Name ) ).ToList();
 
 			var vertices = new List<Vertex>( mesh.Vertices.Length );
 			for ( int i = 0; i < mesh.Vertices.Length; ++i )
@@ -91,16 +87,17 @@ internal static class ShopBuilding
 					MatFlags = mesh.Materials[(int)mesh.Vertices[i].TextureIndex].Flags,
 				} );
 
-			var model = new Model( [.. vertices], mesh.Indices, material );
 			System.Numerics.Matrix4x4.Decompose( mesh.TransformMatrix, out var scl, out var rot, out var pos );
 			var spos = new Vector3( pos.X, pos.Z, pos.Y );
-			parts.Add( new ModelEntity
-			{
-				Model = model,
-				Scale = new Vector3( scl.X, scl.Z, scl.Y ) * fit,
-				Rotation = new System.Numerics.Quaternion( rot.X, rot.Z, rot.Y, -rot.W ),
-				Position = origin + (spos - centre) * fit,
-			} );
+			foreach ( var model in MaterialSlots.BuildModels( [.. vertices], mesh.Indices, textures,
+				() => new Material<ObjectUniformBuffer>( "content/shaders/test.shader" ) ) )
+				parts.Add( new ModelEntity
+				{
+					Model = model,
+					Scale = new Vector3( scl.X, scl.Z, scl.Y ) * fit,
+					Rotation = new System.Numerics.Quaternion( rot.X, rot.Z, rot.Y, -rot.W ),
+					Position = origin + (spos - centre) * fit,
+				} );
 		}
 	}
 }

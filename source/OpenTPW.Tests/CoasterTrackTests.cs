@@ -86,4 +86,26 @@ public class CoasterTrackTests
 		float big = CoasterTrack.BankAngle( tin, tout, gain: 1.0f, maxBank: 1.5f );
 		Assert.AreEqual( 2f * small, big, 1e-5f, "doubling the gain doubles the (unclamped) bank" );
 	}
+
+	[TestMethod]
+	public void TrackTextureIsTheOneMostCrossSectionEdgesUse()
+	{
+		const string sam =
+			"asTextureData[0].pcTextureFilename\t\"Gutter.tga\"\n" +
+			"asTextureData[1].pcTextureFilename\t\"Paint_flow.tga\"\n" +
+			"asCrossSectionEdges1[0].usTexture\t1\n" +
+			"asCrossSectionEdges1[1].usTexture\t1\n" +
+			"asCrossSectionEdges1[2].usTexture\t0\n";
+		var settings = new SettingsFile( new MemoryStream( Encoding.ASCII.GetBytes( sam ) ) );
+		Assert.AreEqual( "Paint_flow", CoasterTrack.ParseTrackTexture( settings ) );
+	}
+
+	[TestMethod]
+	public void TrackTextureDefaultsToTheFirstAndIsNullWhenUnnamed()
+	{
+		var first = new SettingsFile( new MemoryStream( Encoding.ASCII.GetBytes( "asTextureData[0].pcTextureFilename\t\"trak_sec3.tga\"\n" ) ) );
+		Assert.AreEqual( "trak_sec3", CoasterTrack.ParseTrackTexture( first ) );
+		var none = new SettingsFile( new MemoryStream( Encoding.ASCII.GetBytes( "someOtherKey\t1.0\n" ) ) );
+		Assert.IsNull( CoasterTrack.ParseTrackTexture( none ) );
+	}
 }

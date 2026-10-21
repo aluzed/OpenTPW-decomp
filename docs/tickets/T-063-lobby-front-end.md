@@ -25,7 +25,7 @@ original front-end never showed. Commits `4482bfd` + `4d7c0ea` restored it and m
 - The `PurpleButton`s ("Create New Player", "Quit Game") only play a click sound — no player profiles, and
   Quit does nothing (→ [T-068](T-068-quit-game-button.md)).
 - World labels overlap the button column (→ [T-070](T-070-lobby-label-overlap.md)).
-- The Space island model fails to load, so Space Zone is not offered from the lobby.
+- ~~The Space island model fails to load~~ — fixed in T-073 (Space Zone is now offered).
 
 ## Affected files
 

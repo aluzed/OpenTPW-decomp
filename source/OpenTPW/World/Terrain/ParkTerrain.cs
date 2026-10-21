@@ -39,11 +39,7 @@ public sealed class ParkTerrain : Entity
 		{
 			// Double-sided: the terrain heightfield's triangle winding isn't uniform after the Y/Z
 			// swizzle, so back-face culling would drop much of the ground (verified). See MaterialFlags.
-			var material = new Material<ObjectUniformBuffer>( "content/shaders/test.shader", MaterialFlags.DoubleSided );
-			var textures = new List<Texture>();
-			for ( int i = 0; i < 16; ++i )
-				textures.Add( mesh.Materials.Length <= i ? Texture.Missing : LoadTexture( texCache, terrainPath, mesh.Materials[i].Name ) );
-			material.Set( "Color", [.. textures] );
+			var textures = mesh.Materials.Select( m => LoadTexture( texCache, terrainPath, m.Name ) ).ToList();
 
 			var vertices = new Vertex[mesh.Vertices.Length];
 			for ( int i = 0; i < mesh.Vertices.Length; ++i )
@@ -56,13 +52,15 @@ public sealed class ParkTerrain : Entity
 					MatFlags = mesh.Materials[(int)mesh.Vertices[i].TextureIndex].Flags
 				};
 
-			var model = new Model( vertices, mesh.Indices, material );
 			Matrix4x4.Decompose( mesh.TransformMatrix, out var scl, out var rot, out var pos );
 			var mPos = new OpenTPW.Vector3( pos.X, pos.Z, pos.Y );
 			var mRot = new Quaternion( rot.X, rot.Z, rot.Y, -rot.W );
 			var mScl = new OpenTPW.Vector3( scl.X, scl.Z, scl.Y );
 
-			_ = new ModelEntity { Model = model, Scale = mScl, Rotation = mRot, Position = mPos };
+			// One model per group of ≤16 materials (MaterialSlots) — beyond 16 the shader draws solid magenta.
+			foreach ( var model in MaterialSlots.BuildModels( vertices, mesh.Indices, textures,
+				() => new Material<ObjectUniformBuffer>( "content/shaders/test.shader", MaterialFlags.DoubleSided ) ) )
+				_ = new ModelEntity { Model = model, Scale = mScl, Rotation = mRot, Position = mPos };
 
 			// Record world-space vertex positions for height sampling + bounds.
 			var modelMatrix = Matrix4x4.CreateScale( mScl.GetSystemVector3() )

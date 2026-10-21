@@ -112,6 +112,7 @@ All format/VM decoding and the core gameplay loop are done. Open work falls into
 | [T-070](T-070-lobby-label-overlap.md) | 🟢 Low | ✅ Done | **Bug**: lobby world names slid under the button column — camera reframed left + no label/click behind the buttons |
 | [T-071](T-071-park-blue-tint.md) | 🟡 Medium | ⚠️ Mostly done | **Bug**: park read uniformly blue — the **ground layer (`base.lnd`) was never rendered** (now decoded: `LndFile` + `ParkGround`, all 4 themes) and the terrain fog went full at ~370 units (now ~920). Some cyan gaps + exact blend remain |
 | [T-072](T-072-placement-grid-scale.md) | 🟠 Medium | ✅ Done | **Bug**: grid was 16-unit tiles on the terrain centroid → now **10-unit tiles from (0,0)** (measured), rides re-centred on their footprint, river/lake = water + walkable forecourt from the `.lnd` mask, autoplace on the biggest open lawn, `3d.shader` fog fixed |
+| [T-073](T-073-magenta-materials.md) | 🟠 Medium | ✅ Done | **Bug**: magenta faces on hallow/fantasy/space rides (>16 materials per mesh → `MaterialSlots`; shared textures → `sharetex.wad` fallback), coaster track texture read from `coaster.sam`, and the **Space lobby island now loads** |
 
 Priority legend: 🔴 blocking · 🟠 important · 🟡 desirable/feature · ⚪ technical debt/polish.
 Status legend: ✅ done · ⚠️ partial · ☐ to do · 🗂️ split into focused tickets · ⏸️ deferred.

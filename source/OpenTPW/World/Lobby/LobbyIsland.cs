@@ -21,23 +21,12 @@ public sealed class LobbyIsland : Entity
 		{
 			LoadProgress.ReportSub( $"Loading island: {themeName}... ({++meshIndex}/{meshCount})", (float)meshIndex / meshCount );
 
-			var material = new Material<ObjectUniformBuffer>( "content/shaders/test.shader" );
-			var textures = new List<Texture>();
-
-			for ( int i = 0; i < 16; ++i )
+			// A missing texture used to throw and drop the whole island (Space's lobby island never showed).
+			var textures = mesh.Materials.Select( m =>
 			{
-				if ( mesh.Materials.Length <= i )
-				{
-					textures.Add( Texture.Missing );
-				}
-				else
-				{
-					var j = mesh.Materials[i];
-					textures.Add( new Texture( $"lobby/terrain/textures/{j.Name}.wct", TextureFlags.Repeat ) );
-				}
-			}
-
-			material.Set( $"Color", [.. textures] );
+				try { return new Texture( $"lobby/terrain/textures/{m.Name}.wct", TextureFlags.Repeat ); }
+				catch { return Texture.Missing; }
+			} ).ToList();
 
 			var vertices = new List<Vertex>();
 			for ( int i = 0; i < mesh.Vertices.Length; ++i )
@@ -48,24 +37,26 @@ public sealed class LobbyIsland : Entity
 					Normal = mesh.Normals[i],
 					TexCoords = mesh.TexCoords[i],
 					TexIndex = (int)mesh.Vertices[i].TextureIndex,
-					MatFlags = mesh.Materials[(int)mesh.Vertices[i].TextureIndex].Flags
+					// Space's island has vertices past its material list (it threw and the island never showed).
+					MatFlags = mesh.Vertices[i].TextureIndex < mesh.Materials.Length ? mesh.Materials[(int)mesh.Vertices[i].TextureIndex].Flags : 0
 				} );
 			}
 
-			var model = new Model( [.. vertices], mesh.Indices, material );
 			Matrix4x4.Decompose( mesh.TransformMatrix, out var scl, out var rot, out var pos );
 
 			var position = new Vector3( pos.X, pos.Z, pos.Y - 2.5f );
 			var rotation = new Quaternion( rot.X, rot.Z, rot.Y, -rot.W );
 			var scale = new Vector3( scl.X, scl.Z, scl.Y );
 
-			_ = new ModelEntity()
-			{
-				Model = model,
-				Scale = scale,
-				Rotation = rotation,
-				Position = position + Position,
-			};
+			foreach ( var model in MaterialSlots.BuildModels( [.. vertices], mesh.Indices, textures,
+				() => new Material<ObjectUniformBuffer>( "content/shaders/test.shader" ) ) )
+				_ = new ModelEntity()
+				{
+					Model = model,
+					Scale = scale,
+					Rotation = rotation,
+					Position = position + Position,
+				};
 		}
 	}
 }

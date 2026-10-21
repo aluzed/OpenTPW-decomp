@@ -379,3 +379,6 @@ dumps
 # Local disc images, no-CD archives and extracted game data
 /iso/
 /install/
+
+# Claude Code local session state
+/.claude/*.local.md

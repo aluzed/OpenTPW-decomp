@@ -589,6 +589,15 @@ public class Ride : Entity
 			try { return new Texture( $"{archive}/{folder}/{materialName}.wct", TextureFlags.PinkChromaKey ); }
 			catch { /* try the next folder */ }
 		}
+
+		// Shared textures (the base-plate floor tiles jfl_*, grass, signs, doorways…) live once per level in
+		// levels/<theme>/sharetex.wad, not in each ride's WAD. archive = levels/<theme>/<rides|sideshow|…>/<name>.
+		var level = Path.GetDirectoryName( Path.GetDirectoryName( archive ) );
+		if ( !string.IsNullOrEmpty( level ) )
+		{
+			try { return new Texture( $"{level}/sharetex/{materialName}.wct", TextureFlags.PinkChromaKey ); }
+			catch { /* not shared either */ }
+		}
 		return Texture.Missing;
 	}
 
@@ -609,20 +618,8 @@ public class Ride : Entity
 		var parts = new List<ModelEntity>();
 		foreach ( var mesh in modelFile.Meshes )
 		{
-			var material = new Material<ObjectUniformBuffer>( "content/shaders/test.shader" );
-			var textures = new List<Texture>();
-			for ( int i = 0; i < 16; ++i )
-			{
-				if ( mesh.Materials.Length <= i )
-				{
-					textures.Add( Texture.Missing );
-					continue;
-				}
-
-				textures.Add( LoadRideTexture( rideArchive, mesh.Materials[i].Name ) );
-			}
-			// (LoadRideTexture is defined once below and shared with the car meshes.)
-			material.Set( "Color", [.. textures] );
+			// One texture per material (any count — see MaterialSlots); LoadRideTexture is shared with the car meshes.
+			var textures = mesh.Materials.Select( m => LoadRideTexture( rideArchive, m.Name ) ).ToList();
 
 			var vertices = new List<Vertex>();
 			for ( int i = 0; i < mesh.Vertices.Length; ++i )
@@ -637,7 +634,11 @@ public class Ride : Entity
 				} );
 			}
 
-			var model = new Model( [.. vertices], mesh.Indices, material );
+			// A mesh with more than 16 materials (a fantasy ride's base plate has 25 floor tiles) is drawn as several
+			// models. The first stays this mesh's animated part — the engine addresses parts by mesh index — and the
+			// rest (static floor tiles in practice) are extra entities the ride owns.
+			var models = MaterialSlots.BuildModels( [.. vertices], mesh.Indices, textures,
+				() => new Material<ObjectUniformBuffer>( "content/shaders/test.shader" ) );
 			Matrix4x4.Decompose( mesh.TransformMatrix, out var scl, out var rot, out var pos );
 
 			// Placement rotation (T-041): spin the whole ride about its footprint centre (= Position) by
@@ -661,13 +662,20 @@ public class Ride : Entity
 				partRot = yaw * partRot;
 			}
 
-			parts.Add( new ModelEntity
+			for ( int m = 0; m < models.Count; m++ )
 			{
-				Model = model,
-				Scale = new Vector3( scl.X, scl.Z, scl.Y ),
-				Rotation = partRot,
-				Position = localOffset + Position,
-			} );
+				var entity = new ModelEntity
+				{
+					Model = models[m],
+					Scale = new Vector3( scl.X, scl.Z, scl.Y ),
+					Rotation = partRot,
+					Position = localOffset + Position,
+				};
+				if ( m == 0 )
+					parts.Add( entity );
+				else
+					OwnedEntities.Add( entity );
+			}
 		}
 		return parts;
 	}

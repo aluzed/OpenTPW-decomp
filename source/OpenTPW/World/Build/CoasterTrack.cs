@@ -43,8 +43,7 @@ public sealed class CoasterTrack
 		this.terrain = terrain;
 		this.coaster = coaster;
 
-		try { trackTex = new Texture( $"{coaster.Archive}/gtexture/Trak_sec2.wct", TextureFlags.Repeat ); }
-		catch { trackTex = Texture.Missing; }
+		trackTex = LoadTrackTexture( coaster.Archive );
 		// Unlit (not 3d.shader): unlit samples a single Color texture at the vertex UVs, whereas 3d.shader
 		// expects a per-vertex-indexed texture *array* this hand-built ribbon mesh doesn't supply.
 		ribbonMat = new Material<ObjectUniformBuffer>( "content/shaders/unlit.shader", MaterialFlags.DoubleSided );
@@ -236,6 +235,45 @@ public sealed class CoasterTrack
 	private const float BankGain = 1.6f;  // heading-change (rad) → roll (rad) multiplier
 	private const float MaxBank = 0.6f;   // ≈34° cap on the roll
 	private const int BankSmooth = 2;     // ± window (spline points) of the bank moving-average
+
+	// The track's texture, named by its own coaster.sam (T-072 follow-up): it used to be hard-coded to jungle's
+	// Trak_sec2, which other themes don't ship — their track drew as an error texture.
+	private static Texture LoadTrackTexture( string archive )
+	{
+		try
+		{
+			using var s = FileSystem.OpenRead( $"{archive}/coaster.sam" );
+			if ( ParseTrackTexture( new SettingsFile( s ) ) is { } name )
+				return new Texture( $"{archive}/gtexture/{name}.wct", TextureFlags.Repeat );
+		}
+		catch ( Exception e )
+		{
+			Log.Warning( $"[coaster] track texture unavailable for {archive}: {e.Message}" );
+		}
+		return Texture.Missing;
+	}
+
+	// The texture most of cross-section 1's edges use (asCrossSectionEdges1[*].usTexture, default 0) →
+	// asTextureData[n].pcTextureFilename, without its quotes and extension (the WAD holds it as .wct).
+	// The ribbon is drawn with a single texture, so the dominant one stands for the whole profile.
+	internal static string? ParseTrackTexture( SettingsFile settings )
+	{
+		var uses = new Dictionary<int, int>();
+		for ( int i = 0; ; i++ )
+		{
+			var t = settings[$"asCrossSectionEdges1[{i}].usTexture"];
+			if ( string.IsNullOrEmpty( t ) )
+				break;
+			int index = int.TryParse( t, out var v ) ? v : 0;
+			uses[index] = uses.GetValueOrDefault( index ) + 1;
+		}
+		int dominant = uses.Count > 0 ? uses.OrderByDescending( kv => kv.Value ).ThenBy( kv => kv.Key ).First().Key : 0;
+
+		var file = settings[$"asTextureData[{dominant}].pcTextureFilename"];
+		if ( string.IsNullOrEmpty( file ) )
+			return null;
+		return Path.GetFileNameWithoutExtension( file.Trim( '"', ' ' ) );
+	}
 
 	// The authored track cross-section: the 2D profile (X across, Y up, U texcoord) the original sweeps
 	// along the track centre-line, read from coaster.sam's asCrossSectionPoints1[*] (plain settings text).
