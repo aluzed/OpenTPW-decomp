@@ -75,7 +75,7 @@ internal sealed class ManagePanel : HudPanel
 		// Selected-shop row: a food/drink stall's price is adjustable (a toilet is free); plus sell.
 		else if ( BuildMode.Current?.SelectedShop is { } shop )
 		{
-			if ( shop.Kind != ShopKind.Toilet )
+			if ( !shop.IsFree )
 			{
 				list.Add( new Btn( new Rectangle( 16f, RideY, 64f, BtnH ), "PRICE-", shop.Price > 1f,
 					() => shop.Price = System.Math.Max( 1f, shop.Price - 1f ) ) );

@@ -330,8 +330,8 @@ public class Level
 				+ $"rsch={CommitPlacement( Item( "researcher" ), grid, terrain, cx + 4, cy + 2 )} "
 				+ $"mech={CommitPlacement( Item( "mechanic" ), grid, terrain, cx + 4, cy )} "
 				+ $"guard={CommitPlacement( Item( "guard" ), grid, terrain, cx, cy )}" ); // guard patrols the centre (T-039 vandalism deterrence)
-			// Souvenir stalls by the paths, so visitors make impulse buys (balloons, gifts).
-			foreach ( var (name, dx, dy) in new[] { ("balloon", 10, 1), ("giftshop", 10, 4) } )
+			// Souvenir stalls by the paths, so visitors make impulse buys (balloons, gifts), and a few litter bins.
+			foreach ( var (name, dx, dy) in new[] { ("balloon", 10, 1), ("giftshop", 10, 4), ("bin", 4, 6), ("bin", -2, 2), ("bin", 6, -1) } )
 				if ( catalog.FirstOrDefault( c => c.Name == name ) is { Name: not null } souvenir )
 					CommitPlacementNear( souvenir, grid, terrain, cx + dx, cy + dy, radius: 4 );
 
@@ -695,7 +695,7 @@ public class Level
 				placed++;
 
 		// Shared shops + one of each staff role (these catalog names exist for every theme).
-		foreach ( var (name, dx, dy) in new[] { ("shop", 6, 4), ("drink", 6, 1), ("toilet", 8, 4) } )
+		foreach ( var (name, dx, dy) in new[] { ("shop", 6, 4), ("drink", 6, 1), ("toilet", 8, 4), ("bin", 4, 6), ("bin", -2, 2) } )
 			if ( catalog.FirstOrDefault( c => c.Name == name ) is { Name: not null } shop )
 				CommitPlacementNear( shop, grid, terrain, cx + dx, cy + dy, radius: 6 );
 		foreach ( var (name, dx, dy) in new[] { ("entertainer", 0, 2), ("handyman", 2, 2), ("guard", 0, 0), ("mechanic", 4, 0), ("researcher", 4, 2) } )
@@ -744,6 +744,8 @@ public class Level
 		list.Add( Stall( "shop", ShopKind.Food, 500f ) );    // food stall (satisfies hunger)
 		list.Add( Stall( "drink", ShopKind.Drink, 450f ) );  // drink stall (satisfies thirst, T-039)
 		list.Add( Stall( "toilet", ShopKind.Toilet, 400f ) ); // toilet (relieves bladder, free to use, T-039)
+		if ( ShopBuilding.StatsFor( ShopKind.Bin, theme ) is { } bin ) // litter bin: visitors nearby bin their rubbish
+			list.Add( new BuildCatalogItem( "bin", null, null, 1, 1, bin.BuildCost, Title: ObjectNames.Localize( bin.Name ) ) );
 		// The theme's other stalls (fries, ice cream, restaurant, gift / balloon / costume shops), keyed by archive.
 		var defaults = new[] { ShopKind.Food, ShopKind.Drink }.Select( k => ShopBuilding.DefaultArchive( k, theme ) ).ToHashSet( StringComparer.OrdinalIgnoreCase );
 		foreach ( var archive in ShopBuilding.ShopArchives( theme ) )
@@ -933,6 +935,7 @@ public class Level
 	{
 		"drink" => ShopKind.Drink,
 		"toilet" => ShopKind.Toilet,
+		"bin" => ShopKind.Bin,
 		_ => ShopKind.Food,
 	};
 
@@ -1208,7 +1211,7 @@ public class Level
 		{
 			nextEconLog = Time.Now + 5f;
 			Log.Info( $"[econ] money={f.Money:0}  ride+={f.RideRevenue:0}  entry+={f.EntryRevenue:0}  shop+={f.FoodRevenue:0}  upkeep-={f.UpkeepPaid:0}  wages-={f.WagesPaid:0}"
-				+ $"  vandalism={Peep.VandalismActs} deterred={Peep.VandalismDeterred} toilet={Peep.ToiletVisits}"
+				+ $"  vandalism={Peep.VandalismActs} deterred={Peep.VandalismDeterred} toilet={Peep.ToiletVisits} binned={Shop.LitterBinned} litter={Litter.Active.Count}"
 				+ $"  breakdowns={Ride.Breakdowns} repairs={Ride.Repairs}"
 				+ $"  sold: {string.Join( ' ', Enum.GetValues<SaleCategory>().Where( c => f.Sold( c ) > 0 ).Select( c => $"{c}={f.Sold( c )}" ) )}" );
 		}

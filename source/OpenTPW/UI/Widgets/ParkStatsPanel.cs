@@ -133,7 +133,7 @@ internal sealed class ParkStatsPanel : HudPanel
 
 			// Selected shop: its sale price (a toilet is free), adjustable with , . like a ride.
 			if ( build.SelectedShop is { } shopSel )
-				lines.Add( shopSel.Kind == ShopKind.Toilet
+				lines.Add( shopSel.IsFree
 					? $"SHOP {shopSel.Name} (free)"
 					: $"SHOP {shopSel.Name}  price {shopSel.Price:0} (,.)" );
 

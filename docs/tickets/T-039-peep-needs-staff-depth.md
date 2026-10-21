@@ -5,6 +5,11 @@
 - **Status**: ✅ Core done (+toilets, +breakdowns) — thirst + drink stalls, **bladder + toilets**, vandalism
   that guards measurably reduce, a balanced long-run economy, peep thoughts/ratings (T-050), and **ride
   breakdown + mechanic repair with spark/zap feedback**. Only a reliability-balance tuning pass remains.
+  **2026-10-21: litter bins** — each theme's bin feature (jungle `pelbin`, hallow `bin`, fantasy `bfbin`, space
+  `spacbin`: "Litter Bin", 1×1, $100, `UsageInfo.HoldsLitter 1`) is buildable; a visitor within ~3 tiles of one
+  bins its rubbish (random litter and the wrappers stalls hand out) instead of dropping it (`Shop.Discard`).
+  Vandalism still scatters litter on the ground. Stray (non-wrapper) litter dropped to ~1 piece per 2 minutes of
+  wandering (was one per 25 s, which pinned a 250-visitor park at the 300-piece cap).
 - **Related**: [T-034](T-034-peeps.md) (needs, economy, staff — core done).
 
 ## Context

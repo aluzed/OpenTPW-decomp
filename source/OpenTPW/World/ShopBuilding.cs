@@ -19,6 +19,8 @@ internal static class ShopBuilding
 		ShopKind.Drink => new[] { "coconut", "drinks", "pumpkin", "cola" }.Select( n => $"levels/{theme}/shops/{n}" ),
 		// Each theme names its small toilet differently: jungle toilet, fantasy/space loo, hallow horloo.
 		ShopKind.Toilet => new[] { "toilet", "loo", "horloo" }.Select( n => $"levels/{theme}/features/{n}" ),
+		// And its litter bin: jungle pelbin (a pelican), hallow bin, fantasy bfbin, space spacbin.
+		ShopKind.Bin => new[] { "pelbin", "bin", "bfbin", "spacbin" }.Select( n => $"levels/{theme}/features/{n}" ),
 		_ => new[] { "burger", "fries", "steak", "hotdog", "sburger", "gchips" }.Select( n => $"levels/{theme}/shops/{n}" ),
 	};
 
@@ -91,8 +93,9 @@ internal static class ShopBuilding
 	public static string? DefaultArchive( ShopKind kind, string theme )
 	{
 		// The preferred names first, then any stall of that kind the theme ships (a toilet is a feature, not a shop).
-		foreach ( var archive in Candidates( kind, theme ).Concat( kind == ShopKind.Toilet ? [] : ShopArchives( theme ) ) )
-			if ( StatsOf( archive ) is { } st && (kind == ShopKind.Toilet || KindOf( st.ShopType ) == kind) )
+		bool feature = kind is ShopKind.Toilet or ShopKind.Bin;
+		foreach ( var archive in Candidates( kind, theme ).Concat( feature ? [] : ShopArchives( theme ) ) )
+			if ( StatsOf( archive ) is { } st && (feature || KindOf( st.ShopType ) == kind) )
 				return archive;
 		return null;
 	}

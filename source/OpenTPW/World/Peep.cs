@@ -66,7 +66,10 @@ public sealed class Peep : ModelEntity
 	private const float WaitPenaltyPerSec = 1f; // standing in a line that isn't moving sours the mood
 	private const float RideRewardScale = 0.3f; // happiness gained = ride excitement × this
 	private const float LeaveHappiness = 10f;   // fed up below this
-	private const float LitterChancePerSec = 0.04f; // ~1 dropped every ~25 s of wandering
+	// Stray litter besides the wrappers stalls hand out (their authored LitterEffect): ~1 piece per 2 minutes of
+	// wandering. It was 0.04 (one per 25 s) before purchases dropped wrappers, which kept a 250-visitor park at the
+	// litter cap and "Too messy" on top of the thoughts whatever the handymen and bins did.
+	private const float LitterChancePerSec = 0.008f;
 	private const float LitterRadius = 18f;          // litter within this sours the mood
 	private const float LitterPenaltyPerSec = 0.4f;  // happiness lost per second per nearby litter (capped at 3 → max 1.2/s, so a peep survives the walk to a ride instead of dying in the litter death-spiral)
 	private const float HungerPerSec = 2f;           // hunger builds while in the park (0..100)
@@ -410,9 +413,9 @@ public sealed class Peep : ModelEntity
 		// Visitors occasionally drop litter, and standing among litter sours the mood (until a handyman
 		// clears it). Both raise the chance the peep heads home unhappy. A nearby guard deters littering.
 		if ( Random.Shared.NextDouble() < LitterChancePerSec * Time.Delta && !Staff.GuardNear( Position ) )
-			Litter.TryDrop( Position );
+			Shop.Discard( Position );
 		if ( wrapperTimer >= 0f && (wrapperTimer -= Time.Delta) < 0f )
-			Litter.TryDrop( Position );
+			Shop.Discard( Position );
 		int nearbyLitter = CountNearbyLitter();
 		amidLitter = nearbyLitter >= 2;
 		if ( nearbyLitter > 0 )

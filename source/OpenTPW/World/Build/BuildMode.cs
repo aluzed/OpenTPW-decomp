@@ -259,7 +259,7 @@ public sealed class BuildMode : Entity
 				if ( Hit( Key.Delete ) ) SellSelected(); // sell/demolish the selected ride (T-041)
 			}
 			// Selected shop: snack/drink price (, .) — a toilet stays free (T-041).
-			if ( SelectedShop is { Kind: not ShopKind.Toilet } shopSel && Selected < 0 )
+			if ( SelectedShop is { IsFree: false } shopSel && Selected < 0 )
 			{
 				if ( Hit( Key.Comma ) ) shopSel.Price = MathF.Max( 1f, shopSel.Price - 1f );
 				if ( Hit( Key.Period ) ) shopSel.Price += 1f;

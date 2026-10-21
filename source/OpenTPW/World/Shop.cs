@@ -11,6 +11,8 @@ public enum ShopKind
 	Toilet,
 	/// <summary>A gift / balloon / costume shop: an impulse buy that lifts the mood (no need satisfied).</summary>
 	Item,
+	/// <summary>A litter bin (<c>UsageInfo.HoldsLitter</c>): a visitor near one bins its rubbish instead of dropping it.</summary>
+	Bin,
 }
 
 /// <summary>What a sale was, for the per-product challenge counters (see <see cref="ShopBuilding.CategoryOf"/>).</summary>
@@ -37,8 +39,30 @@ public sealed class Shop : ModelEntity
 	/// <summary>What this stall sells (which need it satisfies).</summary>
 	public ShopKind Kind { get; }
 
+	/// <summary>A free facility (toilet, litter bin): nothing to sell, so no price.</summary>
+	public bool IsFree => Kind is ShopKind.Toilet or ShopKind.Bin;
+
+	/// <summary>How close (world units, ~3 tiles) a visitor must be to a bin to use it rather than litter.</summary>
+	public const float BinReach = 30f;
+
+	/// <summary>Pieces of rubbish visitors put in bins rather than on the ground.</summary>
+	public static int LitterBinned { get; private set; }
+
+	/// <summary>A visitor gets rid of a piece of rubbish at <paramref name="position"/>: into a bin within
+	/// <see cref="BinReach"/> if there is one, else onto the ground (<see cref="Litter.TryDrop"/>).</summary>
+	public static void Discard( Vector3 position )
+	{
+		foreach ( var s in Stalls )
+			if ( s.Kind == ShopKind.Bin && (s.Position - position).WithZ( 0 ).LengthSquared <= BinReach * BinReach )
+			{
+				LitterBinned++;
+				return;
+			}
+		Litter.TryDrop( position );
+	}
+
 	/// <summary>Display name (for the manage UI): the stall's own <c>Info.Name</c> when its data loaded.</summary>
-	public string Name => title ?? Kind switch { ShopKind.Drink => "Drink Stall", ShopKind.Toilet => "Toilet", ShopKind.Item => "Gift Shop", _ => "Food Stall" };
+	public string Name => title ?? Kind switch { ShopKind.Drink => "Drink Stall", ShopKind.Toilet => "Toilet", ShopKind.Item => "Gift Shop", ShopKind.Bin => "Litter Bin", _ => "Food Stall" };
 	private readonly string? title;
 
 	/// <summary>What one sale costs the park in goods (<c>UsageInfo.InitCostOfGoods</c>); the profit is the price minus this.</summary>
@@ -92,11 +116,11 @@ public sealed class Shop : ModelEntity
 		Archive = archive ?? ShopBuilding.DefaultArchive( kind, Level.Current.Name );
 		// The stall's own price / cost of goods / name / type from its .sam (a toilet stays free).
 		Stats = Archive != null ? ShopBuilding.StatsOf( Archive ) : null;
-		Kind = Stats is { } typed && kind != ShopKind.Toilet ? ShopBuilding.KindOf( typed.ShopType ) : kind;
+		Kind = Stats is { } typed && kind is not (ShopKind.Toilet or ShopKind.Bin) ? ShopBuilding.KindOf( typed.ShopType ) : kind;
 		if ( Stats is { } stats )
 		{
 			title = ObjectNames.Localize( stats.Name );
-			if ( Kind != ShopKind.Toilet )
+			if ( !IsFree )
 			{
 				Price = stats.Price;
 				CostOfGoods = stats.CostOfGoods;
@@ -149,6 +173,7 @@ public sealed class Shop : ModelEntity
 			ShopKind.Drink => Billboard.Make( 50, 130, 220 ),   // blue
 			ShopKind.Toilet => Billboard.Make( 210, 210, 220 ), // pale grey/white
 			ShopKind.Item => Billboard.Make( 220, 120, 200 ),   // pink gifts
+			ShopKind.Bin => Billboard.Make( 90, 90, 90 ),       // dark grey bin
 			_ => Billboard.Make( 40, 170, 70 ),                 // green food
 		};
 		sharedModels[kind] = model;
