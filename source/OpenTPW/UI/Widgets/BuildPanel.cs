@@ -169,6 +169,9 @@ internal sealed class BuildPanel : GameWindow
 		var name = item.Staff is { } role ? StaffNames.For( role ) : item.Label;
 		Text( Small, name, 290f, 92f, 13f, default, TextAlign.Center );
 
+		if ( Level.ArchiveOf( item ) is { } archive )
+			ItemPreview.For( archive, item.RidePath != null ? item.Name : Path.GetFileName( archive ) )?.Draw( Preview );
+
 		var figures = ItemFigures.For( item );
 		float y = 300f;
 		void Row( string label, string? value, float? gauge )
@@ -180,7 +183,7 @@ internal sealed class BuildPanel : GameWindow
 				DrawGauge( At( 338f, y + 1f, 110f, 9f ), g );
 			y += 24f;
 		}
-		int owned = Entity.All.OfType<Ride>().Count( r => r.Name.Equals( item.Name, StringComparison.OrdinalIgnoreCase ) );
+		int owned = Entity.All.OfType<Ride>().Count( r => Path.GetFileName( r.Archive ).Equals( item.Name, StringComparison.OrdinalIgnoreCase ) );
 		Row( Localization.Get( UIStrings.NumberOwned, "Number owned" ), owned == 0 ? "None" : owned.ToString(), null );
 		if ( figures.Excitement is { } excitement )
 			Row( Localization.Get( UIStrings.Excitement, "Excitement" ), null, excitement / 100f );

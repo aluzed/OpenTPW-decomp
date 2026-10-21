@@ -1210,6 +1210,11 @@ public class Level
 	}
 
 	// The shop kind for a catalog item name.
+	/// <summary>The archive (wad folder) a catalog item's model comes from — a ride's, a stall's, or the theme's
+	/// default stall of its kind; null for staff.</summary>
+	public static string? ArchiveOf( BuildCatalogItem item )
+		=> item.RidePath ?? item.ShopPath ?? (item.Staff == null ? ShopBuilding.DefaultArchive( ShopKindOf( item.Name ), Current.Name ) : null);
+
 	private static ShopKind ShopKindOf( string name ) => name switch
 	{
 		"drink" => ShopKind.Drink,
@@ -1551,6 +1556,8 @@ public class Level
 		foreach ( var entity in Entity.All )
 			if ( entity is RootPanel )
 				entity.Render();
+		// The windows' turning 3D previews, over the interface.
+		ItemPreview.RenderQueued();
 
 		// A full-screen "Loading <theme>…" curtain shown for the frame before a reload's synchronous load, so
 		// the screen freezes on this instead of the old park (T-062).

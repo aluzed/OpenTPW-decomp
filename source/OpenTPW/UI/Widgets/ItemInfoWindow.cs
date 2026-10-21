@@ -101,6 +101,7 @@ internal sealed class ItemInfoWindow : GameWindow
 	private static void RenderRide( BuildMode build, ParkFinances fin, Ride ride )
 	{
 		DrawHeading( ride.Name, 460f, 0f, 44f );
+		ItemPreview.For( ride.Archive, Path.GetFileName( ride.Archive ) )?.Draw( Preview );
 		Text( Small, ride.IsBroken ? "Broken down!" : ride.Riders > 0 ? $"{ride.Riders} riding" : "", 261f, 250f, 11f,
 			ride.IsBroken ? LockedInk : default, TextAlign.Center );
 
@@ -151,6 +152,8 @@ internal sealed class ItemInfoWindow : GameWindow
 	private static void RenderShop( BuildMode build, ParkFinances fin, Shop shop )
 	{
 		DrawHeading( shop.Name, 460f, 0f, 44f );
+		if ( shop.Archive is { } archive )
+			ItemPreview.For( archive, Path.GetFileName( archive ) )?.Draw( Preview );
 
 		statsY = 87f;
 		StatRow( "In use", $"{shop.InUse}" );
