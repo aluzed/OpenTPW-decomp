@@ -30,7 +30,10 @@ public readonly record struct ParkFacilities(
 	int Rides, int WornRides, int BrokenRides, int Shops, int Sideshows, int Toilets,
 	int Litter, int Visitors, int NeedingToilet, int Misbehaving, int Days, int WaitingAtGate = 0, float WorstToiletFilth = 0f,
 	int Researchers = 0, float Money = 0f, float Debt = 0f, bool AnyUpgradeResearched = true,
-	float RecentWages = 0f, float RecentIncome = 0f );
+	float RecentWages = 0f, float RecentIncome = 0f,
+	// Staff (T-049): the average grade of each type that is employed, in StaffStrikes.Roles order (NaN = none hired),
+	// and the strike announcements (StaffStrikes notices) still to be made.
+	float[]? AverageGrades = null, IReadOnlyCollection<string>? StaffNotices = null );
 
 /// <summary>
 /// Maps the live park state to advisor message candidates — <c>(id, group, score)</c> for the
@@ -62,7 +65,9 @@ public static class AdvisorAdvice
 	private const int PriceVerdictsToSpeak = 5;
 	private const float PriceScorePerVerdict = 10f, PriceScoreCap = 120f;
 
-	// Default scores when the .sam omits the key (matches the shipped jungle file).
+	// Default scores when the .sam omits the key (matches the shipped jungle file); a strike notice the .sam doesn't
+	// score (StaffUnhappy* has 50, StaffStriking* 280…) is still worth saying.
+	private const float StrikeNoticeScore = 100f;
 	private const float RedMonthScore = 110f, RedThreeScore = 50f, RedSixScore = 75f, BankruptedScore = 100000f;
 	private const float ThirstyPerPerson = 1f, HungryPerPerson = 1f, ResearchScore = 40f, CongratScore = 60f;
 	private const float CongratHappiness = 75f; // average happiness worth a "well done"
@@ -186,6 +191,20 @@ public static class AdvisorAdvice
 		// Wages swallowing the income (WagesHigh: wages over the last AverageOverMonths > WagesTimesHigherThanIncome ×).
 		if ( f.RecentWages > 0f && f.RecentWages > P( "WagesHigh", "WagesTimesHigherThanIncome", 2f ) * f.RecentIncome )
 			Add( "WagesHigh", P( "WagesHigh", "Score", 90f ) );
+
+		// Strikes: the game's own announcements (warning, reminder, strike, called off, back to work).
+		if ( f.StaffNotices is { } notices )
+			foreach ( var id in notices )
+				Add( id, P( id, "Score", StrikeNoticeScore ) );
+
+		// Poorly trained staff (StaffTrain*: an average grade worse than WorseThan 1).
+		if ( f.AverageGrades is { } grades )
+			for ( int i = 0; i < grades.Length && i < StaffStrikes.Roles.Length; i++ )
+			{
+				string id = $"StaffTrain{StaffStrikes.AdvisorName( StaffStrikes.Roles[i] )}";
+				if ( !float.IsNaN( grades[i] ) && grades[i] < P( id, "WorseThan", 1f ) )
+					Add( id, P( id, "Score", 30f ) );
+			}
 
 		// Too many of one kind of staff (Max*.MoreThan 10).
 		foreach ( var (id, hired) in new[] { ("MaxHandymen", f.Handymen), ("MaxEntertainers", f.Entertainers),

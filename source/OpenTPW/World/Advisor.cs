@@ -306,7 +306,23 @@ public sealed class Advisor : Entity
 			AnyUpgradeResearched: rides.Any( r => r.ResearchedLevel > 0 || r.UpgradeLevel > 0 ),
 			Money: ParkFinances.Current?.Money ?? 0f,
 			Debt: ParkFinances.Current?.Debt ?? 0f,
-			WorstToiletFilth: Shop.Stalls.Where( s => s.Kind == ShopKind.Toilet ).Select( s => s.Filth ).DefaultIfEmpty( 0f ).Max() );
+			WorstToiletFilth: Shop.Stalls.Where( s => s.Kind == ShopKind.Toilet ).Select( s => s.Filth ).DefaultIfEmpty( 0f ).Max(),
+			AverageGrades: StaffStrikes.Roles.Select( r => staff.Where( s => s.Role == r ).Select( s => (float)s.Grade ).DefaultIfEmpty( float.NaN ).Average() ).ToArray(),
+			StaffNotices: PendingStaffNotices() );
+	}
+
+	// Strike announcements wait up to StaffNoticeLife seconds for the advisor to have a free moment.
+	private readonly Dictionary<string, float> staffNotices = new();
+	private const float StaffNoticeLife = 30f;
+
+	private IReadOnlyCollection<string> PendingStaffNotices()
+	{
+		if ( StaffStrikes.Current is { } strikes )
+			foreach ( var id in strikes.TakeNotices() )
+				staffNotices[id] = Time.Now + StaffNoticeLife;
+		foreach ( var id in staffNotices.Where( kv => kv.Value < Time.Now || activeMessage == kv.Key ).Select( kv => kv.Key ).ToList() )
+			staffNotices.Remove( id );
+		return staffNotices.Keys.ToList();
 	}
 
 	protected override void OnUpdate()

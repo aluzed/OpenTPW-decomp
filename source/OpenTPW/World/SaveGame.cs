@@ -68,6 +68,11 @@ public sealed class SaveGame
 		public float ZoneX { get; set; }
 		public float ZoneY { get; set; }
 		public float ZoneRadius { get; set; }
+		// Grade, training and condition (T-049 depth); an older save's staff (no Grade) keep their rolled grade.
+		public int? Grade { get; set; }
+		public float Training { get; set; }
+		public float Energy { get; set; } = 100f;
+		public float Morale { get; set; } = 60f;
 	}
 
 	/// <summary>The active/offered challenge's progression (T-059, T-054). The challenge itself is identified by

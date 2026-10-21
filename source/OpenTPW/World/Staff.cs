@@ -49,7 +49,11 @@ public sealed class Staff : ModelEntity
 	/// guard, researcher).</summary>
 	public static float[] PayMultipliers { get; set; } = { 10f, 30f, 15f, 20f, 35f };
 
-	/// <summary>The wage per second for a role (pure).</summary>
+	/// <summary>The wage per second for a role at a grade (pure): the role's pay ratio, scaled by the grade's
+	/// <c>BaseWage</c> relative to grade 1 (<see cref="StaffGrades.WageFactor"/>).</summary>
+	public static float WagePerSecond( StaffRole role, int grade ) => WagePerSecond( role ) * StaffGrades.Current.WageFactor( grade );
+
+	/// <summary>The wage per second for a role at grade 1 (pure).</summary>
 	public static float WagePerSecond( StaffRole role )
 	{
 		int i = role switch
@@ -60,8 +64,7 @@ public sealed class Staff : ModelEntity
 		float m = i < PayMultipliers.Length ? PayMultipliers[i] : AveragePayMultiplier;
 		return AverageWagePerSecond * m / AveragePayMultiplier;
 	}
-	private const float CheerRadius = 30f;     // entertainer reach: EntertainerConstsPerGrade[0].ActivationDistance 3 cells × 10 units
-	private const float CheerPerSecond = 8f;   // happiness lifted per second for visitors in range
+	private const float CellSize = 10f;        // one map cell (the placement grid's tile) in world units
 	private const float ReachDistance = 3f;    // how close counts as "arrived" / "picked up"
 	private const float WalkFps = 8f;          // walk-cycle frames per second
 	private const float GuardDeterRadius = 30f; // visitors within this of a guard don't litter: RegionFX "Guard" radius 3 cells × 10 units
@@ -74,6 +77,101 @@ public sealed class Staff : ModelEntity
 
 	/// <summary>How many researchers are currently employed (drives ride upgrade research, T-044).</summary>
 	public static int ResearcherCount => Entity.All.Count( e => e is Staff s && s.Role == StaffRole.Researcher );
+
+	/// <summary>The research speed of the researchers at work, in grade-1 researchers (<c>ResearchAbility</c>; none
+	/// while they strike).</summary>
+	public static float ResearchPower => StaffStrikes.Current?.IsStriking( StaffRole.Researcher ) == true ? 0f
+		: Entity.All.OfType<Staff>().Where( s => s.Role == StaffRole.Researcher ).Sum( s => StaffGrades.Current.ResearchFactor( s.Grade ) );
+
+	// ---- Grade, training, energy and morale (Standard.sam PerGradeStaffConsts / *ConstsPerGrade, see StaffGrades) ----
+
+	/// <summary>The staff member's grade, 0–4 (rolled from the staff pool at hire, raised by training).</summary>
+	public int Grade { get; private set; }
+
+	/// <summary>Training towards the next grade, 0–<see cref="StaffGrades.PointsPerGrade"/> percent.</summary>
+	public float TrainingPoints { get; private set; }
+
+	/// <summary>Energy 0–100: spent working, recovered resting (<c>RecuperationRate</c>).</summary>
+	public float Energy { get; private set; } = 100f;
+
+	/// <summary>Happiness 0–100: worn down by working tired with nowhere to rest (<c>HappyHitCosNoRestArea</c>),
+	/// recovered when rested (<c>HappinessRecuperationRate</c>). Tired or unhappy staff strike (<see cref="StaffStrikes"/>).</summary>
+	public float Morale { get; private set; } = StartMorale;
+
+	private const float StartMorale = 60f;
+	private const float WorkDrainPerSecond = 1.2f; // energy a member of staff spends per second on a job
+	private const float TiredBelow = 30f;          // tired enough that a day at work costs happiness
+	private const float RestBelow = 10f, RestUntil = 60f;
+
+	private bool working;   // on a job this frame (walking to it or doing it)
+	private bool resting;   // exhausted: standing to recover until RestUntil
+	private float idleUntil; // short rest after each job (IdleDuration)
+
+	/// <summary>The cost of <paramref name="points"/> training percent at the current grade (0 at the top grade).</summary>
+	public float TrainingCost( float points ) => points * StaffGrades.Current.CostPerTrainingPoint( Role, Grade );
+
+	/// <summary>Whether training can still raise this member of staff.</summary>
+	public bool CanTrain => Grade < StaffGrades.MaxGrade && StaffGrades.Current.CostPerTrainingPoint( Role, Grade ) > 0f;
+
+	/// <summary>Add training percent (the caller pays <see cref="TrainingCost"/>); a full hundred raises the grade.</summary>
+	public void Train( float points )
+	{
+		if ( !CanTrain )
+			return;
+		TrainingPoints += points;
+		while ( TrainingPoints >= StaffGrades.PointsPerGrade && Grade < StaffGrades.MaxGrade )
+		{
+			TrainingPoints -= StaffGrades.PointsPerGrade;
+			Grade++;
+			Log.Info( $"[staff] {Role} trained to grade {Grade}" );
+		}
+		if ( Grade >= StaffGrades.MaxGrade )
+			TrainingPoints = 0f;
+	}
+
+	/// <summary>Restore a saved member of staff's grade, training and condition (T-059).</summary>
+	public void RestoreCondition( int grade, float training, float energy, float morale )
+	{
+		Grade = Math.Clamp( grade, 0, StaffGrades.MaxGrade );
+		TrainingPoints = Math.Clamp( training, 0f, StaffGrades.PointsPerGrade );
+		Energy = Math.Clamp( energy, 0f, 100f );
+		Morale = Math.Clamp( morale, 0f, 100f );
+	}
+
+	/// <summary>A day passed: working tired with no rest area costs happiness, being rested restores it.</summary>
+	public void OnNewDay()
+	{
+		var g = StaffGrades.Current;
+		Morale = Energy < TiredBelow
+			? MathF.Max( 0f, Morale - g.HappyHitNoRestArea * 2.5f )
+			: MathF.Min( 100f, Morale + g.HappinessRecuperationRate[Math.Clamp( Grade, 0, StaffGrades.MaxGrade )] );
+	}
+
+	/// <summary>Every member of staff's daily condition update.</summary>
+	public static void OnNewDayAll()
+	{
+		foreach ( var s in Entity.All.OfType<Staff>().ToList() )
+			s.OnNewDay();
+	}
+
+	/// <summary>The month's strike consideration for every type of staff (from the clock's month boundary).</summary>
+	public static void ConsiderStrikes()
+	{
+		if ( StaffStrikes.Current is not { } strikes || GameClock.Current is not { } clock )
+			return;
+		var staff = Entity.All.OfType<Staff>().ToList();
+		foreach ( var role in StaffStrikes.Roles )
+		{
+			var of = staff.Where( s => s.Role == role ).ToList();
+			bool grievance = of.Count > 0 && StaffStrikes.HasGrievance( of.Count, of.Average( s => s.Energy ), of.Average( s => s.Morale ) );
+			strikes.ConsiderMonth( role, clock.TotalMonths, grievance );
+		}
+	}
+
+	/// <summary>Where strikers gather (<c>FixedItemInfo.StrikeArea*</c>: "I'm going on strike! And I'm going to that
+	/// bus stop!"), set by the level.</summary>
+	public static (Vector3 Min, Vector3 Max)? StrikeArea { get; set; }
+	private Vector3? picket;
 
 	/// <summary>Drop the park-wide guard registry (T-062 reload): the entities themselves are cleared via
 	/// <c>Entity.All</c>, but this static list would otherwise keep stale references across a level reload.</summary>
@@ -173,6 +271,9 @@ public sealed class Staff : ModelEntity
 		if ( role == StaffRole.Guard )
 			guards.Add( this );
 
+		Grade = StaffGrades.Current.RollGrade( role, Random.Shared );
+		Energy = 70f + (float)Random.Shared.NextDouble() * 30f;
+
 		sheet = RoleSprite( role );
 		fallback = RoleModel( role );
 		spriteHeight = 10f; // ~1 tile (was 16, sized for the old 16-unit grid — T-072)
@@ -187,16 +288,50 @@ public sealed class Staff : ModelEntity
 
 	protected override void OnUpdate()
 	{
-		ParkFinances.Current?.PayWages( WagePerSecond( Role ) * Time.Delta );
 		shadow.Position = Position.WithZ( terrain.SampleHeight( Position.X, Position.Y ) + 0.12f );
+		var grades = StaffGrades.Current;
 
-		switch ( role )
+		if ( StaffStrikes.Current?.IsStriking( role ) == true )
 		{
-			case StaffRole.Handyman: DoHandyman(); break;
-			case StaffRole.Guard: DoGuard(); break;         // patrol toward trouble (unhappy peeps)
-			case StaffRole.Mechanic: DoMechanic(); break;   // repair broken-down rides (T-032)
-			case StaffRole.Researcher: WanderStep(); break; // research is off-screen (T-044)
-			default: DoEntertainer(); break;
+			// On strike: no wage, no work — off to the picket by the bus stop, recovering there.
+			picket ??= PicketSpot();
+			if ( picket is { } spot )
+				WalkToward( spot );
+			else
+				movedThisFrame = false;
+			Energy = MathF.Min( 100f, Energy + grades.EnergyRecoveryPerSecond( Grade ) * Time.Delta );
+		}
+		else
+		{
+			picket = null;
+			ParkFinances.Current?.PayWages( WagePerSecond( Role, Grade ) * Time.Delta );
+
+			if ( Energy <= RestBelow )
+				resting = true;
+			if ( resting || Time.Now < idleUntil )
+			{
+				// Exhausted (or between jobs): stand and recover.
+				movedThisFrame = false;
+				Energy = MathF.Min( 100f, Energy + grades.EnergyRecoveryPerSecond( Grade ) * Time.Delta );
+				if ( Energy >= RestUntil )
+					resting = false;
+			}
+			else
+			{
+				working = false;
+				switch ( role )
+				{
+					case StaffRole.Handyman: DoHandyman(); break;
+					case StaffRole.Guard: DoGuard(); break;         // patrol toward trouble (unhappy peeps)
+					case StaffRole.Mechanic: DoMechanic(); break;   // repair broken-down rides (T-032)
+					case StaffRole.Researcher: working = true; WanderStep(); break; // research is off-screen (T-044)
+					default: DoEntertainer(); break;
+				}
+				// A job spends energy; strolling between jobs recovers half the resting rate.
+				Energy = working
+					? MathF.Max( 0f, Energy - WorkDrainPerSecond * Time.Delta )
+					: MathF.Min( 100f, Energy + grades.EnergyRecoveryPerSecond( Grade ) * 0.5f * Time.Delta );
+			}
 		}
 
 		// Cylindrical billboard: yaw about world up so the quad faces the camera.
@@ -206,6 +341,18 @@ public sealed class Staff : ModelEntity
 
 		ApplySprite();
 	}
+
+	// A spot in the strike area, or null when the level has none.
+	private static Vector3? PicketSpot()
+	{
+		if ( StrikeArea is not { } a )
+			return null;
+		float t = (float)Random.Shared.NextDouble(), u = (float)Random.Shared.NextDouble();
+		return new Vector3( a.Min.X + (a.Max.X - a.Min.X) * t, a.Min.Y + (a.Max.Y - a.Min.Y) * u, 0 );
+	}
+
+	// A job is done: rest IdleDuration (shorter for better-trained staff) before the next.
+	private void FinishJob() => idleUntil = Time.Now + StaffGrades.Current.IdleSeconds( Grade );
 
 	private static SpriteSheet? RoleSprite( StaffRole role ) => role switch
 	{
@@ -259,18 +406,30 @@ public sealed class Staff : ModelEntity
 	// Wander the park and lift the mood of every visitor within reach.
 	private void DoEntertainer()
 	{
-		WanderStep();
-
-		float lift = CheerPerSecond * Time.Delta;
-		float r2 = CheerRadius * CheerRadius;
+		// Reach and cheer by grade: ActivationDistance cells, HappinessEffectOnCell happiness a second.
+		var g = StaffGrades.Current;
+		int grade = Math.Clamp( Grade, 0, StaffGrades.MaxGrade );
+		float radius = g.EntertainerActivationDistance[grade] * CellSize;
+		float lift = g.EntertainerHappinessEffect[grade] * Time.Delta;
+		float r2 = radius * radius;
+		bool audience = false;
 		foreach ( var e in Entity.All )
 		{
 			if ( e is not Peep peep )
 				continue;
 			float dx = peep.Position.X - Position.X, dy = peep.Position.Y - Position.Y;
 			if ( dx * dx + dy * dy <= r2 )
+			{
 				peep.Cheer( lift );
+				audience = true;
+			}
 		}
+		// Entertaining an audience is the job; with nobody around the entertainer just strolls.
+		working = audience;
+		if ( !audience )
+			WanderStep();
+		else
+			movedThisFrame = false;
 	}
 
 	// Patrol toward the nearest unhappy (would-be vandal) peep so the guard's deterrence lands where the
@@ -295,20 +454,37 @@ public sealed class Staff : ModelEntity
 				trouble = p;
 			}
 		}
-		if ( trouble != null )
+		// Chase the trouble for WorkDuration (longer for better-trained guards), then give up on it for a while.
+		if ( trouble != null && trouble != pursued )
+		{
+			pursued = trouble;
+			pursuitUntil = Time.Now + StaffGrades.Current.PursuitSeconds( Grade );
+		}
+		if ( trouble != null && Time.Now < pursuitUntil )
+		{
+			working = true;
 			WalkToward( trouble.Position );
+		}
 		else
+		{
+			if ( trouble != null && Time.Now >= pursuitUntil )
+				FinishJob();
+			pursued = null;
 			WanderStep();
+		}
 	}
 
-	// Head for the nearest broken-down ride and repair it (over RepairTime once there); wander otherwise.
-	private const float RepairTime = 4f; // seconds of on-site work to fix a ride
+	private Peep? pursued;
+	private float pursuitUntil;
+
+	// Head for the nearest broken-down ride and repair it (over the grade's WorkDuration once there); wander otherwise.
 	private Ride? repairTarget;
 	private float repairTimer;
 	private void DoMechanic()
 	{
 		if ( repairTarget is { IsBroken: true } )
 		{
+			working = true;
 			if ( WalkToward( repairTarget.Position ) ) // arrived at the ride
 			{
 				repairTimer -= Time.Delta;
@@ -316,6 +492,7 @@ public sealed class Staff : ModelEntity
 				{
 					repairTarget.Repair();
 					repairTarget = null;
+					FinishJob();
 				}
 			}
 			return;
@@ -323,7 +500,7 @@ public sealed class Staff : ModelEntity
 
 		// No (valid) target: find the nearest broken ride; idle-wander if the park is all running.
 		repairTarget = NearestBrokenRide();
-		repairTimer = RepairTime;
+		repairTimer = StaffGrades.Current.RepairSeconds( Grade );
 		if ( repairTarget == null )
 			WanderStep();
 	}
@@ -353,10 +530,12 @@ public sealed class Staff : ModelEntity
 		// A toilet that needs cleaning comes first (it sickens visitors); otherwise the nearest litter.
 		if ( toiletTarget is { NeedsCleaning: true } || (toiletTarget = DirtiestToilet()) != null )
 		{
+			working = true;
 			if ( WalkToward( toiletTarget!.Position ) )
 			{
 				toiletTarget.Filth = 0f;
 				toiletTarget = null;
+				FinishJob();
 			}
 			return;
 		}
@@ -368,8 +547,18 @@ public sealed class Staff : ModelEntity
 			return;
 		}
 
+		working = true;
 		if ( WalkToward( litter.Position ) )
-			litter.PickUp();
+		{
+			// The broom sweeps the litter around the spot too — half the grade's DetectionRange cells.
+			float sweep = StaffGrades.Current.HandymanDetectionRange[Math.Clamp( Grade, 0, StaffGrades.MaxGrade )] * CellSize * 0.5f;
+			foreach ( var l in Litter.Active.ToList() )
+			{
+				float dx = l.Position.X - litter.Position.X, dy = l.Position.Y - litter.Position.Y;
+				if ( l == litter || dx * dx + dy * dy <= sweep * sweep )
+					l.PickUp();
+			}
+		}
 	}
 
 	private Shop? toiletTarget;

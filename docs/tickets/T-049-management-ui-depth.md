@@ -64,3 +64,31 @@ reuses the verified `HudPanel` click/hit-test path.
 
 The selected ride / stall / member of staff is marked by the game's own bobbing selection arrow
 (`esprites/Generic/Thoughts/SPR_TC` frames 3–6; blue = ride, yellow = stall, green = staff) — `SelectionArrow`.
+
+## Grades, training, energy, morale and strikes (2026-10-21)
+
+From `Standard.sam`'s staff tables (`StaffGrades`, pure + unit-tested) and the strike logic reversed from `tp.exe`
+(`StaffStrikes`):
+
+- **Grades 0–4.** A recruit's grade is rolled around `StaffPoolInfo.AvgGradeOf*` (±1), or two above it
+  `ChanceToGetGreat*` percent of the time. The wage scales with `PerGradeStaffConsts[g].BaseWage` (relative to grade 1,
+  the level the economy was tuned at); the work does too — a mechanic repairs in `WorkDuration` turns (80 → 20, i.e.
+  20 s → 5 s at 4 turns/s), an entertainer reaches `ActivationDistance` cells and cheers `HappinessEffectOnCell` a
+  second, a guard chases one troublemaker for `WorkDuration` turns, a researcher counts `ResearchAbility / 3`
+  grade-1 researchers (`Staff.ResearchPower`), a handyman's broom also sweeps the litter within half its
+  `DetectionRange` cells; after a repair / toilet / chase every member of staff idles `IdleDuration` turns.
+- **Training.** The selected staffer's **TRAIN $x** button buys 10 % at `*ConstsPerGrade[g].PoundsPerTrainingPoint`;
+  100 % raises the grade (grade 4 can't be trained). The HUD shows grade, training, energy and mood.
+- **Energy and morale.** A job spends 1.2 energy a second; resting recovers `RecuperationRate` per turn (half that
+  while strolling); at 10 a staffer stops to rest until 60. Each day spent tired (< 30) costs
+  `HappyHitCosNoRestArea` × 2.5 happiness (there is no staff room to rest in), a rested day gives back
+  `HappinessRecuperationRate`. (The rates are an interpretation; the thresholds below are the original's.)
+- **Strikes** (`FUN_00508f70`/`FUN_00509360`): from the 24th month, once a month per type — a grievance is more than
+  three of that type averaging under 15 energy ("striking through fatigue") or happiness ("through unhappiness").
+  It escalates a warning → a one-week strike → two weeks → a month (then a month each time); content staff reset
+  it, and a warning called off thanks the player. Strikers draw no wage, stop working (no research either) and
+  picket the `FixedItemInfo.StrikeArea*` patch by the bus stop. The advisor speaks the game's own lines
+  (TAG_SYSTEM 33–62: `StaffTrain*`, `StaffUnhappy*`, `StaffVeryUnhappy*` mid-month, `StaffStriking*`,
+  `StaffHappier*`, `StrikeEndBad*`), with the `Advisor.sam` scores. Not reversed: the handymen's extra litter-ratio
+  grievance (`FUN_004c8180/FUN_004c8150` against a constant), the strike walk-out animation.
+- Saves keep each staffer's grade, training, energy and mood.

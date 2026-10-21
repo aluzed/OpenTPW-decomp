@@ -15,6 +15,7 @@ internal sealed class ManagePanel : HudPanel
 	private const float EconY = 52f;  // bottom of the economy row buttons
 	private const float RideY = 22f;  // bottom of the ride row buttons
 	private const float BtnH = 26f;
+	private const float TrainingStep = 10f; // training percent bought per click (100 = one grade)
 
 	// The game's own words where UITEXT.str has them ("Price", "Available Loans"), in the selected language.
 	private static string PriceLabel => Localization.Get( UIStrings.Price, "Price" ).ToUpperInvariant();
@@ -90,9 +91,13 @@ internal sealed class ManagePanel : HudPanel
 				$"SELL {shop.Name} ${shop.BuildCost * Ride.SellRefundFraction:0}", true,
 				() => BuildMode.Current?.SellSelected(), Warned: true ) );
 		}
-		// Selected-staff row (T-049): dismiss the staffer + bound their patrol zone.
+		// Selected-staff row (T-049): dismiss the staffer + bound their patrol zone; training sits on the economy row.
 		else if ( BuildMode.Current?.SelectedStaff is { } staff )
 		{
+			float cost = staff.TrainingCost( TrainingStep );
+			list.Add( new Btn( new Rectangle( 316f, EconY, 140f, BtnH ),
+				staff.CanTrain ? $"TRAIN ${cost:0}" : "MAX GRADE", staff.CanTrain && fin.CanAfford( cost ),
+				() => { fin.PayBuild( cost ); staff.Train( TrainingStep ); } ) );
 			bool zoned = staff.HasPatrolZone;
 			float radius = staff.Zone?.Radius ?? 0f;
 			bool moving = BuildMode.Current?.IsMovingStaff == true;

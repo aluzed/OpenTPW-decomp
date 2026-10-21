@@ -136,6 +136,11 @@ public class Level
 		// In-game calendar (T-053): the single time source; finances settle once per in-game month.
 		GameClock.Current = new GameClock();
 		GameClock.Current.OnNewMonth += ParkFinances.Current.SettleMonth;
+		// Staff grades, training and strikes (Standard.sam's staff tables; strikes considered monthly).
+		StaffStrikes.Current = new StaffStrikes();
+		GameClock.Current.OnNewDay += Staff.OnNewDayAll;
+		GameClock.Current.OnNewDay += () => StaffStrikes.Current?.OnNewDay( GameClock.Current?.Day ?? 1 );
+		GameClock.Current.OnNewMonth += Staff.ConsiderStrikes;
 		if ( Environment.GetEnvironmentVariable( "OPENTPW_BANKRUPT_DEMO" ) != null )
 			ParkFinances.Current.ForceBankrupt();
 
@@ -158,6 +163,8 @@ public class Level
 
 		// Centre the placement grid on the terrain's dense centroid (robust to stray distant meshes).
 		var standard = new SettingsFile( $"/levels/{Current.Name}/Standard.sam" );
+		StaffGrades.Current = StaffGrades.Load( standard );
+		Staff.StrikeArea = ReadStrikeArea( standard );
 
 		// Peep ride-choice weights (T-060): the authored DecisionVar* weights drive which ride peeps pick, and
 		// the per-type PreferredExcitement gives each peep its own taste (gentle vs intense rides).
@@ -527,6 +534,17 @@ public class Level
 	public static int WaitingAtGate { get; private set; }
 	private const int MaxWaitingAtGate = 60;
 	private static ArrivalSettings arrivalSettings = ArrivalSettings.Defaults;
+	// The pickets' patch by the bus stop (FixedItemInfo.StrikeAreaStart/Size, in map cells).
+	private static (Vector3 Min, Vector3 Max)? ReadStrikeArea( SettingsFile standard )
+	{
+		static int? I( SettingsFile s, string key ) => int.TryParse( s[$"FixedItemInfo.{key}"], out var v ) ? v : null;
+		if ( I( standard, "StrikeAreaStartX" ) is not { } x || I( standard, "StrikeAreaStartY" ) is not { } y )
+			return null;
+		float w = I( standard, "StrikeAreaSizeX" ) ?? 1, h = I( standard, "StrikeAreaSizeY" ) ?? 1;
+		float c = PlacementGrid.WorldTileSize;
+		return (new Vector3( x * c, y * c, 0 ), new Vector3( (x + w) * c, (y + h) * c, 0 ));
+	}
+
 	private static (Vector3 Gate, ParkTerrain Terrain, PathGraph Paths)? visitorSpawn;
 	private static ArrivalBus? arrivalBus; // brings each arriving group to the gate (null: they appear there)
 	private static int visitorSerial;
@@ -587,7 +605,8 @@ public class Level
 		// Staff (T-059 v2): role + wander centre + patrol zone — respawned on load (they roam, so no grid tile).
 		foreach ( var st in Entity.All.OfType<Staff>() )
 		{
-			var ss = new SaveGame.StaffState { Role = st.Role.ToString(), X = st.WanderCenter.X, Y = st.WanderCenter.Y };
+			var ss = new SaveGame.StaffState { Role = st.Role.ToString(), X = st.WanderCenter.X, Y = st.WanderCenter.Y,
+				Grade = st.Grade, Training = st.TrainingPoints, Energy = st.Energy, Morale = st.Morale };
 			if ( st.Zone is { } z )
 			{
 				ss.HasZone = true;
@@ -714,6 +733,8 @@ public class Level
 			var st = new Staff( role, terrain, new System.Numerics.Vector3( ss.X, ss.Y, 0f ), roam: 160f );
 			if ( ss.HasZone )
 				st.SetPatrolZone( new System.Numerics.Vector3( ss.ZoneX, ss.ZoneY, 0f ), ss.ZoneRadius );
+			if ( ss.Grade is { } grade )
+				st.RestoreCondition( grade, ss.Training, ss.Energy, ss.Morale );
 		}
 
 		// Progression (T-059): resume the challenge + golden-ticket state. Done after the park is rebuilt so the
@@ -1203,6 +1224,7 @@ public class Level
 		ChallengeManager.Current = null;
 		GoldenTicketGoals.Current = null;
 		WeatherSim.Current = null;
+		StaffStrikes.Current = null;
 		arrivalBus = null;
 
 		var next = new Level( theme );

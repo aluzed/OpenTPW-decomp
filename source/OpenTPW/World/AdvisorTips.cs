@@ -119,7 +119,21 @@ public static class AdvisorTips
 		["PricingShopsTooCheap"] = 101,
 		["PricingRestaurantTooExpensive"] = 102,
 		["PricingRestaurantTooCheap"] = 103,
-		["PricingSideshowsTooExpensive"] = 111, // (no "too cheap" sideshow line: the game speaks of prizes instead)
+		["PricingSideshowsTooExpensive"] = 111,
+		// Staff (T-049): training, then the strike cycle — TAG_SYSTEM lists each in the order mechanics, cleaners,
+		// guards, entertainers, scientists (StaffStrikes.Roles).
+		["StaffTrainMechanics"] = 33, ["StaffTrainHandymen"] = 34, ["StaffTrainGuards"] = 35,
+		["StaffTrainEntertainers"] = 36, ["StaffTrainResearchers"] = 37,
+		["StaffUnhappyMechanics"] = 38, ["StaffUnhappyHandymen"] = 39, ["StaffUnhappyGuards"] = 40,
+		["StaffUnhappyEntertainers"] = 41, ["StaffUnhappyResearchers"] = 42,
+		["StaffVeryUnhappyMechanics"] = 43, ["StaffVeryUnhappyHandymen"] = 44, ["StaffVeryUnhappyGuards"] = 45,
+		["StaffVeryUnhappyEntertainers"] = 46, ["StaffVeryUnhappyResearchers"] = 47,
+		["StaffStrikingMechanics"] = 48, ["StaffStrikingHandymen"] = 49, ["StaffStrikingGuards"] = 50,
+		["StaffStrikingEntertainers"] = 51, ["StaffStrikingResearchers"] = 52,
+		["StaffHappierMechanics"] = 53, ["StaffHappierHandymen"] = 54, ["StaffHappierGuards"] = 55,
+		["StaffHappierEntertainers"] = 56, ["StaffHappierResearchers"] = 57,
+		["StrikeEndBadMechanics"] = 58, ["StrikeEndBadHandymen"] = 59, ["StrikeEndBadGuards"] = 60,
+		["StrikeEndBadEntertainers"] = 61, ["StrikeEndBadResearchers"] = 62, // (no "too cheap" sideshow line: the game speaks of prizes instead)
 	};
 
 	private static string[]? tagSystem;

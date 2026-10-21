@@ -112,6 +112,16 @@ internal sealed class ParkStatsPanel : HudPanel
 			lines.Add( "LOANS: L  (no debt)" );
 		if ( fin.Bankrupt )
 			lines.Add( "*** BANKRUPT ***" );
+		// Staff on strike, or warned (T-049 depth).
+		if ( StaffStrikes.Current is { } strikes )
+		{
+			var striking = StaffStrikes.Roles.Where( strikes.IsStriking ).Select( StaffNames.For ).ToList();
+			var warned = StaffStrikes.Roles.Where( r => !strikes.IsStriking( r ) && strikes.Level( r ) == 1 ).Select( StaffNames.For ).ToList();
+			if ( striking.Count > 0 )
+				lines.Add( $"ON STRIKE: {string.Join( ", ", striking )}" );
+			if ( warned.Count > 0 )
+				lines.Add( $"STRIKE WARNING: {string.Join( ", ", warned )}" );
+		}
 
 		// Build palette (T-041): number keys pick an item to place, left-click places it.
 		if ( BuildMode.Current is { } build )
@@ -127,9 +137,15 @@ internal sealed class ParkStatsPanel : HudPanel
 				lines.Add( $"SAVE SLOT {build.SaveSlot} {(SaveGame.SlotExists( build.SaveSlot ) ? "[used]" : "[empty]")}  (F5 save, F9 load, F6 slot, F8 menu)" );
 
 			if ( build.SelectedStaff is { } staffSel )
+			{
 				lines.Add( staffSel.HasPatrolZone
 					? $"STAFF {StaffNames.For( staffSel.Role )}  zone r{staffSel.Zone!.Value.Radius:0} (FIRE/ZONE buttons)"
 					: $"STAFF {StaffNames.For( staffSel.Role )}  free roam (FIRE/SET ZONE buttons)" );
+				// Grade + training, energy and happiness (T-049 depth).
+				lines.Add( $"GRADE {staffSel.Grade}" + (staffSel.CanTrain ? $" (+{staffSel.TrainingPoints:0}%)" : "")
+					+ $"  ENERGY {staffSel.Energy:0}  MOOD {staffSel.Morale:0}"
+					+ (StaffStrikes.Current?.IsStriking( staffSel.Role ) == true ? "  ON STRIKE" : "") );
+			}
 
 			// Selected shop: its sale price (a toilet is free), adjustable with , . like a ride.
 			if ( build.SelectedShop is { } shopSel )

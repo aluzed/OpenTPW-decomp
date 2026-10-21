@@ -69,7 +69,7 @@ public class Ride : Entity
 	}
 
 	/// <summary>Advance research by <paramref name="researchers"/> researcher-seconds.</summary>
-	public void TickResearch( float dt, int researchers )
+	public void TickResearch( float dt, float researchers )
 	{
 		if ( !researching || researchers <= 0 )
 			return;
@@ -760,6 +760,6 @@ public class Ride : Entity
 		// Researchers advance only the queue's active ride (one at a time park-wide), so the team concentrates
 		// instead of every researching ride progressing in parallel (T-044).
 		if ( ResearchQueue.Active == this )
-			TickResearch( Time.Delta, Staff.ResearcherCount );
+			TickResearch( Time.Delta, Staff.ResearchPower );
 	}
 }
