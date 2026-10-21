@@ -29,7 +29,8 @@ public readonly record struct ParkFacilities(
 	int Mechanics, int Handymen, int Guards, int Entertainers,
 	int Rides, int WornRides, int BrokenRides, int Shops, int Sideshows, int Toilets,
 	int Litter, int Visitors, int NeedingToilet, int Misbehaving, int Days, int WaitingAtGate = 0, float WorstToiletFilth = 0f,
-	int Researchers = 0, float Money = 0f, float Debt = 0f, bool AnyUpgradeResearched = true );
+	int Researchers = 0, float Money = 0f, float Debt = 0f, bool AnyUpgradeResearched = true,
+	float RecentWages = 0f, float RecentIncome = 0f );
 
 /// <summary>
 /// Maps the live park state to advisor message candidates — <c>(id, group, score)</c> for the
@@ -181,6 +182,10 @@ public static class AdvisorAdvice
 			Add( "WealthHighRepayLoan", P( "WealthHighRepayLoan", "Score", 90f ) );
 		else if ( f.Money > P( "WealthHigh", "MoreMoneyThan", 200000f ) )
 			Add( "WealthHigh", P( "WealthHigh", "Score", 40f ) );
+
+		// Wages swallowing the income (WagesHigh: wages over the last AverageOverMonths > WagesTimesHigherThanIncome ×).
+		if ( f.RecentWages > 0f && f.RecentWages > P( "WagesHigh", "WagesTimesHigherThanIncome", 2f ) * f.RecentIncome )
+			Add( "WagesHigh", P( "WagesHigh", "Score", 90f ) );
 
 		// Too many of one kind of staff (Max*.MoreThan 10).
 		foreach ( var (id, hired) in new[] { ("MaxHandymen", f.Handymen), ("MaxEntertainers", f.Entertainers),

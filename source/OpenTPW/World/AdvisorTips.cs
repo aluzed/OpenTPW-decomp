@@ -15,6 +15,7 @@ public static class AdvisorTips
 	private static readonly Dictionary<string, string> Tips = new()
 	{
 		["WelcomeTutorial"] = "Welcome to your park! Place a few rides and shops, then open the gates.",
+		["WagesHigh"] = "Staff wages are higher than your income — consider letting some staff go.",
 		["RidesNoUpgrades"] = "It's about time you researched some ride upgrades.",
 		["Bankrupted"] = "Six months in the red: the banks have closed your park.",
 		["InTheRedSixMonths"] = "You've lost money for six months — raise the gate fee or sell off a ride before you go bust!",
@@ -76,6 +77,7 @@ public static class AdvisorTips
 		["Bankrupted"] = 127,          // "You have been in the red for six months, so the banks have closed your park…"
 		["VisitorsThirsty"] = 9,
 		["VisitorsHungry"] = 10,
+		["WagesHigh"] = 128,           // "Staff wages are higher than your income…"
 		["RidesNoUpgrades"] = 68,      // "It's about time you researched some ride upgrades. As yet you don't have any."
 		["NewResearchGroupRide"] = 70, // "There are ride upgrades available that you haven't yet used." (68 is "you have none yet")
 		["CongratVisitorsHappy"] = 161,

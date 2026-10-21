@@ -162,6 +162,8 @@ CongratVisitorsHappy.Score				60
 		Assert.IsFalse( For( park with { Guards = 10 } ).Any( a => a.Id == "MaxGuards" ) );
 		Assert.IsTrue( For( park with { AnyUpgradeResearched = false, Days = 18 * 30 } ).Any( a => a.Id == "RidesNoUpgrades" ) );
 		Assert.IsFalse( For( park with { AnyUpgradeResearched = false, Days = 100 } ).Any( a => a.Id == "RidesNoUpgrades" ), "too early" );
+		Assert.IsTrue( For( park with { RecentWages = 500f, RecentIncome = 200f } ).Any( a => a.Id == "WagesHigh" ) );
+		Assert.IsFalse( For( park with { RecentWages = 300f, RecentIncome = 200f } ).Any( a => a.Id == "WagesHigh" ) );
 		Assert.IsTrue( For( park with { Rides = 20, Money = 30000f } ).Any( a => a.Id == "ShopsBuildMoreShops" ), "2 shops < 0.15 × 20 rides" );
 		Assert.IsFalse( For( park with { Rides = 20, Money = 10000f } ).Any( a => a.Id == "ShopsBuildMoreShops" ), "not rich enough" );
 		Assert.IsTrue( For( park with { Rides = 10, Money = 30000f } ).Any( a => a.Id == "SideshowsBuildMoreSideshows" ), "1 sideshow < 0.2 × 10" );

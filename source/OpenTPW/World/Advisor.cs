@@ -280,11 +280,12 @@ public sealed class Advisor : Entity
 	}
 
 	// What the park has built and hired, for the staffing / building advice.
-	private static ParkFacilities Facilities()
+	private ParkFacilities Facilities()
 	{
 		var staff = Entity.All.OfType<Staff>().ToList();
 		int Hired( StaffRole r ) => staff.Count( s => s.Role == r );
 		var rides = Entity.All.OfType<Ride>().ToList();
+		var recent = ParkFinances.Current?.RecentWagesAndIncome( (int)(config.Param( "WagesHigh", "AverageOverMonths" ) ?? 3f) ) ?? (0f, 0f);
 		return new ParkFacilities(
 			Mechanics: Hired( StaffRole.Mechanic ), Handymen: Hired( StaffRole.Handyman ),
 			Guards: Hired( StaffRole.Guard ), Entertainers: Hired( StaffRole.Entertainer ),
@@ -301,6 +302,7 @@ public sealed class Advisor : Entity
 			Days: GameClock.Current?.TotalDays ?? 0,
 			WaitingAtGate: Level.WaitingAtGate,
 			Researchers: Hired( StaffRole.Researcher ),
+			RecentWages: recent.Wages, RecentIncome: recent.Income,
 			AnyUpgradeResearched: rides.Any( r => r.ResearchedLevel > 0 || r.UpgradeLevel > 0 ),
 			Money: ParkFinances.Current?.Money ?? 0f,
 			Debt: ParkFinances.Current?.Debt ?? 0f,

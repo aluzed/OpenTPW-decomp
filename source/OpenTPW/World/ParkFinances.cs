@@ -26,7 +26,7 @@ public sealed class ParkFinances
 	// ── Finance history (T-049): one sample per in-game "month", for the finance graph ─────────────
 	/// <summary>One period's finances: the closing balance, the income / expense that flowed that month, and the
 	/// cumulative visitor count at the close (drives the golden-ticket "recent visitors" window, T-055).</summary>
-	public readonly record struct FinanceSample( float Balance, float Income, float Expense, int Visitors = 0 );
+	public readonly record struct FinanceSample( float Balance, float Income, float Expense, int Visitors = 0, float Wages = 0f );
 
 	/// <summary>How many monthly samples the rolling history keeps (oldest dropped past this).</summary>
 	public const int MaxHistory = 48;
@@ -41,6 +41,19 @@ public sealed class ParkFinances
 	/// <summary>Consecutive in-game months the park has closed in the red (Money &lt; 0); 0 when solvent.
 	/// Drives the advisor's escalating "in the red" warnings (T-046).</summary>
 	public int MonthsInRed { get; private set; }
+	private float lastWagesTotal;
+
+	/// <summary>Wages and income summed over the last <paramref name="months"/> closed months (advisor WagesHigh).</summary>
+	public (float Wages, float Income) RecentWagesAndIncome( int months )
+	{
+		float w = 0f, inc = 0f;
+		for ( int i = Math.Max( 0, history.Count - months ); i < history.Count; i++ )
+		{
+			w += history[i].Wages;
+			inc += history[i].Income;
+		}
+		return (w, inc);
+	}
 
 	private float TotalIncome => RideRevenue + EntryRevenue + FoodRevenue + SideshowRevenue;
 	private float TotalExpense => UpkeepPaid + WagesPaid + BuildSpent;
@@ -52,8 +65,10 @@ public sealed class ParkFinances
 		float expense = TotalExpense - lastExpenseTotal;
 		lastIncomeTotal = TotalIncome;
 		lastExpenseTotal = TotalExpense;
+		float wages = WagesPaid - lastWagesTotal;
+		lastWagesTotal = WagesPaid;
 
-		history.Add( new FinanceSample( Money, income, expense, VisitorsTotal ) );
+		history.Add( new FinanceSample( Money, income, expense, VisitorsTotal, wages ) );
 		if ( history.Count > MaxHistory )
 			history.RemoveRange( 0, history.Count - MaxHistory );
 
