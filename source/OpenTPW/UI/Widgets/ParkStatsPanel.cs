@@ -52,9 +52,12 @@ internal sealed class ParkStatsPanel : HudPanel
 		// The player HUD (always shown): the essentials — money, visitors, admission control.
 		var lines = new List<string>
 		{
-			$"MONEY {fin.Money:0}",
-			Level.GatesOpen ? $"VISITORS {visitors}" : $"VISITORS {visitors}  -  PARK CLOSED (OPEN PARK, bottom left)",
-			$"ADMISSION {fin.EntryFee:0}  ([ ] adjust)",
+			// The labels are the game's own UITEXT.str entries, so they follow the language (GameLanguage).
+			$"{Localization.Get( UIStrings.BankBalance, "Bank balance" )} {fin.Money:0}",
+			Level.GatesOpen
+				? $"{Localization.Get( UIStrings.PeopleInPark, "People in park" )} {visitors}"
+				: $"{Localization.Get( UIStrings.PeopleInPark, "People in park" )} {visitors}  -  {Localization.Get( UIStrings.ParkClosed, "PARK CLOSED" )}",
+			$"{Localization.Get( UIStrings.PriceOfEntry, "Price of entry" )} {fin.EntryFee:0}  ([ ])",
 		};
 
 		// The debug overlay (backtick toggle): the income breakdown, counts and crowd-mood diagnostics that
@@ -163,12 +166,12 @@ internal sealed class ParkStatsPanel : HudPanel
 		// What the crowd thinks, in the game's own words (THOUGHTS.str) — the two most common thoughts.
 		var crowd = CrowdThoughts.Summary( Peep.CrowdThoughtTally() );
 		if ( crowd.Length > 0 )
-			lines.Add( $"CROWD: {crowd}" );
+			lines.Add( $"{Localization.Get( UIStrings.Top3Thoughts, "Thoughts" )}: {crowd}" );
 
 		// Park rating = average visitor happiness (T-039); shown as a coloured gauge under the stats.
 		float rating = Peep.AverageHappiness;
 		if ( rating >= 0f )
-			lines.Add( $"PARK RATING {rating:0}%" );
+			lines.Add( $"{Localization.Get( UIStrings.ParkRating, "Park rating" )} {rating:0}%" );
 
 		// Translucent backing so the text reads over the bright park; covers the lines + the rating bar.
 		int n = lines.Count;

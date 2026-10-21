@@ -83,7 +83,7 @@ internal sealed class LoanPanel : HudPanel
 		var mat = Material.UI;
 		mat.Set( "Color", Bg );
 		Graphics.Quad( bounds, mat );
-		Graphics.DrawText( Font, "BANK LOANS", bounds.X + 16f, bounds.Y + bounds.Height - 24f, TextAlign.Left, 1.5f );
+		Graphics.DrawText( Font, Localization.Get( UIStrings.GraphAvailableLoans, "Available Loans" ), bounds.X + 16f, bounds.Y + bounds.Height - 24f, TextAlign.Left, 1.5f );
 
 		var loans = fin.Loans;
 		for ( int i = 0; i < loans.Count; i++ )

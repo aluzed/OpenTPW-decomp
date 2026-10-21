@@ -42,9 +42,9 @@ internal sealed class OptionsPanel : HudPanel
 
 	private static readonly Row[] Rows =
 	{
-		new( "MUSIC", () => Audio.MusicVolume, v => Audio.MusicVolume = v ),
-		new( "SFX", () => Audio.SfxVolume, v => Audio.SfxVolume = v ),
-		new( "SPEECH", () => Audio.SpeechVolume, v => Audio.SpeechVolume = v ),
+		new( Localization.Get( UIStrings.MusicVolume, "Music volume:" ), () => Audio.MusicVolume, v => Audio.MusicVolume = v ),
+		new( Localization.Get( UIStrings.SoundEffectsVolume, "Sound effects volume:" ), () => Audio.SfxVolume, v => Audio.SfxVolume = v ),
+		new( Localization.Get( UIStrings.SpeechVolume, "Speech volume:" ), () => Audio.SpeechVolume, v => Audio.SpeechVolume = v ),
 	};
 
 	/// <summary>True when the panel is open and the cursor is over it (so world tools ignore the click).</summary>
@@ -108,7 +108,7 @@ internal sealed class OptionsPanel : HudPanel
 		mat.Set( "Color", Bg );
 		Graphics.Quad( bounds, mat );
 
-		Graphics.DrawText( Font, "AUDIO OPTIONS", bounds.X + 16f, bounds.Y + bounds.Height - 24f, TextAlign.Left, 1.5f );
+		Graphics.DrawText( Font, Localization.Get( UIStrings.Options, "Options" ), bounds.X + 16f, bounds.Y + bounds.Height - 24f, TextAlign.Left, 1.5f );
 
 		for ( var i = 0; i < Rows.Length; i++ )
 		{
