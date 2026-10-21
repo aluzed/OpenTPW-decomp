@@ -27,7 +27,8 @@
   `Upgrades[n].WearRate` (5/10 as built → ~250 s of occupied running; 3 and 2 once upgraded). Rides ridden at the
   2-minute mark: 87 → 197. This is the reliability-balance pass the ticket was waiting on.
   **Pranksters** (`Standard.sam`): `PeepInfo.PrankeryLikelihood` (5) visitors in 100 are pranksters; every 10 s one
-  lets off a stink bomb with `StinkbombLikelihood` (25) % chance — the `P_EFFECT_YellowStink` effect and −5 happiness
+  lets off a stink bomb with `StinkbombLikelihood` (25) % chance — the `P_EFFECT_YellowStink` effect, −3 happiness and
+  +3 illness (`RegionFX` "Stink Bomb")
   for every visitor within ~3 tiles — unless a guard is near (counted as deterred). ~9 stink bombs per 2 minutes in
   the 250-visitor dev park.
   **Toilet filth**: each visit dirties a toilet (+1 of 100); a handyman cleans the dirtiest toilet over 30 first (in

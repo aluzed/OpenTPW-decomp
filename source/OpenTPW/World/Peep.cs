@@ -966,7 +966,8 @@ public sealed class Peep : ModelEntity
 		FaceCamera();
 	}
 
-	// A stink bomb: the yellow stink effect and a sour mood for every visitor within StinkRadius (the prankster too).
+	// A stink bomb: the yellow stink effect, a sour mood and a queasy stomach for every visitor within StinkRadius
+	// (the prankster too).
 	private void StinkBomb()
 	{
 		StinkBombs++;
@@ -974,7 +975,11 @@ public sealed class Peep : ModelEntity
 		float r2 = StinkRadius * StinkRadius;
 		foreach ( var e in Entity.All )
 			if ( e is Peep { riding: false } p && (p.Position - Position).LengthSquared <= r2 )
-				p.happiness = MathF.Max( 0f, p.happiness - 5f ); // SmallHappinessChange
+			{
+				// Standard.sam RegionFX "Stink Bomb": happiness −3, illness +3 within 3 cells.
+				p.happiness = MathF.Max( 0f, p.happiness - 3f );
+				p.illness += 3f;
+			}
 	}
 
 	private const int YellowStinkEffect = 50; // par_lib.h P_EFFECT_YellowStink
