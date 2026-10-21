@@ -13,6 +13,8 @@ internal sealed class ItemInfoWindow : GameWindow
 
 	public ItemInfoWindow() => Current = this;
 
+	public override void Close() => BuildMode.Current?.ClearSelection();
+
 	protected override void OnDelete()
 	{
 		if ( Current == this )

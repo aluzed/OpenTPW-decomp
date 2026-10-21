@@ -12,6 +12,8 @@ internal sealed class BankruptPanel : GameWindow
 
 	public BankruptPanel() => Current = this;
 
+	protected override bool Closable => false;
+
 	protected override void OnDelete()
 	{
 		if ( Current == this )

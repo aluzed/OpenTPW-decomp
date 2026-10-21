@@ -266,6 +266,9 @@ public sealed class BuildMode : Entity
 		for ( int i = 0; i < NumberKeys.Length && i < Catalog.Count; i++ )
 			if ( Hit( NumberKeys[i] ) && IsBuildable( i ) )
 				Selected = i;
+		// Esc puts down the item being placed, else closes the open windows.
+		if ( Hit( Key.Escape ) && Selected < 0 && !CamcorderCameraMode.Active && RideItCameraMode.Target == null )
+			GameWindow.CloseOpen();
 		if ( Hit( Key.Escape ) || Hit( Key.Number0 ) )
 			Selected = -1;
 

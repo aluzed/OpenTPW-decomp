@@ -40,6 +40,33 @@ internal abstract class GameWindow : HudPanel
 	/// <summary>Is the window open.</summary>
 	public bool IsOpen { get; protected set; }
 
+	private static readonly List<WeakReference<GameWindow>> windows = new();
+
+	protected GameWindow()
+	{
+		windows.RemoveAll( w => !w.TryGetTarget( out _ ) );
+		windows.Add( new WeakReference<GameWindow>( this ) );
+	}
+
+	/// <summary>Close the window (a window that shows the selected item drops the selection instead).</summary>
+	public virtual void Close() => IsOpen = false;
+
+	/// <summary>Close every open window (Esc); true when one was open.</summary>
+	public static bool CloseOpen()
+	{
+		bool any = false;
+		foreach ( var weak in windows )
+			if ( weak.TryGetTarget( out var w ) && w.IsOpen && w.Closable )
+			{
+				w.Close();
+				any = true;
+			}
+		return any;
+	}
+
+	/// <summary>Whether Esc may close it (a message that must be answered can't be).</summary>
+	protected virtual bool Closable => true;
+
 	protected abstract Rectangle Frame { get; }
 
 	/// <summary>True when the cursor is over the open window (so world tools ignore the click).</summary>

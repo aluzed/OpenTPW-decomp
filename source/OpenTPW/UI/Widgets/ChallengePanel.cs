@@ -13,6 +13,8 @@ internal sealed class ChallengePanel : GameWindow
 
 	public ChallengePanel() => Current = this;
 
+	protected override bool Closable => false; // an offer is answered with its tick or cross
+
 	protected override void OnDelete()
 	{
 		if ( Current == this )

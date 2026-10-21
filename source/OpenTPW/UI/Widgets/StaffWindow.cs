@@ -12,6 +12,8 @@ internal sealed class StaffWindow : GameWindow
 
 	public StaffWindow() => Current = this;
 
+	public override void Close() => BuildMode.Current?.ClearSelection();
+
 	protected override void OnDelete()
 	{
 		if ( Current == this )

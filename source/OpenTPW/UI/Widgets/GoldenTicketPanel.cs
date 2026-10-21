@@ -9,6 +9,8 @@ internal sealed class GoldenTicketPanel : GameWindow
 {
 	private const float ShowSeconds = 9f;
 
+	public override void Close() => showUntil = Time.Now;
+
 	protected override Rectangle Frame => At( 270f, 170f, 420f, 247f );
 
 	private readonly Queue<(string Headline, string Sentence)> pending = new();
