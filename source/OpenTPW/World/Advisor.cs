@@ -290,7 +290,8 @@ public sealed class Advisor : Entity
 			Visitors: Entity.All.Count( e => e is Peep ),
 			NeedingToilet: Peep.CountNeedingToilet(),
 			Misbehaving: Peep.CountUnhappy(),
-			Days: GameClock.Current?.TotalDays ?? 0 );
+			Days: GameClock.Current?.TotalDays ?? 0,
+			WaitingAtGate: Level.WaitingAtGate );
 	}
 
 	protected override void OnUpdate()

@@ -28,7 +28,7 @@ public readonly record struct ParkSnapshot(
 public readonly record struct ParkFacilities(
 	int Mechanics, int Handymen, int Guards, int Entertainers,
 	int Rides, int WornRides, int BrokenRides, int Shops, int Sideshows, int Toilets,
-	int Litter, int Visitors, int NeedingToilet, int Misbehaving, int Days );
+	int Litter, int Visitors, int NeedingToilet, int Misbehaving, int Days, int WaitingAtGate = 0 );
 
 /// <summary>
 /// Maps the live park state to advisor message candidates — <c>(id, group, score)</c> for the
@@ -163,6 +163,10 @@ public static class AdvisorAdvice
 		float busy = P( "StaffHireEntertainers1", "AtLeastThisBusy", 35f );
 		if ( f.Entertainers == 0 && f.Visitors >= busy )
 			Add( "StaffHireEntertainers1", MathF.Min( FacilityScoreCap, P( "StaffHireEntertainers1", "ScorePerExtraBusyPoint", 3f ) * (f.Visitors - busy + 1) ) );
+
+		// People want to come in but the gates are shut.
+		if ( f.WaitingAtGate > 0 )
+			Add( "OpenPark", P( "OpenPark", "ScorePerWaitingPerson", 20f ) * f.WaitingAtGate );
 
 		// Nothing built yet: the nudge grows by the day (the .sam's negative base delays it).
 		if ( f.Rides == 0 )

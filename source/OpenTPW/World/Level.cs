@@ -57,6 +57,7 @@ public class Level
 		arrivals = null;
 		Peep.LeaveOnExit = false;
 		GatesOpen = false;
+		WaitingAtGate = 0;
 		openedOnce = false;
 
 		SunLight = new Sun() { Position = new( 0, 100, 100 ) };
@@ -502,10 +503,21 @@ public class Level
 			openedOnce = true;
 			SpawnVisitors( OpeningCrowd );
 		}
+		// Whoever was waiting outside comes in.
+		if ( GatesOpen && WaitingAtGate > 0 )
+		{
+			SpawnVisitors( WaitingAtGate );
+			WaitingAtGate = 0;
+		}
 		Log.Info( $"[park] gates {(GatesOpen ? "opened" : "closed")}" );
 	}
 
 	private const int OpeningCrowd = 30;
+
+	/// <summary>Visitors who came while the gates were shut and wait outside (once the park has a ride to come for);
+	/// they come in when the gates open, and the advisor suggests opening (<c>OpenPark</c>).</summary>
+	public static int WaitingAtGate { get; private set; }
+	private const int MaxWaitingAtGate = 60;
 	private static ArrivalSettings arrivalSettings = ArrivalSettings.Defaults;
 	private static (Vector3 Gate, ParkTerrain Terrain, PathGraph Paths)? visitorSpawn;
 	private static int visitorSerial;
@@ -1225,6 +1237,12 @@ public class Level
 		LevelSoundscape.Update();               // the park's ambient one-shots
 
 		// Visitor arrivals (T-074): a group at the gate every interval, sized by the park rating.
+		if ( arrivals != null && !GatesOpen && Entity.All.Any( e => e is Ride ) )
+		{
+			// Closed, but there's something to come for: arrivals gather at the gate.
+			int coming = arrivals.Update( Time.Delta, Peep.AverageHappiness, GameClock.Current?.TotalDays ?? 0, WaitingAtGate );
+			WaitingAtGate = Math.Min( MaxWaitingAtGate, WaitingAtGate + coming );
+		}
 		if ( arrivals != null && GatesOpen )
 		{
 			int inPark = Entity.All.Count( e => e is Peep );
@@ -1242,7 +1260,7 @@ public class Level
 		{
 			nextEconLog = Time.Now + 5f;
 			Log.Info( $"[econ] money={f.Money:0}  ride+={f.RideRevenue:0}  entry+={f.EntryRevenue:0}  shop+={f.FoodRevenue:0}  upkeep-={f.UpkeepPaid:0}  wages-={f.WagesPaid:0}"
-				+ $"  vandalism={Peep.VandalismActs} deterred={Peep.VandalismDeterred} rides={f.RidesRidden} toilet={Peep.ToiletVisits} vomit={Peep.VomitCount} refused={Peep.StallsRefused} stink={Peep.StinkBombs} binned={Shop.LitterBinned} litter={Litter.Active.Count}"
+				+ $"  vandalism={Peep.VandalismActs} deterred={Peep.VandalismDeterred} rides={f.RidesRidden} toilet={Peep.ToiletVisits} vomit={Peep.VomitCount} refused={Peep.StallsRefused} stink={Peep.StinkBombs} binned={Shop.LitterBinned} litter={Litter.Active.Count} waiting={WaitingAtGate}"
 				+ $"  breakdowns={Ride.Breakdowns} repairs={Ride.Repairs}"
 				+ $"  sold: {string.Join( ' ', Enum.GetValues<SaleCategory>().Where( c => f.Sold( c ) > 0 ).Select( c => $"{c}={f.Sold( c )}" ) )}" );
 		}

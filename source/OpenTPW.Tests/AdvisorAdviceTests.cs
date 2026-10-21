@@ -149,5 +149,6 @@ CongratVisitorsHappy.Score				60
 		Assert.IsFalse( For( park with { Rides = 0, Days = 10 } ).Any( a => a.Id == "RidesBuildRides" ), "too early" );
 		Assert.IsTrue( For( park with { Toilets = 0, NeedingToilet = 30 } ).Any( a => a.Id == "FeaturesNoToilets" ) );
 		Assert.IsFalse( For( park with { Toilets = 0, NeedingToilet = 10 } ).Any( a => a.Id == "FeaturesNoToilets" ) );
+		Assert.AreEqual( 100f, For( park with { WaitingAtGate = 5 } ).Single( a => a.Id == "OpenPark" ).Score, "20 per waiting visitor" );
 	}
 }

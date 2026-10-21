@@ -25,6 +25,7 @@ public static class AdvisorTips
 		["CongratGoldenTicket"] = "You've won the Golden Ticket — every park goal is met. Magnificent work!",
 		["CongratChallengeWon"] = "Challenge complete! The prize is in the bank — ready for the next one?",
 		["ChallengeFailed"] = "That challenge slipped away this time. Don't worry — another will come along.",
+		["OpenPark"] = "People want to come in but your park is closed. Open the gates!",
 		["StaffHireMechanics1"] = "Your rides are wearing out and you have no mechanics.",
 		["StaffHireMechanics2"] = "Rides are breaking down and you have no mechanics — hire some!",
 		["StaffHireMechanics3"] = "You need more mechanics for this many rides.",
@@ -62,6 +63,7 @@ public static class AdvisorTips
 		["CongratGoldenTicket"] = 120,
 		["CongratChallengeWon"] = 194, // "Challenge completed!"
 		["ChallengeFailed"] = 195,     // "Challenge failed..."
+		["OpenPark"] = 7,
 		["StaffHireMechanics1"] = 11,
 		["StaffHireMechanics2"] = 12,
 		["StaffHireMechanics3"] = 13,

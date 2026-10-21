@@ -167,3 +167,6 @@ cleaners), `StaffHireGuards2` (misbehaving visitors, no guards), `StaffHireEnter
 `RidesBuildRides` / `ShopsBuildShops` / `SideshowsBuildSideshows` (nothing built; the nudge grows per day from the
 .sam's base) and `FeaturesNoToilets` (> 25 visitors needing one) — TAG_SYSTEM.str 11–20 / 67 / 77 / 81 / 86.
 Verified: an empty park hears "no rides", "no shops", "no sideshows" in turn; the staffed dev park hears none.
+
+`OpenPark` (TAG_SYSTEM 7, `ScorePerWaitingPerson` 20): with the gates shut and at least one ride built, arrivals
+gather at the gate (`Level.WaitingAtGate`, up to 60) and walk in when the gates open; the advisor suggests opening.

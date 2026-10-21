@@ -121,6 +121,7 @@ All format/VM decoding and the core gameplay loop are done. Open work falls into
 | [T-073](T-073-magenta-materials.md) | 🟠 Medium | ✅ Done | **Bug**: magenta faces on hallow/fantasy/space rides (>16 materials per mesh → `MaterialSlots`; shared textures → `sharetex.wad` fallback), coaster track texture read from `coaster.sam`, and the **Space lobby island now loads** |
 | [T-074](T-074-visitor-arrivals.md) | 🟠 Medium | ⚠️ Implemented | **Visitor arrivals**: groups at the gate from `Arrival.*` (sized by park rating), stays from `PeepInfo.ExitLevel`, departures leave for good — the golden-ticket crowd goals are reachable. Data-driven approximation; exact formula (bus-based, RE notes recorded) still to reverse |
 | [T-075](T-075-native-memory-growth.md) | 🟡 Low | ☐ To do | Slow **native** memory growth: was ~13 MB/min, **~1.7 MB/min since trace logging became opt-in** (the log spam was most of it); residue needs a longer soak |
+| [T-076](T-076-calendar-pace.md) | 🟠 Medium | ☐ To do | **In-game calendar runs at a dev pace** (8 s per month): visitors stay 15 in-game months, 60-day challenges last 16 s, per-day advisor nudges climb in seconds — find the original day length (tp.exe) and rebalance |
 
 Priority legend: 🔴 blocking · 🟠 important · 🟡 desirable/feature · ⚪ technical debt/polish.
 Status legend: ✅ done · ⚠️ partial · ☐ to do · 🗂️ split into focused tickets · ⏸️ deferred.
