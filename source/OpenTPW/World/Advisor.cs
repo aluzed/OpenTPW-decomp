@@ -284,7 +284,7 @@ public sealed class Advisor : Entity
 	{
 		var staff = Entity.All.OfType<Staff>().ToList();
 		int Hired( StaffRole r ) => staff.Count( s => s.Role == r );
-		var rides = Entity.All.OfType<Ride>().ToList();
+		var rides = Entity.All.OfType<Ride>().Where( r => !r.IsFeature ).ToList();
 		var recent = ParkFinances.Current?.RecentWagesAndIncome( (int)(config.Param( "WagesHigh", "AverageOverMonths" ) ?? 3f) ) ?? (0f, 0f);
 		return new ParkFacilities(
 			Mechanics: Hired( StaffRole.Mechanic ), Handymen: Hired( StaffRole.Handyman ),
@@ -308,7 +308,8 @@ public sealed class Advisor : Entity
 			Debt: ParkFinances.Current?.Debt ?? 0f,
 			WorstToiletFilth: Shop.Stalls.Where( s => s.Kind == ShopKind.Toilet ).Select( s => s.Filth ).DefaultIfEmpty( 0f ).Max(),
 			AverageGrades: StaffStrikes.Roles.Select( r => staff.Where( s => s.Role == r ).Select( s => (float)s.Grade ).DefaultIfEmpty( float.NaN ).Average() ).ToArray(),
-			StaffNotices: PendingStaffNotices() );
+			StaffNotices: PendingStaffNotices(),
+			Features: Ride.Features.Count, Cameras: Ride.Features.Count( r => r.ProvidesSecurity ) );
 	}
 
 	// Strike announcements wait up to StaffNoticeLife seconds for the advisor to have a free moment.

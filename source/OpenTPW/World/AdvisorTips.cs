@@ -120,6 +120,8 @@ public static class AdvisorTips
 		["PricingRestaurantTooExpensive"] = 102,
 		["PricingRestaurantTooCheap"] = 103,
 		["PricingSideshowsTooExpensive"] = 111,
+		// Features: build some scenery (85), security cameras (28).
+		["FeaturesBuildFeatures"] = 85, ["FeaturesPoorSelection"] = 83, ["StaffGuardBuildCamera"] = 28,
 		// Staff (T-049): training, then the strike cycle — TAG_SYSTEM lists each in the order mechanics, cleaners,
 		// guards, entertainers, scientists (StaffStrikes.Roles).
 		["StaffTrainMechanics"] = 33, ["StaffTrainHandymen"] = 34, ["StaffTrainGuards"] = 35,

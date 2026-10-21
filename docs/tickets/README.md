@@ -122,6 +122,7 @@ All format/VM decoding and the core gameplay loop are done. Open work falls into
 | [T-074](T-074-visitor-arrivals.md) | 🟠 Medium | ⚠️ Implemented | **Visitor arrivals**: groups at the gate from `Arrival.*` (sized by park rating), stays from `PeepInfo.ExitLevel`, departures leave for good — the golden-ticket crowd goals are reachable. Data-driven approximation; exact formula (bus-based, RE notes recorded) still to reverse |
 | [T-075](T-075-native-memory-growth.md) | 🟡 Low | ☐ To do | Slow **native** memory growth: was ~13 MB/min, **~1.7 MB/min since trace logging became opt-in** (the log spam was most of it); residue needs a longer soak |
 | [T-076](T-076-calendar-pace.md) | 🟠 Medium | ✅ Done | **In-game calendar at the original pace**: reversed `mFunnySecsPerRealSec` = 15000 from `tp.exe` → a day lasts 5.76 s, Gregorian calendar from 1 January 2000; `OPENTPW_FAST_CLOCK=1` keeps the 8 s dev month |
+| [T-077](T-077-features-scenery.md) | 🟡 Feature | ✅ Done | **Features (scenery)**: the theme's placeable features in a SCENERY build tab (the build menu now has tabs); security cameras deter vandals (RegionFX 5 cells), a staff room spares tired staff the no-rest-area morale hit, scenery cheers nearby visitors; FeaturesBuildFeatures / StaffGuardBuildCamera advice |
 
 Priority legend: 🔴 blocking · 🟠 important · 🟡 desirable/feature · ⚪ technical debt/polish.
 Status legend: ✅ done · ⚠️ partial · ☐ to do · 🗂️ split into focused tickets · ⏸️ deferred.

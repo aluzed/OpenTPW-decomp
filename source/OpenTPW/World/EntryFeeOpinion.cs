@@ -82,7 +82,7 @@ public static class EntryFeeOpinion
 	public static float ArrivalHappinessNow()
 	{
 		float fee = ParkFinances.Current?.EntryFee ?? 0f;
-		float excitement = Entity.All.OfType<Ride>().Where( r => !r.IsSideshow ).Sum( r => (float)r.Excitement );
+		float excitement = Entity.All.OfType<Ride>().Where( r => !r.IsSideshow && !r.IsFeature ).Sum( r => (float)r.Excitement );
 		return ArrivalHappiness( Settings, fee, excitement );
 	}
 }

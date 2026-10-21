@@ -12,7 +12,18 @@ public readonly record struct BuildCatalogItem( string Name, string? RidePath, S
 {
 	/// <summary>What the catalog shows: the item's real (localized) name when known, else its key.</summary>
 	public string Label => Title ?? Name;
+
+	/// <summary>The build menu tab the item sits in — the original's UI categories (<c>Info.WhichUIType</c>: rides,
+	/// shops, sideshows, features) plus staff.</summary>
+	public BuildCategory Category => Staff != null ? BuildCategory.Staff
+		: RidePath is not { } path ? BuildCategory.Shops
+		: path.Contains( "/sideshow/", StringComparison.OrdinalIgnoreCase ) ? BuildCategory.Sideshows
+		: path.Contains( "/features/", StringComparison.OrdinalIgnoreCase ) ? BuildCategory.Features
+		: BuildCategory.Rides;
 }
+
+/// <summary>The build menu's tabs.</summary>
+public enum BuildCategory { Rides, Sideshows, Shops, Features, Staff }
 
 /// <summary>
 /// Build/manage mode (T-040 foundation + T-041 placement). Each frame it projects the cursor to the

@@ -75,6 +75,9 @@ public static class LevelTheme
 	public static IReadOnlyList<string> SideshowNames( string theme )
 		=> theme == Default ? CuratedJungleSideshows : EnumerateWads( $"levels/{theme}/sideshow", MaxEnumeratedSideshows );
 
+	/// <summary>Every <c>.wad</c> in a theme's <c>features/</c> folder (the catalog keeps the placeable ones).</summary>
+	public static IReadOnlyList<string> FeatureNames( string theme ) => EnumerateWads( $"levels/{theme}/features", int.MaxValue );
+
 	/// <summary>List the <c>.wad</c> archive names (no path, no extension) under a level subfolder, sorted for a
 	/// deterministic catalog, capped at <paramref name="max"/>. The VFS surfaces mountable <c>.wad</c> archives
 	/// through <see cref="BaseFileSystem.GetDirectories"/> (extension stripped) — plain <c>.sam</c> files are not

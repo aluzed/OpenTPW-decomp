@@ -367,6 +367,7 @@ public class Level
 			foreach ( var (name, dx, dy) in new[] { ("balloon", 10, 1), ("giftshop", 10, 4), ("cost_shp", 10, 7), ("bin", 4, 6), ("bin", -2, 2), ("bin", 6, -1) } )
 				if ( catalog.FirstOrDefault( c => c.Name == name ) is { Name: not null } souvenir )
 					CommitPlacementNear( souvenir, grid, terrain, cx + dx, cy + dy, radius: 4 );
+			AutoplaceFeatures( catalog, grid, terrain, cx, cy );
 
 			// Rotation (T-041): place a totem rotated 90° and confirm its footprint dims swapped (3x4 -> 4x3).
 			if ( CommitPlacement( Item( "totem" ), grid, terrain, cx - 12, cy - 6, rotation: 1 ) )
@@ -769,7 +770,22 @@ public class Level
 			if ( catalog.FirstOrDefault( c => c.Name == name ) is { Name: not null } st )
 				CommitPlacement( st, grid, terrain, cx + dx, cy + dy );
 
+		AutoplaceFeatures( catalog, grid, terrain, cx, cy );
 		Log.Info( $"[build] autoplace (theme {Current.Name}): {placed}/{rides.Count} ride(s) + shops + staff" );
+	}
+
+	// A few features in the dev park: a security camera, a staff room and two pieces of scenery.
+	private static void AutoplaceFeatures( List<BuildCatalogItem> catalog, PlacementGrid grid, ParkTerrain terrain, int cx, int cy )
+	{
+		var features = catalog.Where( c => c.Category == BuildCategory.Features ).ToList();
+		var picks = features.Where( f => f.Label.Contains( "Camera", StringComparison.OrdinalIgnoreCase ) || f.Label.Contains( "Staff", StringComparison.OrdinalIgnoreCase ) )
+			.Concat( features.Where( f => f.Width * f.Height <= 4 ).Take( 2 ) ).Distinct().ToList();
+		var spots = new (int dx, int dy)[] { (-3, 8), (2, 9), (-8, 8), (6, 9) };
+		int placed = 0;
+		for ( int i = 0; i < picks.Count && i < spots.Length; i++ )
+			if ( CommitPlacementNear( picks[i], grid, terrain, cx + spots[i].dx, cy + spots[i].dy, radius: 5 ) )
+				placed++;
+		Log.Info( $"[build] autoplace: {placed} feature(s) of {features.Count} in the catalog" );
 	}
 
 	private static List<BuildCatalogItem> BuildCatalog()
@@ -802,6 +818,29 @@ public class Level
 		// Sideshows (T-058): the level's stalls/games — placed like rides (their wad carries shape/mesh/script),
 		// but peeps play them for pay-to-play takings rather than a flat ticket (see Ride.IsSideshow).
 		AddFrom( "sideshow", LevelTheme.SideshowNames( theme ) );
+
+		// Features (scenery): every feature the player can place — not the fixed items (bus, gates, lights, land:
+		// Info.WhichUIType 4), the toilets visitors use (IsChoosable 1: they're stalls) or the litter bin (a stall too).
+		// Loudspeakers come in four looks with one name; the first stands for them.
+		var featureTitles = new HashSet<string>( StringComparer.OrdinalIgnoreCase );
+		foreach ( var name in LevelTheme.FeatureNames( theme ) )
+		{
+			var path = $"levels/{theme}/features/{name}";
+			try
+			{
+				var sam = new SettingsFile( FileSystem.OpenRead( $"{path}/{name}.sam" ) );
+				var rawTitle = sam["Info.Name"]?.Trim( '"', ' ' ) ?? name;
+				if ( sam["Info.WhichUIType"] == "4" || sam["Info.IsChoosable"] == "1" || rawTitle == "Litter Bin" || !featureTitles.Add( rawTitle ) )
+					continue;
+				var shape = RideShape.Load( path, name );
+				var (cost, title) = ReadRideInfo( path, name );
+				list.Add( new BuildCatalogItem( name, path, null, shape.Width, shape.Height, cost, Title: title ) );
+			}
+			catch ( Exception e )
+			{
+				Log.Warning( $"[build] skipping feature '{name}' ({e.Message})" );
+			}
+		}
 
 		// Stalls cost what their .sam says (Upgrades[0].CostOfUpgrade — jungle burger 800); these are the fallbacks.
 		BuildCatalogItem Stall( string key, ShopKind kind, float fallbackCost ) =>
@@ -914,7 +953,7 @@ public class Level
 			fin?.NoteCoasterBuilt(); // challenge type 18 (T-054)
 		// The build puff (not when a loaded save rebuilds the park).
 		if ( charge && item.RidePath != null && Entity.All.OfType<Ride>().LastOrDefault() is { } built )
-			ParticleEmitter.World.Spawn( built.IsSideshow ? ParticleEmitter.CreateSideshow : ParticleEmitter.CreateRide, built.Position + Vector3.Up * 6f );
+			ParticleEmitter.World.Spawn( built.IsFeature ? ParticleEmitter.CreateFeature : built.IsSideshow ? ParticleEmitter.CreateSideshow : ParticleEmitter.CreateRide, built.Position + Vector3.Up * 6f );
 		else if ( charge && item.RidePath == null && Shop.Stalls.LastOrDefault() is { } stall )
 			ParticleEmitter.World.Spawn( stall.IsFree ? ParticleEmitter.CreateFeature : ParticleEmitter.CreateShop, stall.Position + Vector3.Up * 4f );
 		return true;
@@ -963,7 +1002,7 @@ public class Level
 
 		var refund = ride.BuildCost * Ride.SellRefundFraction;
 		ParkFinances.Current?.RefundBuild( refund );
-		ParticleEmitter.World.Spawn( ride.IsSideshow ? ParticleEmitter.DestroySideshow : ParticleEmitter.DestroyRide, ride.Position + Vector3.Up * 6f );
+		ParticleEmitter.World.Spawn( ride.IsFeature ? ParticleEmitter.DestroyFeature : ride.IsSideshow ? ParticleEmitter.DestroySideshow : ParticleEmitter.DestroyRide, ride.Position + Vector3.Up * 6f );
 		ride.Despawn();
 		Log.Info( $"[build] sold {ride.Name} for ${refund:0} (built ${ride.BuildCost:0})" );
 	}
@@ -985,6 +1024,8 @@ public class Level
 			// nodes worldise at the ride's real origin/orientation/size (T-048). Moving car/seat nodes are
 			// published by the vehicle each frame regardless.
 			ride.NodeField.Configure( ride.Position, rotation, ride.TileW * grid.TileSize, ride.TileH * grid.TileSize );
+			if ( ride.IsFeature )
+				return true; // scenery: no entrance, queue or riders
 			PlaceEntranceExitMarkers( ride, grid, terrain, tx, ty );
 			var waypoints = SpawnQueuePath( ride, grid, terrain, tx, ty );
 			if ( waypoints != null )
@@ -1279,7 +1320,7 @@ public class Level
 			ToggleGates();
 
 		// Visitor arrivals (T-074): a group at the gate every interval, sized by the park rating.
-		if ( arrivals != null && !GatesOpen && Entity.All.Any( e => e is Ride ) )
+		if ( arrivals != null && !GatesOpen && Entity.All.Any( e => e is Ride { IsFeature: false } ) )
 		{
 			// Closed, but there's something to come for: arrivals gather at the gate.
 			int coming = arrivals.Update( Time.Delta, Peep.AverageHappiness, GameClock.Current?.TotalDays ?? 0, WaitingAtGate );

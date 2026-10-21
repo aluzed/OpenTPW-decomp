@@ -142,7 +142,8 @@ public sealed class Staff : ModelEntity
 	public void OnNewDay()
 	{
 		var g = StaffGrades.Current;
-		Morale = Energy < TiredBelow
+		// A staff room (UsageInfo.ChillsYouOut) is the rest area HappyHitCosNoRestArea is about.
+		Morale = Energy < TiredBelow && !Ride.AnyStaffRoom
 			? MathF.Max( 0f, Morale - g.HappyHitNoRestArea * 2.5f )
 			: MathF.Min( 100f, Morale + g.HappinessRecuperationRate[Math.Clamp( Grade, 0, StaffGrades.MaxGrade )] );
 	}
@@ -177,9 +178,12 @@ public sealed class Staff : ModelEntity
 	/// <c>Entity.All</c>, but this static list would otherwise keep stale references across a level reload.</summary>
 	public static void ResetAll() => guards.Clear();
 
-	/// <summary>True if a patrolling guard is within <paramref name="radius"/> of the point.</summary>
+	/// <summary>True if a patrolling guard is within <paramref name="radius"/> of the point, or a security camera
+	/// covers it (<see cref="Ride.CameraNear"/>).</summary>
 	public static bool GuardNear( Vector3 p, float radius = GuardDeterRadius )
 	{
+		if ( Ride.CameraNear( p ) )
+			return true;
 		float r2 = radius * radius;
 		foreach ( var g in guards )
 		{

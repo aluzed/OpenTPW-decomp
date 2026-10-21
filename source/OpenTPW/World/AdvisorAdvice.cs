@@ -33,7 +33,9 @@ public readonly record struct ParkFacilities(
 	float RecentWages = 0f, float RecentIncome = 0f,
 	// Staff (T-049): the average grade of each type that is employed, in StaffStrikes.Roles order (NaN = none hired),
 	// and the strike announcements (StaffStrikes notices) still to be made.
-	float[]? AverageGrades = null, IReadOnlyCollection<string>? StaffNotices = null );
+	float[]? AverageGrades = null, IReadOnlyCollection<string>? StaffNotices = null,
+	// Features (scenery) placed, and how many of them are security cameras; -1 = not counted (older callers).
+	int Features = -1, int Cameras = 0 );
 
 /// <summary>
 /// Maps the live park state to advisor message candidates — <c>(id, group, score)</c> for the
@@ -191,6 +193,13 @@ public static class AdvisorAdvice
 		// Wages swallowing the income (WagesHigh: wages over the last AverageOverMonths > WagesTimesHigherThanIncome ×).
 		if ( f.RecentWages > 0f && f.RecentWages > P( "WagesHigh", "WagesTimesHigherThanIncome", 2f ) * f.RecentIncome )
 			Add( "WagesHigh", P( "WagesHigh", "Score", 90f ) );
+
+		// Scenery: none at all (FeaturesBuildFeatures: a negative base that grows by the day, like RidesBuildRides).
+		if ( f.Features == 0 && f.Rides > 0 )
+			Add( "FeaturesBuildFeatures", P( "FeaturesBuildFeatures", "Score", -40f ) + P( "FeaturesBuildFeatures", "AdditionalPerDay", 1f ) * f.Days );
+		// Trouble and no camera to help the guards (StaffGuardBuildCamera.AcceptableTrouble 4).
+		if ( f.Features >= 0 && f.Cameras == 0 && f.Guards > 0 && f.Misbehaving > P( "StaffGuardBuildCamera", "AcceptableTrouble", 4f ) )
+			Add( "StaffGuardBuildCamera", P( "StaffGuardBuildCamera", "Score", 45f ) );
 
 		// Strikes: the game's own announcements (warning, reminder, strike, called off, back to work).
 		if ( f.StaffNotices is { } notices )

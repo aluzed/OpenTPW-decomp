@@ -45,7 +45,7 @@ public class Ride : Entity
 	private bool researching;
 	private float researchProgress;
 
-	public bool HasNextLevel => UpgradeLevel + 1 < upgrades.Count;
+	public bool HasNextLevel => !IsFeature && UpgradeLevel + 1 < upgrades.Count;
 	public bool NextResearched => ResearchedLevel > UpgradeLevel;
 	public bool IsResearching => researching;
 	public float ResearchFraction => researching ? Math.Clamp( researchProgress / ResearchDuration, 0f, 1f ) : 0f;
@@ -221,7 +221,65 @@ public class Ride : Entity
 	public static int Repairs { get; private set; }
 
 	/// <summary>Zero the park-wide breakdown/repair tallies for a fresh park (level reload, T-062).</summary>
-	public static void ResetStats() { Breakdowns = 0; Repairs = 0; }
+	public static void ResetStats() { Breakdowns = 0; Repairs = 0; Features.Clear(); }
+
+	// ---- Features (scenery: trees, statues, fountains, cameras, staff rooms — levels/<theme>/features) ----
+
+	/// <summary>The park's placed features (kept so the per-peep security / per-day staff-room checks stay cheap).</summary>
+	public static readonly List<Ride> Features = new();
+
+	/// <summary>A feature (scenery placed from the theme's <c>features/</c> folder): nobody rides it, it has no queue,
+	/// upkeep or wear and can't be upgraded; it decorates (<see cref="Attraction"/> cheers visitors close by), a
+	/// security camera (<c>UsageInfo.ProvidesSecurity</c>) deters vandals like a guard, and a staff room
+	/// (<c>UsageInfo.ChillsYouOut</c>) is where tired staff rest.</summary>
+	public bool IsFeature { get; private set; }
+
+	/// <summary>A security camera (<c>UsageInfo.ProvidesSecurity</c>).</summary>
+	public bool ProvidesSecurity { get; private set; }
+
+	/// <summary>A staff room (<c>UsageInfo.ChillsYouOut</c>).</summary>
+	public bool ChillsYouOut { get; private set; }
+
+	/// <summary>Whether the park has a staff room to rest in.</summary>
+	public static bool AnyStaffRoom => Features.Any( f => f.ChillsYouOut );
+
+	/// <summary>True if a security camera covers the point (RegionFX "Security Camera": 5 cells).</summary>
+	public static bool CameraNear( Vector3 p, float radius = CameraRadius )
+	{
+		float r2 = radius * radius;
+		foreach ( var f in Features )
+		{
+			if ( !f.ProvidesSecurity )
+				continue;
+			float dx = f.Position.X - p.X, dy = f.Position.Y - p.Y;
+			if ( dx * dx + dy * dy <= r2 )
+				return true;
+		}
+		return false;
+	}
+
+	private const float CameraRadius = 50f;         // RegionFX[4] (Security Camera) radius 5 cells × 10 units
+	private const float FeatureCheerRadius = 30f;   // a feature brightens the 3 cells around it
+	private const float FeatureCheerPeriod = 1f;    // seconds between a feature's cheer passes
+	private float featureCheerTimer;
+
+	// Scenery lifts the mood of visitors near it: Info.AttractionValue (Features.sam 10) ÷ 5 happiness a second
+	// (an interpretation: the original's beauty effect isn't reversed).
+	private void CheerNearbyVisitors()
+	{
+		if ( !PeriodicDue( ref featureCheerTimer, Time.Delta, FeatureCheerPeriod ) )
+			return;
+		float lift = Attraction / 5f * FeatureCheerPeriod;
+		float r2 = FeatureCheerRadius * FeatureCheerRadius;
+		foreach ( var e in Entity.All )
+		{
+			if ( e is not Peep peep )
+				continue;
+			float dx = peep.Position.X - Position.X, dy = peep.Position.Y - Position.Y;
+			if ( dx * dx + dy * dy <= r2 )
+				peep.Cheer( lift );
+		}
+	}
 
 	// Breakdown feedback (T-039): while broken, the ride sparks + zaps on this cadence so the player sees +
 	// hears the fault (and where it is) instead of the ride just silently stopping.
@@ -353,6 +411,7 @@ public class Ride : Entity
 		if ( VM != null )
 			VM.IsRunning = false;
 		ResearchQueue.Dequeue( this ); // sold/demolished mid-research → drop out of the queue (T-044)
+		Features.Remove( this );
 		engine.Despawn();
 		Track?.Despawn();           // coaster: pylons + ribbon + train (no-op if none)
 		Vehicle?.Despawn();         // car rides: the moving wagon (no-op if none)
@@ -388,6 +447,9 @@ public class Ride : Entity
 		// Sideshows live in the level's sideshow/ folder; detected by path so it holds even if the .sam is absent.
 		// Economy defaults match the shared jungle SideShow.sam, overridden below by the stall's own UsageInfo.
 		IsSideshow = rideArchive.Contains( "sideshow", StringComparison.OrdinalIgnoreCase );
+		IsFeature = rideArchive.Contains( "/features/", StringComparison.OrdinalIgnoreCase );
+		if ( IsFeature )
+			Features.Add( this );
 		(SideshowPrice, SideshowCostOfGoods, SideshowChanceOfLoosing) = (10, 30, 70);
 		var rideName = Path.GetFileNameWithoutExtension( rideArchive );
 		Shape = RideShape.Load( rideArchive, rideName ).Rotated( Rotation );
@@ -434,7 +496,9 @@ public class Ride : Entity
 					ReadFloat( settings, $"Upgrades[{i}].WearRate", DefaultWearRates[Math.Min( i, DefaultWearRates.Length - 1 )] ) ) );
 			}
 			Excitement = Math.Max( 1, ReadInt( settings, "UsageInfo.ExcitementLevel", 50 ) );
-			Attraction = ReadInt( settings, "Info.AttractionValue", 25 );
+			Attraction = ReadInt( settings, "Info.AttractionValue", IsFeature ? 10 : 25 ); // Features.sam: 10
+			ProvidesSecurity = IsFeature && ReadInt( settings, "UsageInfo.ProvidesSecurity", 0 ) != 0;
+			ChillsYouOut = IsFeature && ReadInt( settings, "UsageInfo.ChillsYouOut", 0 ) != 0;
 			IsIndoors = ReadInt( settings, "UsageInfo.ISIndoors", 0 ) != 0; // under cover → shelter in bad weather
 
 			// Sideshow takings (T-058): a stall is pay-to-play with a chance of winning a prize; load its
@@ -740,6 +804,13 @@ public class Ride : Entity
 		{
 			engine.SyncHeads( VM.HeadSlots );
 			engine.SyncWalk( VM.WalkSlots, VM.GameTime );
+		}
+
+		// Scenery costs nothing to run and never wears; it brightens the visitors around it.
+		if ( IsFeature )
+		{
+			CheerNearbyVisitors();
+			return;
 		}
 
 		// Running the ride costs money over time (its upkeep drains the park balance).
