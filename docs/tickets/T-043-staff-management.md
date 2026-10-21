@@ -14,7 +14,9 @@
 
 - **Researcher** role added (feeds [T-044](T-044-research-upgrades.md)); `Staff.Role` exposed. Roster:
   Entertainer (cheer), Handyman (litter), Guard (litter deterrence), Researcher (wanders; research is
-  off-screen). Researcher has no dedicated sprite in this WAD → flat lab-coat billboard fallback.
+  off-screen). (2026-10-21: researchers and mechanics do have sprites — `esprites/Generic/Researchers/SPR_RE`,
+  `Generic/Mechanics/SPR_FA` / `SPR_OM` — now used instead of flat billboards, and entertainers come from the
+  active theme's `esprites/<Theme>/Entertainers` instead of always Fantasy's.)
 - **Hire + place**: staff are catalog entries (no grid footprint — mobile); selecting one and clicking
   a tile spawns the staff there and charges its hire cost (`ParkFinances.PayBuild`/`CanAfford`).
 - **Wages**: each `Staff` draws `WagePerSecond` (shown as WAGES). The park starts with **no** staff —

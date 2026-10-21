@@ -47,7 +47,6 @@ public sealed class Staff : ModelEntity
 
 	// One shared billboard model per role (built once), so the crowd reads staff roles by colour.
 	private static readonly Dictionary<StaffRole, Model> roleModels = new();
-	private static readonly string[] EntertainerSprites = { "SPR_FL", "SPR_GN", "SPR_LA" };
 
 	// Active guards, so peeps can cheaply check whether one is nearby (litter deterrence).
 	private static readonly List<Staff> guards = new();
@@ -191,9 +190,29 @@ public sealed class Staff : ModelEntity
 	{
 		StaffRole.Handyman => SpriteSheet.Load( "esprites/Generic/Handymen", "SPR_HA" ),
 		StaffRole.Guard => SpriteSheet.Load( "esprites/Generic/Guards", "SPR_GU" ),
-		StaffRole.Researcher or StaffRole.Mechanic => null, // no dedicated sprite in this WAD — flat billboard
-		_ => SpriteSheet.Load( "esprites/Fantasy/Entertainers", EntertainerSprites[Random.Shared.Next( EntertainerSprites.Length )] ),
+		StaffRole.Researcher => SpriteSheet.Load( "esprites/Generic/Researchers", "SPR_RE" ),
+		StaffRole.Mechanic => SpriteSheet.Load( "esprites/Generic/Mechanics", Random.Shared.Next( 2 ) == 0 ? "SPR_FA" : "SPR_OM" ),
+		_ => EntertainerSprite(),
 	};
+
+	// One of the active theme's three entertainer costumes (esprites/<Theme>/Entertainers: jungle SPR_DI/EX/…,
+	// hallow SPR_DR/FK/…, fantasy SPR_FL/GN/LA, space SPR_MO/SM/…).
+	private static SpriteSheet? EntertainerSprite()
+	{
+		var dir = $"esprites/{Souvenirs.ThemeDir( Level.Current?.Name ?? LevelTheme.Default )}/Entertainers";
+		try
+		{
+			var names = FileSystem.GetFiles( dir ).Where( f => f.EndsWith( ".TPC", StringComparison.OrdinalIgnoreCase ) )
+				.Select( Path.GetFileNameWithoutExtension ).ToArray();
+			if ( names.Length > 0 )
+				return SpriteSheet.Load( dir, names[Random.Shared.Next( names.Length )]! );
+		}
+		catch ( Exception e )
+		{
+			Log.Warning( $"[staff] no entertainer sprites in {dir}: {e.Message}" );
+		}
+		return null;
+	}
 
 	// Picks the current sprite frame from the camera-relative facing + walk phase, at a uniform scale
 	// (hotspot-anchored quad — feet planted, no per-frame pulsing).
