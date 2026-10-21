@@ -239,6 +239,8 @@ internal sealed class ItemInfoWindow : GameWindow
 		else
 			StatRow( "Queueing", $"{shop.Waiting}" );
 		bool toilet = shop.Kind == ShopKind.Toilet;
+		if ( !shop.IsFree )
+			StatRow( Localization.Get( UIStrings.CustomerSatisfaction, "Customer satisfaction" ), null, shop.Satisfaction );
 		if ( toilet )
 			StatRow( Localization.Get( UIStrings.Cleanliness, "Cleanliness" ), null, 1f - shop.Filth / 100f );
 		StatRow( Localization.Get( UIStrings.ScrapValue, "Scrap value" ), $"$ {shop.BuildCost * Ride.SellRefundFraction:0}" );

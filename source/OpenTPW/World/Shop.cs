@@ -84,6 +84,24 @@ public sealed class Shop : ModelEntity
 	/// <summary>A free facility (toilet, litter bin): nothing to sell, so no price.</summary>
 	public bool IsFree => Kind is ShopKind.Toilet or ShopKind.Bin;
 
+	/// <summary>How pleased its customers are, 0–1 (UITEXT 36 "Customer satisfaction", the map's satisfaction layer): the
+	/// quality of goods, lifted or lowered a quarter by the price against the authored one
+	/// (<see cref="EntryFeeOpinion.StallPriceMood"/>: none at all when it's too dear to buy); a toilet by its cleanliness.</summary>
+	public float Satisfaction
+	{
+		get
+		{
+			if ( Kind == ShopKind.Toilet )
+				return 1f - Filth / 100f;
+			if ( IsFree || Stats is not { } st )
+				return 1f;
+			float mood = EntryFeeOpinion.StallPriceMood( Price, st.Price, EntryFeeOpinion.Settings );
+			if ( float.IsNaN( mood ) )
+				return 0f;
+			return Math.Clamp( Quality / 100f + mood / 20f, 0f, 1f );
+		}
+	}
+
 	/// <summary>How close (world units, ~3 tiles) a visitor must be to a bin to use it rather than litter.</summary>
 	public const float BinReach = 30f;
 

@@ -5,9 +5,11 @@ namespace OpenTPW;
 
 /// <summary>
 /// The park map (T-057), in the original's map window (<c>w_map</c>; the handheld's map button, or M): the level's
-/// top-down <c>2dmap.tga</c> with a live pin per ride / shop / visitor / litter at its projected world position and a
-/// box marking the camera's focus. The layers toggle from the round buttons down the right, and clicking the map
-/// pans the camera.
+/// top-down <c>2dmap.tga</c> with live pins at their projected world positions and a box marking the camera's focus.
+/// The original's layers toggle from the round buttons down the right (UIHELPTEXT 267–292): rides, shops, sideshows,
+/// scenery, visitors, cleaners and litter, mechanics and ride reliability, guards, entertainers and queues, and the
+/// visitors' happiness, the rides' excitement and the shops' customer satisfaction as red→green pins. Clicking the
+/// map pans the camera.
 /// Projection is the pure <see cref="MinimapProjection"/> fed the live placement-grid bounds. In-park only.
 /// </summary>
 internal sealed class MinimapPanel : GameWindow
@@ -35,8 +37,18 @@ internal sealed class MinimapPanel : GameWindow
 	public void Toggle() => IsOpen = !IsOpen;
 	private bool wasToggleDown;
 
-	// Per-category layer visibility (toggled from the legend).
-	private bool showRides = true, showShops = true, showPeeps = true, showLitter = true;
+	// The layers, toggled from the legend; each button's hint is "show …" (its index) or "hide …" (the next one).
+	private enum Layer { Rides, Shops, Sideshows, Scenery, Visitors, Cleaners, Mechanics, Guards, Entertainers, Happiness, Excitement, Satisfaction }
+	private static readonly (Layer Layer, string Icon, int Hint)[] Layers =
+	{
+		(Layer.Rides, "b_srides", 267), (Layer.Shops, "b_sshops", 269), (Layer.Sideshows, "b_sshows", 271),
+		(Layer.Scenery, "b_sfeature", 273), (Layer.Visitors, "b_svisit", 277), (Layer.Cleaners, "b_shandy", 279),
+		(Layer.Mechanics, "b_smech", 281), (Layer.Guards, "b_sguard", 283), (Layer.Entertainers, "b_senter", 285),
+		(Layer.Happiness, "b_shap", 287), (Layer.Excitement, "b_sexcit", 289), (Layer.Satisfaction, "b_ssatis", 291),
+	};
+	private readonly HashSet<Layer> shown = new() { Layer.Rides, Layer.Shops, Layer.Sideshows, Layer.Visitors };
+	private static Rectangle LayerRect( int i ) => At( 700f + i % 2 * 44f, 84f + i / 2 * 46f, 38f, 38f );
+	private bool On( Layer l ) => shown.Contains( l );
 
 	private static Texture? border, camBox, ridePin, shopPin, peepPin, litterPin, legendBg;
 	private static Texture Border => border ??= Solid( 20, 30, 90, 255 );
@@ -45,6 +57,21 @@ internal sealed class MinimapPanel : GameWindow
 	private static Texture ShopPin => shopPin ??= Solid( 255, 150, 60, 255 );   // orange shops
 	private static Texture PeepPin => peepPin ??= Solid( 240, 240, 240, 255 );  // white peeps
 	private static Texture LitterPin => litterPin ??= Solid( 150, 110, 60, 255 ); // brown litter
+	private static Texture SideshowPin => SolidOf( 190, 110, 230 ); // purple sideshows
+	private static Texture SceneryPin => SolidOf( 70, 160, 70 );    // green scenery
+	private static Texture StaffPin( StaffRole role ) => role switch
+	{
+		StaffRole.Handyman => SolidOf( 255, 230, 60 ), StaffRole.Mechanic => SolidOf( 60, 230, 230 ),
+		StaffRole.Guard => SolidOf( 40, 60, 200 ), StaffRole.Entertainer => SolidOf( 255, 110, 200 ), _ => SolidOf( 255, 255, 255 ),
+	};
+
+	// A 0–1 rating as the gauges' red → yellow → green, in steps (each colour a cached texture).
+	private static Texture Rated( float f )
+	{
+		f = Math.Clamp( f, 0f, 1f );
+		float r = f < 0.5f ? 1f : 2f - 2f * f, g = f < 0.5f ? 2f * f : 1f;
+		return SolidOf( (byte)(40 + r * 200), (byte)(40 + g * 180), 40 );
+	}
 	private static Texture LegendBg => legendBg ??= Solid( 18, 18, 28, 220 );
 
 	private Texture? background;
@@ -75,15 +102,6 @@ internal sealed class MinimapPanel : GameWindow
 		return new MinimapProjection( grid.Origin.X, grid.Origin.Y, grid.Width * grid.TileSize, grid.Height * grid.TileSize, MapRect() );
 	}
 
-	// The layer buttons (rides, shops, visitors, litter) down the right.
-	private IEnumerable<(Rectangle Rect, string Icon, bool On, Action Toggle)> Legend()
-	{
-		yield return (At( 704f, 90f, 50f, 50f ), "b_srides", showRides, () => showRides = !showRides);
-		yield return (At( 704f, 150f, 50f, 50f ), "b_sshops", showShops, () => showShops = !showShops);
-		yield return (At( 704f, 210f, 50f, 50f ), "b_svisit", showPeeps, () => showPeeps = !showPeeps);
-		yield return (At( 704f, 270f, 50f, 50f ), "b_shandy", showLitter, () => showLitter = !showLitter);
-	}
-
 	protected override void OnUpdate()
 	{
 		// M toggles the whole minimap (edge-detected like the other overlays).
@@ -98,10 +116,11 @@ internal sealed class MinimapPanel : GameWindow
 		var mouse = MouseBase();
 
 		// A legend click toggles that layer.
-		foreach ( var b in Legend() )
-			if ( Contains( b.Rect, mouse ) )
+		for ( int i = 0; i < Layers.Length; i++ )
+			if ( Contains( LayerRect( i ), mouse ) )
 			{
-				b.Toggle();
+				if ( !shown.Remove( Layers[i].Layer ) )
+					shown.Add( Layers[i].Layer );
 				return;
 			}
 
@@ -127,27 +146,51 @@ internal sealed class MinimapPanel : GameWindow
 		Graphics.Quad( map, mat );
 		DrawBorder( map, mat );
 
-		// One pin per entity, by category (when its layer is on).
-		if ( showRides )
-			foreach ( var r in Entity.All.OfType<Ride>() )
-				Pin( mat, proj, r.Position, RidePin, 7f );
-		if ( showShops )
-			foreach ( var s in Entity.All.OfType<Shop>() )
-				Pin( mat, proj, s.Position, ShopPin, 7f );
-		if ( showPeeps )
-			foreach ( var p in Entity.All.OfType<Peep>() )
-				Pin( mat, proj, p.Position, PeepPin, 3f );
-		if ( showLitter )
+		// One pin per entity, by category (when its layer is on). Rides take the colour of the rating layer that is on:
+		// reliability (with the mechanics), how short their queue is (with the entertainers), or excitement.
+		foreach ( var r in Entity.All.OfType<Ride>() )
+		{
+			if ( r.IsFeature )
+			{
+				if ( On( Layer.Scenery ) )
+					Pin( mat, proj, r.Position, SceneryPin, 5f );
+				continue;
+			}
+			if ( !On( r.IsSideshow ? Layer.Sideshows : Layer.Rides ) && !On( Layer.Mechanics ) && !On( Layer.Entertainers ) && !On( Layer.Excitement ) )
+				continue;
+			var tex = On( Layer.Mechanics ) ? Rated( r.Reliability )
+				: On( Layer.Entertainers ) ? Rated( 1f - (r.Queue?.LineLength ?? 0) / MathF.Max( 1f, 3f * r.Capacity ) )
+				: On( Layer.Excitement ) ? Rated( r.Excitement / 100f )
+				: r.IsSideshow ? SideshowPin : RidePin;
+			Pin( mat, proj, r.Position, tex, 8f );
+		}
+		if ( On( Layer.Shops ) || On( Layer.Satisfaction ) )
+			foreach ( var s in Shop.Stalls )
+				Pin( mat, proj, s.Position, On( Layer.Satisfaction ) ? Rated( s.Satisfaction ) : ShopPin, 7f );
+		if ( On( Layer.Cleaners ) )
 			foreach ( var l in Litter.Active )
 				Pin( mat, proj, l.Position, LitterPin, 3f );
+		if ( On( Layer.Visitors ) || On( Layer.Happiness ) )
+			foreach ( var p in Entity.All.OfType<Peep>() )
+				Pin( mat, proj, p.Position, On( Layer.Happiness ) ? Rated( p.Happiness / 100f ) : PeepPin, 3f );
+		foreach ( var st in Entity.All.OfType<Staff>() )
+			if ( st.Role switch
+			{
+				StaffRole.Handyman => On( Layer.Cleaners ), StaffRole.Mechanic => On( Layer.Mechanics ),
+				StaffRole.Guard => On( Layer.Guards ), StaffRole.Entertainer => On( Layer.Entertainers ), _ => false,
+			} )
+				Pin( mat, proj, st.Position, StaffPin( st.Role ), 5f );
 
 		// Camera focus box.
 		var c = proj.Project( BuildCameraMode.Focus.X, BuildCameraMode.Focus.Y );
 		DrawHollow( new Rectangle( c.X - 14f, c.Y - 14f, 28f, 28f ), map, mat, CamBox );
 
 		// Layer buttons: lit while the layer shows, pressed-in while hidden (clicks are handled in OnUpdate).
-		foreach ( var b in Legend() )
-			RoundButton( b.Rect, b.Icon, !b.On );
+		for ( int i = 0; i < Layers.Length; i++ )
+		{
+			var (layer, icon, hint) = Layers[i];
+			RoundButton( LayerRect( i ), icon, !On( layer ), hint: On( layer ) ? hint + 1 : hint );
+		}
 		if ( RoundButton( Ok, "b_okay", hint: 1 ) )
 			IsOpen = false;
 	}
