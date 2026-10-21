@@ -2,7 +2,7 @@
 
 - **Priority**: 🟠 Medium (UX)
 - **Type**: UI
-- **Status**: ✅ Core done — the always-on HUD shows only player essentials (date, weather, money, visitors,
+- **Status**: ✅ Done — the original's HUD and windows (see the end); was: core done — the always-on HUD shows only player essentials (date, weather, money, visitors,
   admission, challenge, ticket goals, loan, park rating, contextual build/manage info). The debug dump (income
   breakdown, staff/litter counts, crowd thoughts, save-slot hints, FPS counter) is off by default and toggled
   with the **backtick** key, persisted as `GameSettings.ShowDebug` (also drives `Renderer.ShowFps`).
@@ -40,3 +40,23 @@ gates, `b_fire`, `b_move`, `b_resrch`, `b_upgrade`, `b_delete_login` — the bom
 training). The park readout (top left) puts the matching icons before its lines: `b_money`, `b_svisit`, `b_entry`,
 `b_loan`, `b_speeps` (thoughts), `b_ssatis` (rating). The 3D widget panels themselves (and their UI camera) remain
 to do.
+
+## 2026-10-21 — the original's HUD and windows
+
+Rebuilt on captures of the PC version (docs/10-ui-reference.md) and `ui.wad`'s own art:
+
+- **HUD** (`ParkHud`): the balance with the `$` glyph, cash digits, trend arrow and purchase flash; the golden
+  tickets; the handheld (`mainpanel.MD2` face — its casing, studs and button recesses drawn around it, as the
+  original's shading showed them —, beacon, date LCD, happiness capsule from `meter.wct`, six buttons) and the hint
+  strip with the game's own hover hints (`UIHELPTEXT.str`) and what the advisor says. The advisor stands upright
+  in the theme's outfit (`levels/<theme>/advisor.wad`), facing the player.
+- **Windows** (`GameWindow`: a `ui.wad` frame, yellow title, black insets, red→green gauges, round buttons):
+  buy (`w_big`), ride / shop, park information, financial information, loans, staff, save / load (`w_park`),
+  research lab (`w_res`), map (`w_map`), options (`w_small`), and messages — golden ticket, challenge,
+  bankruptcy — in `w_dialog`. The old text panels are the debug overlay only; the bottom bar is gone.
+- Text is drawn at whole pixels and whole-number scales (the point-sampled fonts lost the dot of "!").
+
+Still to do: the 3D previews in the windows' preview boxes (the original turns the item's model there), the
+advisor's gesture animations (`Advisor_<theme>m*.MD2` keyframes, a format of their own), the hire-staff window
+(staff are hired from the buy window's fifth tab), the lobby's handheld, and the exact UI camera (positions are
+measured, not read from `tp.exe`).
