@@ -38,7 +38,7 @@ fragment {
 
   vec3 lambert( vec3 vLightDir, vec3 vNormal ) 
   {
-    return dot( normalize( vLightDir ), normalize( vNormal ) ) * g_oUbo.g_vLightColor;
+    return max( dot( normalize( vLightDir ), normalize( vNormal ) ), 0.0 ) * g_oUbo.g_vLightColor;
   }
 
   vec3 ambient( vec3 vLightColor ) 
@@ -54,7 +54,9 @@ fragment {
 
   void main() 
   {
-    vec3 vLightDir = normalize( g_oUbo.g_vLightPos - vs_out.vPosition );
+    // The sun is a direction, not a point: g_vLightPos (0,100,100) sits next to the origin, ~500 units from the park,
+    // so a point-light direction grazed flat surfaces (queue paths read as dark strips).
+    vec3 vLightDir = normalize( g_oUbo.g_vLightPos );
 
     vec3 vLambert = lambert( vLightDir, vs_out.vNormal );
     vec3 vAmbient = ambient( g_oUbo.g_vLightColor );
