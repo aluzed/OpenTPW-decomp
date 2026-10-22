@@ -61,4 +61,56 @@ public class GestureFileTests
 		Assert.AreEqual( true, shut.VisibleAt( 62f ) );
 		Assert.AreEqual( false, shut.VisibleAt( 70f ) );
 	}
+
+	// A minimal gesture in the layout the advisor's files use (no game data needed): one record rotating object 25
+	// over three numbered keys (the last tagged 0xFFFF), one record showing object 3 from frame 10 to 20.
+	private static byte[] Synthetic()
+	{
+		var d = new byte[0x400];
+		void U16( int o, int v ) => System.Buffers.Binary.BinaryPrimitives.WriteUInt16LittleEndian( d.AsSpan( o, 2 ), (ushort)v );
+		void U32( int o, uint v ) => System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian( d.AsSpan( o, 4 ), v );
+		void F32( int o, float v ) => System.Buffers.Binary.BinaryPrimitives.WriteSingleLittleEndian( d.AsSpan( o, 4 ), v );
+		U32( 0, 0x1CD15D46 );
+		int trailer = 0x100, records = 0x140, keys = 0x200, visibility = 0x300;
+		U32( 0x98, (uint)trailer );
+		U32( trailer + 0x08, 30 );          // length, frames
+		U16( trailer + 0x12, 2 );           // records
+		U32( trailer + 0x2c, (uint)records );
+
+		U32( records + 0x04, GestureFile.FlagRotation );
+		U16( records + 0x10, 3 );           // rotation keys
+		U16( records + 0x14, 25 );          // the object
+		U32( records + 0x1c, (uint)keys );
+		var rotations = new[] { Quaternion.Identity, Quaternion.CreateFromAxisAngle( System.Numerics.Vector3.UnitX, 0.5f ), Quaternion.Identity };
+		for ( int k = 0; k < 3; k++ )
+		{
+			int o = keys + k * 20;
+			U32( o, ((k == 2 ? 0xFFFFu : (uint)k) << 16) | (uint)(k * 15) );
+			F32( o + 4, rotations[k].X ); F32( o + 8, rotations[k].Y ); F32( o + 12, rotations[k].Z ); F32( o + 16, rotations[k].W );
+		}
+
+		int r2 = records + 0x40;
+		U32( r2 + 0x04, GestureFile.FlagVisibility );
+		U16( r2 + 0x14, 3 );
+		U32( r2 + 0x30, (uint)visibility );
+		U16( visibility, 10 );              // shown from 10
+		U16( visibility + 2, unchecked((ushort)-20) ); // hidden from 20
+		return d;
+	}
+
+	[TestMethod]
+	public void ReadsRotationAndVisibilityTracks()
+	{
+		var g = new GestureFile( Synthetic() );
+		Assert.AreEqual( 30f, g.Length );
+		var turn = g.Tracks.Single( t => t.Target == 25 );
+		CollectionAssert.AreEqual( new[] { 0f, 15f, 30f }, turn.Rotation.Select( k => k.Frame ).ToArray() );
+		var mid = GestureFile.Sample( turn.Rotation, 15f );
+		Assert.IsTrue( MathF.Abs( Quaternion.Dot( mid, Quaternion.CreateFromAxisAngle( System.Numerics.Vector3.UnitX, 0.5f ) ) ) > 0.999f );
+
+		var shown = g.Tracks.Single( t => t.Target == 3 );
+		Assert.AreEqual( false, shown.VisibleAt( 5f ) );
+		Assert.AreEqual( true, shown.VisibleAt( 15f ) );
+		Assert.AreEqual( false, shown.VisibleAt( 25f ) );
+	}
 }
