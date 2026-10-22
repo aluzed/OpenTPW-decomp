@@ -34,3 +34,12 @@ original front-end never showed. Commits `4482bfd` + `4d7c0ea` restored it and m
 `source/OpenTPW/Client/Game.cs`, `source/OpenTPW/World/Level.cs`,
 `source/OpenTPW/UI/Widgets/LobbyWorldSelect.cs`, `source/OpenTPW/World/LobbyCameraMode.cs`,
 `source/OpenTPW/UI/Layouts/LobbyLayout.cs`.
+
+## 2026-10-22 (night) — the lobby comes alive
+
+- The islands loop their own animations (`<Jun|Hal|Fan|Spa>_isleM1, M2…`, through `KeyframePoser`, the rides'
+  tree pose).
+- Each island has its park gates (`<prefix>_gate.MD2`, in the island's frame; their M1–M3 aren't played).
+- Bats circle the Halloween island, butterflies the jungle and fantasy ones (`LobbyFlyer`: `Bat`, `Bfly_PINK`,
+  `Bfly_YELL`, flapping with their `m1`).
+- Not placed yet: the globe, the plane (`plane` / `plane_anim`), the golden ticket and the pins (`Hpin`, `Lpin`).
