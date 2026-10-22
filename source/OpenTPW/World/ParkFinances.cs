@@ -323,7 +323,12 @@ public sealed class ParkFinances
 		var c = category ?? (drink ? SaleCategory.Drink : SaleCategory.Snack);
 		sold[(int)c]++;
 		if ( c is SaleCategory.Gift or SaleCategory.Costume or SaleCategory.Balloon )
+		{
+			// Selling well is a sign of happy visitors (TAG_SYSTEM 174–176): the advisor says so at a few milestones.
+			if ( sold[(int)c] is 30 or 100 or 300 )
+				Advisor.Notice( c switch { SaleCategory.Balloon => "CongratBalloons", SaleCategory.Costume => "CongratCostumes", _ => "CongratSouvenirs" } );
 			return; // impulse items: neither food nor drink
+		}
 		if ( drink || c == SaleCategory.Drink ) DrinkSold++; else FoodSold++;
 	}
 

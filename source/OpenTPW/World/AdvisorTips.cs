@@ -62,6 +62,9 @@ public static class AdvisorTips
 		["CongratTrainedEntertainers"] = "Your entertainers have been trained well and are making people very happy.",
 		["CongratTrainedMechanics"] = "Your mechanics are highly skilled now thanks to your training initiative.",
 		["CongratStaffHappy"] = "Your staff are all happy. You should try to keep them that way to avoid strikes.",
+		["CongratBalloons"] = "Lots of visitors are buying balloons. This is a good indication that they're really happy.",
+		["CongratCostumes"] = "Lots of visitors are buying costumes, which means they liked most of the rides they have been on. Well done!",
+		["CongratSouvenirs"] = "Many of your visitors are buying souvenirs from the gift shop before they leave. They enjoyed their day.",
 		["StaffUncoveredHandymen"] = "Some areas of your park don't have a cleaner patrolling them.",
 		["StaffUncoveredGuards"] = "Some parts of the park don't have a guard patrolling them or even a security camera.",
 		["StaffUncoveredEntertainers"] = "There are areas of your park that aren't being patrolled by an entertainer.",
@@ -156,6 +159,7 @@ public static class AdvisorTips
 		["StaffUncoveredMechanics"] = 25, ["StaffUncoveredHandymen"] = 27, ["StaffUncoveredGuards"] = 30, ["StaffUncoveredEntertainers"] = 32,
 		["CongratTrainedGuards"] = 162, ["CongratTrainedResearchers"] = 163, ["CongratTrainedHandymen"] = 164,
 		["CongratTrainedEntertainers"] = 165, ["CongratTrainedMechanics"] = 166, ["CongratStaffHappy"] = 160,
+		["CongratBalloons"] = 174, ["CongratCostumes"] = 175, ["CongratSouvenirs"] = 176,
 		// "You have employed the maximum number of … for a park … you'll have to train them."
 		["StaffMaxHandyman"] = 136, ["StaffMaxEntertainer"] = 138, ["StaffMaxMechanic"] = 140, ["StaffMaxGuard"] = 142,
 		["StaffMaxResearcher"] = 144,
