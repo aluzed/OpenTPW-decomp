@@ -828,6 +828,9 @@ public sealed class RideEngine : IRideEngine
 	private bool bodyBuilt; // the body's Create has played
 	private bool bodyBroken; // broken down: the Break animation holds its last frame
 
+	/// <summary>The body stands built already (a loaded park): the script's Create is ignored.</summary>
+	public void SkipBuild() => bodyBuilt = true;
+
 	/// <summary>The ride broke down: it stops, and plays its Break animation (the totem's figures slump, the crates
 	/// burst), holding the last frame until it is repaired.</summary>
 	public void BreakDown()

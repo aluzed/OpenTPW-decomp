@@ -637,6 +637,8 @@ public class Ride : Entity
 		engine.SetAnimChannels( channels );
 		LoadKeyframes( rideArchive, rideName, channels );
 		engine.StartBestBodyAnim();
+		if ( Level.Restoring )
+			engine.SkipBuild(); // a loaded park's rides stand built
 
 		// Ride duration: one full pass of the ride's running animation is the authoritative, ride-specific
 		// length we have (monkey ~11 s, totem ~14 s). Fall back to Info.DurationUnit (a 0–3 band; the exact

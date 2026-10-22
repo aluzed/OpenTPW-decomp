@@ -781,6 +781,9 @@ public class Level
 
 	/// <summary>Restore a park from a <see cref="SaveGame"/> (T-059): clear the current rides/shops, restore the
 	/// balance + clock, then rebuild each placement for free (the balance is already restored).</summary>
+	/// <summary>True while a save is being laid out (the placements respawned): no construction animations.</summary>
+	public static bool Restoring { get; private set; }
+
 	public static void ApplySave( SaveGame s )
 	{
 		if ( saveGrid is not { } grid || saveTerrain is not { } terrain || saveCatalog is not { } catalog )
@@ -810,6 +813,8 @@ public class Level
 		// while rebuilding so the restored queue head matches the save instead of the load order.
 		var researching = new List<(Ride Ride, int Pos)>();
 
+		// A loaded park stands built: its rides and stalls don't play their construction (Restoring).
+		Restoring = true;
 		foreach ( var p in s.Placements )
 		{
 			var item = catalog.FirstOrDefault( c => c.Name == p.Name );
@@ -855,6 +860,7 @@ public class Level
 				shop.IngredientAmount = p.Ingredient;
 			}
 		}
+		Restoring = false;
 
 		// Rebuild the research queue in its saved order (a position of -1 sorts last — a defensive fallback).
 		foreach ( var (ride, _) in researching.OrderBy( e => e.Pos < 0 ? int.MaxValue : e.Pos ) )

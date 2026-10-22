@@ -324,6 +324,8 @@ public sealed class Shop : ModelEntity
 				return; // a mesh split over several models (more than 16 materials): parts no longer match meshes
 			poser = new KeyframePoser( tree, buildingParts, orders );
 			placedAt = Time.Now;
+			if ( Level.Restoring )
+				buildAnim = null; // a loaded park's stalls stand built
 			Log.Info( $"[shop] {name} animated (build {(buildAnim != null ? "yes" : "no")}, loop {(loopAnim != null ? $"{loopAnim.Duration:0} frames" : "none")})" );
 		}
 		catch ( Exception e ) { Log.Warning( $"[shop] {name}: no animation ({e.Message})" ); }
