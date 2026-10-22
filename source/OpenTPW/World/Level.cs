@@ -1336,7 +1336,8 @@ public class Level
 			var shape = RideShape.Load( path, Path.GetFileName( path ) ).Rotated( rotation );
 			var w = grid.TileToWorld( tx, ty, shape.Width, shape.Height );
 			var ride = new Ride( path, w.WithZ( terrain.SampleHeight( w.X, w.Y ) ), rotation );
-			ride.SetActive( false );
+			// A ride waits for riders; scenery has none, its motion (the fountain's water, the camera's turn) just runs.
+			ride.SetActive( ride.IsFeature );
 			ride.BuildCost = cost; // remembered for the sell refund (T-041)
 			ride.TileX = tx; ride.TileY = ty; ride.TileW = ride.Shape.Width; ride.TileH = ride.Shape.Height;
 			// Fix the node field's world placement now the footprint is known, so static (walk/head/particle)
