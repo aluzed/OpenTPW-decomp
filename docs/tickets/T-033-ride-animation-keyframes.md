@@ -175,3 +175,18 @@ and driven from real ride data. 51 tests pass.
 
 - A ride (e.g. `monkey`) visibly plays its **Main** keyframe loop matching the original, and plays
   one-shot transitions (Create/Start/End) when the script triggers them, with `dotnet test` green.
+
+## 2026-10-22 — the record layout corrected (from the advisor's gestures, T-046)
+
+Decoding the advisor's gestures showed the keyframe records were misread: `+0x10` / `+0x12` are the rotation /
+scale **key counts** and the object a record moves is `+0x14`, an index into the model's whole object tree
+(meshes, then the nodes after the mesh table — `ModelHierarchy`). The old reader took the key count for the
+surface, so e.g. all eight of the Inca god's tracks landed on "surface 9", and the monkey's second arm drove the
+first. Rotation keys are the object's **whole local rotation**, not a delta on the bind pose; the files come in two
+generations — older (the jungle monkey: every key tagged 0xFFFF, `(w,x,y,z)`) and newer (numbered keys, the last
+0xFFFF, `(x,y,z,w)`). The length is the trailer's `+0x08`. Vertex morphs address the **target mesh's positions**
+(`ModelFile.Mesh.VertexOrder`), not one buffer across the parts — the monkey's body morph used to deform the base.
+
+`RideEngine` now poses the parts through the tree (`L · B⁻¹ · A`: the loaded look at rest, everything moving with
+what it hangs from) and morphs the right mesh. Visible result: the Crazy Ape now pops out of its crate and the crate
+bursts. Rides that ship only Create no longer loop their construction as their running motion.

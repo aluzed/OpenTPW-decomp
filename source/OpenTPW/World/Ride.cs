@@ -806,6 +806,16 @@ public class Ride : Entity
 	private List<ModelEntity> BuildMeshEntities( string md2Path, string rideArchive )
 	{
 		var modelFile = new ModelFile( md2Path );
+		// The object tree and the vertex orders, so keyframes pose the parts through it and morphs reach their mesh.
+		try
+		{
+			using var file = FileSystem.OpenRead( md2Path );
+			using var bytes = new MemoryStream();
+			file.CopyTo( bytes );
+			engine.SetHierarchy( ModelHierarchy.Read( bytes.ToArray() ) );
+		}
+		catch ( Exception e ) { Log.Warning( $"[ride] no object tree for {md2Path}: {e.Message}" ); }
+		engine.SetVertexOrders( modelFile.Meshes.Select( m => m.VertexOrder ) );
 		// The authored car/seat nodes (object 0x80 + car 0x100) — their count drives how many riders the
 		// RideVehicle shows (T-048). Their world positions are runtime sim output, not file data, so only
 		// the count is used here.

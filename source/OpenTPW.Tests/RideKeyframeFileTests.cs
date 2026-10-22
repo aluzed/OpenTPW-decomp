@@ -11,9 +11,9 @@ namespace OpenTPW.Tests;
 [TestClass]
 public class RideKeyframeFileTests
 {
-	// Builds a minimal keyframe file matching the reverse-engineered layout (docs/08): a header with
-	// the magic and a 0x98 anim pointer, a trailer (count + record array), one surface record with a
-	// rotation track, and a rotation track of (0xFFFF-tagged time, (w,x,y,z) quaternion) keys.
+	// Builds a minimal keyframe file in the older layout (docs/08, the jungle monkey's): a header with the magic and
+	// a 0x98 anim pointer, a trailer (count + record array), one record (key count +0x10, object +0x14) with a
+	// rotation track of (0xFFFF-tagged time, (w,x,y,z) quaternion) keys.
 	private static byte[] BuildFrame( int surfaceIndex, (int time, Quaternion q)[] rotKeys )
 	{
 		var d = new byte[0x400];
@@ -29,7 +29,8 @@ public class RideKeyframeFileTests
 
 		// One surface record (0x40 bytes).
 		BinaryPrimitives.WriteUInt32LittleEndian( d.AsSpan( records + 0x04, 4 ), RideKeyframeFile.FlagRotation ); // flags
-		BinaryPrimitives.WriteUInt16LittleEndian( d.AsSpan( records + 0x10, 2 ), (ushort)surfaceIndex );          // surface index
+		BinaryPrimitives.WriteUInt16LittleEndian( d.AsSpan( records + 0x10, 2 ), (ushort)rotKeys.Length );        // rotation key count
+		BinaryPrimitives.WriteUInt16LittleEndian( d.AsSpan( records + 0x14, 2 ), (ushort)surfaceIndex );          // the object
 		BinaryPrimitives.WriteUInt32LittleEndian( d.AsSpan( records + 0x1c, 4 ), (uint)rotTrack );                // rotation track offset
 
 		// Rotation track: stride 20 = [0xFFFF|time][4 floats w,x,y,z].
@@ -58,7 +59,9 @@ public class RideKeyframeFileTests
 		BinaryPrimitives.WriteUInt16LittleEndian( d.AsSpan( trailer + 0x12, 2 ), 1 );
 		BinaryPrimitives.WriteUInt32LittleEndian( d.AsSpan( trailer + 0x2c, 4 ), (uint)records );
 		BinaryPrimitives.WriteUInt32LittleEndian( d.AsSpan( records + 0x04, 4 ), RideKeyframeFile.FlagRotation | RideKeyframeFile.FlagScale );
-		BinaryPrimitives.WriteUInt16LittleEndian( d.AsSpan( records + 0x10, 2 ), 5 );
+		BinaryPrimitives.WriteUInt16LittleEndian( d.AsSpan( records + 0x10, 2 ), (ushort)rot.Length );
+		BinaryPrimitives.WriteUInt16LittleEndian( d.AsSpan( records + 0x12, 2 ), (ushort)scale.Length );
+		BinaryPrimitives.WriteUInt16LittleEndian( d.AsSpan( records + 0x14, 2 ), 5 );
 		BinaryPrimitives.WriteUInt32LittleEndian( d.AsSpan( records + 0x1c, 4 ), (uint)rotTrack );
 		BinaryPrimitives.WriteUInt32LittleEndian( d.AsSpan( records + 0x20, 4 ), (uint)scaleTrack );
 
@@ -198,10 +201,39 @@ public class RideKeyframeFileTests
 	[TestMethod]
 	public void StopsAtTimeWrap()
 	{
-		// Two concatenated tracks (the second wraps back to t=0) — only the first should be read.
+		// A key count past the track (the next one wraps back to t=0) — only the first track should be read.
 		var keys = new[] { (0, RotZ( 0 )), (10, RotZ( 90 )), (0, RotZ( 0 )), (10, RotZ( 90 )) };
 		var kf = new RideKeyframeFile( BuildFrame( 5, keys ) );
 		Assert.AreEqual( 2, kf.Surfaces[0].Rotation.Count, "must stop when the keyframe time decreases" );
+	}
+
+	[TestMethod]
+	public void ReadsTheNewerLayoutsNumberedXyzwKeys()
+	{
+		// The newer files (the advisor's, the Inca god's): keys numbered 0, 1, … with the last tagged 0xFFFF, (x,y,z,w).
+		var d = BuildFrame( 7, new[] { (0, RotZ( 0 )), (10, RotZ( 90 )), (20, RotZ( 180 )) } );
+		int o = 0x200;
+		var keys = new[] { RotZ( 0 ), RotZ( 90 ), RotZ( 180 ) };
+		for ( int k = 0; k < keys.Length; k++, o += 20 )
+		{
+			BinaryPrimitives.WriteUInt32LittleEndian( d.AsSpan( o, 4 ), ((k == keys.Length - 1 ? 0xFFFFu : (uint)k) << 16) | (uint)(k * 10) );
+			BinaryPrimitives.WriteSingleLittleEndian( d.AsSpan( o + 4, 4 ), keys[k].X );
+			BinaryPrimitives.WriteSingleLittleEndian( d.AsSpan( o + 8, 4 ), keys[k].Y );
+			BinaryPrimitives.WriteSingleLittleEndian( d.AsSpan( o + 12, 4 ), keys[k].Z );
+			BinaryPrimitives.WriteSingleLittleEndian( d.AsSpan( o + 16, 4 ), keys[k].W );
+		}
+		var s = new RideKeyframeFile( d ).Surfaces.Single();
+		Assert.AreEqual( 7, s.SurfaceIndex );
+		Assert.AreEqual( 3, s.Rotation.Count );
+		AssertQuat( RotZ( 90 ), s.Rotation[1].Value );
+	}
+
+	[TestMethod]
+	public void TheLengthComesFromTheTrailer()
+	{
+		var d = BuildFrame( 5, new[] { (0, RotZ( 0 )), (10, RotZ( 90 )) } );
+		BinaryPrimitives.WriteUInt32LittleEndian( d.AsSpan( 0x100 + 0x08, 4 ), 60 );
+		Assert.AreEqual( 60f, new RideKeyframeFile( d ).Duration );
 	}
 
 	[TestMethod]

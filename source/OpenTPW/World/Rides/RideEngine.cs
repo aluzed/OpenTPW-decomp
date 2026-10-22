@@ -1,3 +1,4 @@
+using System.Numerics;
 namespace OpenTPW;
 
 /// <summary>
@@ -777,8 +778,8 @@ public sealed class RideEngine : IRideEngine
 	/// <summary>
 	/// Chooses the body's running loop + idle channels once keyframes are loaded, and leaves the body
 	/// idle (occupancy drives whether it runs — see <see cref="SetActive"/>). The running loop prefers
-	/// Main, then Idle, otherwise any channel with real keyframe data (so a ride that only ships e.g.
-	/// Create still animates); the idle loop is the ride's Idle channel when it ships one (else the body
+	/// Main, then Idle, otherwise any other channel with real keyframe data except the one-shot Create / Break /
+	/// Repair; the idle loop is the ride's Idle channel when it ships one (else the body
 	/// rests). Called by the Ride after <see cref="SetChannelKeyframes"/>.
 	/// </summary>
 	public void StartBestBodyAnim()
@@ -790,8 +791,11 @@ public sealed class RideEngine : IRideEngine
 		foreach ( var pref in new[] { (int)ScriptDefs.Animations.ANIM_Main, (int)ScriptDefs.Animations.ANIM_Idle } )
 			if ( channelAnims.ContainsKey( pref ) ) { chosen = pref; break; }
 
-		if ( chosen < 0 && channelAnims.Count > 0 )
-			chosen = channelAnims.Keys.OrderBy( k => k ).First();
+		// Not the one-shots: Create builds the ride up out of nothing, Break / Repair take it apart — looping one would
+		// show the ride forever half-built (now that their morphs reach the right meshes).
+		if ( chosen < 0 )
+			chosen = channelAnims.Keys.Where( k => k is not ((int)ScriptDefs.Animations.ANIM_Create or (int)ScriptDefs.Animations.ANIM_Break
+				or (int)ScriptDefs.Animations.ANIM_Repair) ).OrderBy( k => k ).DefaultIfEmpty( -1 ).First();
 
 		bodyLoopAnim = chosen;
 		// Idle loop for an empty ride: only if the ride ships an Idle channel (else it rests).
@@ -1016,6 +1020,12 @@ public sealed class RideEngine : IRideEngine
 	private void ApplyKeyframes( RideObject obj, RideKeyframeFile kf, float elapsed )
 	{
 		var clock = elapsed * KeyframeRate;
+		if ( tree != null && obj.Id == SelfId )
+		{
+			ApplyTreeKeyframes( obj, kf, clock );
+			ApplyMorph( obj, kf, clock );
+			return;
+		}
 
 		foreach ( var sa in kf.Surfaces )
 		{
@@ -1046,6 +1056,100 @@ public sealed class RideEngine : IRideEngine
 		ApplyMorph( obj, kf, clock );
 	}
 
+	// ── The model's object tree (T-033 corrected by the advisor's gestures, T-046) ──────────────────────────────────
+	// A key is an object's whole local rotation / scale, and objects hang off one another (the cars off the wheel,
+	// the arms off the body; nodes are pivots between them). Each part is posed as L · B⁻¹ · A: its bind local, back
+	// out of its hierarchical bind pose, into its hierarchical animated pose — exactly the loaded look at rest, and
+	// moving with everything above it.
+
+	private ModelHierarchy? tree;
+	// Per mesh: each of its positions' vertices (ModelFile.Mesh.VertexOrder inverted), for the morphs.
+	private List<int[][]>? vertexOfPosition;
+
+	/// <summary>The meshes' vertex orders (which position each vertex is), so morphs reach the right vertices.</summary>
+	public void SetVertexOrders( IEnumerable<ushort[]> orders )
+		=> vertexOfPosition = orders.Select( order => Enumerable.Range( 0, order.Length == 0 ? 0 : order.Max() + 1 )
+			.Select( position => Enumerable.Range( 0, order.Length ).Where( v => order[v] == position ).ToArray() ).ToArray() ).ToList();
+	private Matrix4x4[]? bindWorld;
+	private static readonly Matrix4x4 SwapYZ = new( 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1 );
+
+	/// <summary>The ride model's object tree (from its .md2), so keyframes pose the parts through it.</summary>
+	public void SetHierarchy( ModelHierarchy? hierarchy )
+	{
+		tree = hierarchy;
+		bindWorld = null;
+		if ( tree == null )
+			return;
+		bindWorld = new Matrix4x4[tree.ObjectCount];
+		var done = new bool[tree.ObjectCount];
+		for ( int i = 0; i < tree.ObjectCount; i++ )
+			WorldOf( i, j => tree.Local[j], bindWorld, done );
+	}
+
+	private Matrix4x4 WorldOf( int i, Func<int, Matrix4x4> local, Matrix4x4[] world, bool[] done )
+	{
+		if ( done[i] )
+			return world[i];
+		int parent = tree!.Parent[i];
+		// A root mesh keeps its own matrix (as the loader placed it); a root node is the scene's frame, left out.
+		var m = parent < 0 ? (i < tree.MeshCount ? local( i ) : Matrix4x4.Identity) : local( i ) * WorldOf( parent, local, world, done );
+		world[i] = m;
+		done[i] = true;
+		return m;
+	}
+
+	private void ApplyTreeKeyframes( RideObject obj, RideKeyframeFile kf, float clock )
+	{
+		// The tracks by object (a merged channel may carry several; the last of each kind wins).
+		var byObject = new Dictionary<int, RideKeyframeFile.SurfaceAnim>();
+		foreach ( var sa in kf.Surfaces )
+			if ( sa.SurfaceIndex < tree!.ObjectCount && (sa.Rotation.Count > 0 || sa.Scale.Count > 0 || sa.Translation.Count > 0) )
+				byObject[sa.SurfaceIndex] = sa;
+		if ( byObject.Count == 0 )
+			return;
+
+		Matrix4x4 Local( int i )
+		{
+			var bind = tree!.Local[i];
+			if ( !byObject.TryGetValue( i, out var sa ) )
+				return bind;
+			Matrix4x4.Decompose( bind, out var scl, out var rot, out var pos );
+			if ( sa.Rotation.Count > 0 )
+				rot = RideKeyframeFile.SampleRotation( sa.Rotation, TrackTime( clock, sa.Rotation[^1].Time, obj.AnimLoop ) );
+			if ( sa.Scale.Count > 0 )
+				scl = RideKeyframeFile.SampleVector( sa.Scale, TrackTime( clock, sa.Scale[^1].Time, obj.AnimLoop ), scl );
+			if ( sa.Translation.Count > 0 )
+				pos += RideKeyframeFile.SampleVector( sa.Translation, TrackTime( clock, sa.Translation[^1].Time, obj.AnimLoop ), System.Numerics.Vector3.Zero );
+			return Matrix4x4.CreateScale( scl ) * Matrix4x4.CreateFromQuaternion( rot ) * Matrix4x4.CreateTranslation( pos );
+		}
+
+		var world = new Matrix4x4[tree!.ObjectCount];
+		var done = new bool[tree.ObjectCount];
+		for ( int p = 0; p < obj.Parts.Count && p < tree.MeshCount; p++ )
+		{
+			// Only parts with something animated at or above them move.
+			bool moves = false;
+			for ( int a = p; a >= 0 && !moves; a = tree.Parent[a] )
+				moves = byObject.ContainsKey( a );
+			if ( !moves || !Matrix4x4.Invert( bindWorld![p], out var bindInverse ) )
+				continue;
+
+			var animated = tree.Local[p] * bindInverse * WorldOf( p, Local, world, done );
+			// Into the parts' frame (the loader's Y/Z swap) and onto the part's placement in the park.
+			var (entity, basePos, baseRot, baseScale) = obj.Parts[p];
+			var baseMatrix = Matrix4x4.CreateScale( baseScale.GetSystemVector3() ) * Matrix4x4.CreateFromQuaternion( baseRot )
+				* Matrix4x4.CreateTranslation( basePos.GetSystemVector3() );
+			if ( !Matrix4x4.Invert( SwapYZ * tree.Local[p] * SwapYZ, out var restInverse ) )
+				continue;
+			var final = SwapYZ * animated * SwapYZ * restInverse * baseMatrix;
+			if ( !Matrix4x4.Decompose( final, out var scale, out var rotation, out var position ) )
+				continue;
+			entity.Position = new Vector3( position.X, position.Y, position.Z );
+			entity.Rotation = rotation;
+			entity.Scale = new Vector3( scale.X, scale.Y, scale.Z );
+		}
+	}
+
 	// Vertex-morph: a global additive blend-shape over one combined vertex buffer (see
 	// docs/08-ghidra-animation.md). Resets each touched part to its rest pose, then writes the
 	// keyframed positions (model space → world Y/Z-swizzled, the same swizzle the loader applies to
@@ -1056,6 +1160,10 @@ public sealed class RideEngine : IRideEngine
 
 		foreach ( var sa in kf.Surfaces )
 		{
+			// A morph addresses its own mesh's positions (each written to that position's vertices); without the mesh's
+			// vertex order, fall back to one combined buffer across the parts.
+			int[][]? positions = obj.Id == SelfId && vertexOfPosition != null && sa.SurfaceIndex < vertexOfPosition.Count
+				&& sa.SurfaceIndex < obj.Parts.Count ? vertexOfPosition[sa.SurfaceIndex] : null;
 			foreach ( var m in sa.Morph )
 			{
 				if ( m.VertexSlots.Length == 0 || m.Times.Length == 0 )
@@ -1064,17 +1172,33 @@ public sealed class RideEngine : IRideEngine
 				var t = TrackTime( clock, m.Times[^1], obj.AnimLoop );
 				for ( int i = 0; i < m.VertexSlots.Length; i++ )
 				{
-					if ( !TryMapSlot( obj, m.VertexSlots[i], out var part, out var local ) )
-						continue;
-
-					if ( !touched[part] )
+					var p = m.Sample( i, t );
+					if ( positions != null )
 					{
-						ResetPartVerts( obj, part );
-						touched[part] = true;
+						int part = sa.SurfaceIndex;
+						var verts = obj.Parts[part].Entity.Model?.Vertices;
+						if ( verts == null || m.VertexSlots[i] >= positions.Length )
+							continue;
+						if ( !touched[part] )
+						{
+							ResetPartVerts( obj, part );
+							touched[part] = true;
+						}
+						foreach ( int v in positions[m.VertexSlots[i]] )
+							if ( v < verts.Length )
+								verts[v].Position = new Vector3( p.X, p.Z, p.Y );
+						continue;
 					}
 
-					var p = m.Sample( i, t );
-					obj.Parts[part].Entity.Model!.Vertices[local].Position = new Vector3( p.X, p.Z, p.Y );
+					if ( !TryMapSlot( obj, m.VertexSlots[i], out var slotPart, out var local ) )
+						continue;
+
+					if ( !touched[slotPart] )
+					{
+						ResetPartVerts( obj, slotPart );
+						touched[slotPart] = true;
+					}
+					obj.Parts[slotPart].Entity.Model!.Vertices[local].Position = new Vector3( p.X, p.Z, p.Y );
 				}
 			}
 		}

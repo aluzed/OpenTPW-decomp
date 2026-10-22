@@ -14,13 +14,15 @@ namespace OpenTPW;
 /// header but carry time-indexed animation <b>tracks</b> keyed to the base model's surfaces.
 ///
 /// <para>Layout (reverse-engineered from <c>FUN_0046d6d0</c> / <c>FUN_00470b60</c> /
-/// <c>FUN_00471860</c>): the dword at <c>0x98</c> points to a per-surface relink trailer — a count at
-/// <c>+0x12</c> and an array of <c>0x40</c>-byte records at <c>+0x2c</c>. Each record names a base
-/// surface (<c>+0x10</c>), a flags word (<c>+0x04</c>) selecting which tracks run, and file offsets to
-/// its translation (<c>+0x18</c>), rotation (<c>+0x1c</c>) and scale (<c>+0x20</c>) tracks. A track is
-/// a list of keyframes; each key starts with a <c>0xFFFF</c>-tagged dword whose low <c>u16</c> is the
-/// keyframe time, followed by the value (a 4-float <c>(w,x,y,z)</c> quaternion for rotation, a 3-float
-/// vec3 for translation/scale). Vertex-morph tracks (flag <c>0x1000</c>) are not yet decoded here.</para>
+/// <c>FUN_00471860</c>, corrected against the advisor's gestures — T-046): the dword at <c>0x98</c> points to a
+/// trailer — the length in frames at <c>+0x08</c>, a count at <c>+0x12</c> and an array of <c>0x40</c>-byte records
+/// at <c>+0x2c</c>. Each record has a flags word (<c>+0x04</c>) selecting which tracks run, the rotation and scale key
+/// counts (<c>+0x10</c> / <c>+0x12</c>), the object it moves (<c>+0x14</c>: the model's meshes, then its nodes — see
+/// <see cref="ModelHierarchy"/>), and file offsets to its translation (<c>+0x18</c>), rotation (<c>+0x1c</c>), scale
+/// (<c>+0x20</c>) and vertex-morph (<c>+0x28</c>) data. A key starts with a dword whose low <c>u16</c> is the frame;
+/// a rotation key is the object's whole local rotation — <c>(w,x,y,z)</c> with every key tagged <c>0xFFFF</c> in the
+/// older files, <c>(x,y,z,w)</c> with numbered keys (the last <c>0xFFFF</c>) in the newer. Morphs address the target
+/// mesh's positions.</para>
 /// </summary>
 public sealed class RideKeyframeFile
 {
@@ -112,9 +114,9 @@ public sealed class RideKeyframeFile
 	private void Parse( byte[] d )
 	{
 		// Bounds-checked little-endian readers — a malformed/short file yields no animation, never throws.
-		ushort U16( int o ) => o + 2 <= d.Length ? (ushort)(d[o] | (d[o + 1] << 8)) : (ushort)0;
-		uint U32( int o ) => o + 4 <= d.Length ? (uint)(d[o] | (d[o + 1] << 8) | (d[o + 2] << 16) | (d[o + 3] << 24)) : 0u;
-		float F32( int o ) => o + 4 <= d.Length ? BitConverter.ToSingle( d, o ) : 0f;
+		ushort U16( int o ) => o >= 0 && o + 2 <= d.Length ? (ushort)(d[o] | (d[o + 1] << 8)) : (ushort)0;
+		uint U32( int o ) => o >= 0 && o + 4 <= d.Length ? (uint)(d[o] | (d[o + 1] << 8) | (d[o + 2] << 16) | (d[o + 3] << 24)) : 0u;
+		float F32( int o ) => o >= 0 && o + 4 <= d.Length ? BitConverter.ToSingle( d, o ) : 0f;
 
 		if ( d.Length < 0x9c || U32( 0 ) != Magic )
 			return;
@@ -130,11 +132,19 @@ public sealed class RideKeyframeFile
 		if ( records <= 0 || count <= 0 || count > 4096 )
 			return;
 
-		// Tracks are laid out contiguously in the data region, so a track ends where the next one
-		// begins. Collect every track/data offset (each record's translation +0x18, rotation +0x1c,
-		// scale +0x20, vertex-morph +0x28) plus the trailer, so each track can be bounded by the next
-		// offset above it — the marker-and-monotonic-time scan alone would over-read identity tracks
-		// into adjacent record data (which can look like a valid key).
+		// Two generations of the format (T-046 / T-033): the older (the jungle monkey) tags every rotation key 0xFFFF
+		// and stores (w, x, y, z); the newer numbers its keys (the last one 0xFFFF) and stores (x, y, z, w). A rotation
+		// track of several keys whose first is already tagged 0xFFFF tells the older.
+		bool older = false;
+		for ( int i = 0; i < count && !older; i++ )
+		{
+			int rec = records + i * 0x40;
+			if ( (U32( rec + 0x04 ) & FlagRotation) != 0 && U16( rec + 0x10 ) > 1 && (U32( (int)U32( rec + 0x1c ) ) >> 16) == 0xFFFF )
+				older = true;
+		}
+
+		// Translation tracks carry no count: bound each by the next track's offset (every record's translation
+		// +0x18, rotation +0x1c, scale +0x20, vertex-morph +0x28, plus the trailer).
 		var bounds = new SortedSet<int> { trailer };
 		for ( int i = 0; i < count; i++ )
 		{
@@ -160,19 +170,45 @@ public sealed class RideKeyframeFile
 			if ( rec + 0x40 > d.Length )
 				break;
 
-			var anim = new SurfaceAnim { SurfaceIndex = U16( rec + 0x10 ), Flags = U32( rec + 0x04 ) };
+			// A record: flags +0x04, the rotation / scale key counts +0x10 / +0x12, the object it moves +0x14 (an index
+			// into the model's object tree — its meshes, then its nodes; see ModelHierarchy).
+			uint flags = U32( rec + 0x04 );
+			var anim = new SurfaceAnim { SurfaceIndex = U16( rec + 0x14 ), Flags = flags };
 
-			// A key's header dword is (marker << 16) | time: the high u16 is the interpolation-type
-			// marker — 0xFFFF for a rotation (quaternion) track, 0x0000 for a linear vec3 track
-			// (translation / scale). The low u16 is the keyframe time. A track is read until the next
-			// track offset, the marker mismatches, or the time stops increasing.
-			int transOff = (int)U32( rec + 0x18 ), rotOff = (int)U32( rec + 0x1c ), scaleOff = (int)U32( rec + 0x20 );
-			ReadTrack( d, transOff, NextBound( transOff ), 3, 0x0000, U32, F32, ( t, v ) => anim.Translation.Add( (t, new SVector3( v[0], v[1], v[2] )) ) );
-			// Rotation quaternion is stored (w, x, y, z); System.Numerics.Quaternion is (x, y, z, w).
-			ReadTrack( d, rotOff, NextBound( rotOff ), 4, 0xFFFF, U32, F32, ( t, v ) => anim.Rotation.Add( (t, Quaternion.Normalize( new Quaternion( v[1], v[2], v[3], v[0] ) )) ) );
-			ReadTrack( d, scaleOff, NextBound( scaleOff ), 3, 0x0000, U32, F32, ( t, v ) => anim.Scale.Add( (t, new SVector3( v[0], v[1], v[2] )) ) );
+			if ( (flags & FlagRotation) != 0 )
+			{
+				int keys = U16( rec + 0x10 ), o = (int)U32( rec + 0x1c );
+				for ( int k = 0; k < keys && k < 1024 && o > 0 && o + 20 <= d.Length; k++, o += 20 )
+				{
+					float t = U32( o ) & 0xFFFF;
+					if ( anim.Rotation.Count > 0 && t < anim.Rotation[^1].Time )
+						break;
+					var q = older
+						? new Quaternion( F32( o + 8 ), F32( o + 12 ), F32( o + 16 ), F32( o + 4 ) )
+						: new Quaternion( F32( o + 4 ), F32( o + 8 ), F32( o + 12 ), F32( o + 16 ) );
+					anim.Rotation.Add( (t, Quaternion.Normalize( q )) );
+					if ( !older && (U32( o ) >> 16) == 0xFFFF )
+						break; // the newer format's last key
+				}
+			}
+			if ( (flags & FlagScale) != 0 )
+			{
+				int keys = U16( rec + 0x12 ), o = (int)U32( rec + 0x20 );
+				for ( int k = 0; k < keys && k < 1024 && o > 0 && o + 16 <= d.Length; k++, o += 16 )
+				{
+					float t = U32( o ) & 0xFFFF;
+					if ( anim.Scale.Count > 0 && t < anim.Scale[^1].Time )
+						break;
+					anim.Scale.Add( (t, new SVector3( F32( o + 4 ), F32( o + 8 ), F32( o + 12 ) )) );
+				}
+			}
+			if ( (flags & FlagTranslation) != 0 )
+			{
+				int transOff = (int)U32( rec + 0x18 );
+				ReadTrack( d, transOff, NextBound( transOff ), 3, 0x0000, U32, F32, ( t, v ) => anim.Translation.Add( (t, new SVector3( v[0], v[1], v[2] )) ) );
+			}
 
-			if ( (anim.Flags & FlagVertexMorph) != 0 )
+			if ( (flags & FlagVertexMorph) != 0 )
 				anim.Morph.AddRange( ReadMorph( d, (int)U32( rec + 0x28 ) ) );
 
 			if ( anim.HasAnimation )
@@ -180,10 +216,13 @@ public sealed class RideKeyframeFile
 				surfaces.Add( anim );
 				foreach ( var k in anim.Rotation ) Duration = MathF.Max( Duration, k.Time );
 				foreach ( var k in anim.Translation ) Duration = MathF.Max( Duration, k.Time );
-				foreach ( var k in anim.Scale ) Duration = MathF.Max( Duration, k.Time );
 				foreach ( var m in anim.Morph ) if ( m.Times.Length > 0 ) Duration = MathF.Max( Duration, m.Times[^1] );
 			}
 		}
+
+		// The animation's own length (frames) when it gives one: a constant scale track may run past it.
+		if ( U32( trailer + 0x08 ) is var length and > 0 and < 100000 )
+			Duration = length;
 	}
 
 	// Parses a vertex-morph block (see docs/08): a bounding-box scale/offset header and a count of
