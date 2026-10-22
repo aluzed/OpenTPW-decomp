@@ -142,7 +142,7 @@ internal sealed class ItemInfoWindow : GameWindow
 	{
 		if ( EditableHeading( ride.Name, 460f, 44f, ride.IsSideshow ? 37 : 3 ) )
 			RenameDialog.Open( Localization.Get( UIStrings.RenameItem, "Rename Item" ), Localization.Get( UIStrings.Name, "Name" ), ride.Name,
-				name => { ride.Name = name; ride.Renamed = true; } );
+				name => { ride.Name = name; ride.Renamed = true; ride.RefreshSign(); } );
 		ItemPreview.For( ride.Archive, Path.GetFileName( ride.Archive ) )?.Draw( Preview );
 		Text( Small, ride.IsBroken ? "Broken down!" : ride.Riders > 0 ? $"{ride.Riders} riding" : "", 261f, 250f, 11f,
 			ride.IsBroken ? LockedInk : default, TextAlign.Center );

@@ -831,6 +831,7 @@ public class Level
 					{
 						ride.Name = title;
 						ride.Renamed = true;
+						ride.RefreshSign();
 					}
 					if ( p.Queue is { Count: >= 2 } queue )
 						ride.QueuePath?.Restore( Enumerable.Range( 0, queue.Count / 2 ).Select( i => (queue[2 * i], queue[2 * i + 1]) ) );
@@ -1282,6 +1283,7 @@ public class Level
 			{
 				ride.Name = title;
 				ride.Renamed = true;
+				ride.RefreshSign();
 			}
 			ride.SeatLimit = moved.Seats;
 			if ( moved.Closed )

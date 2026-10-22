@@ -806,6 +806,28 @@ public class Ride : Entity
 		return Texture.Missing;
 	}
 
+	// The materials showing the name board, with their texture slots (see RefreshSign).
+	private readonly List<(Material Material, Texture[] Slots)> signSlots = new();
+
+	/// <summary>Repaint the ride's name board with its current <see cref="Entity.Name"/> (after a rename).</summary>
+	public void RefreshSign()
+	{
+		if ( signSlots.Count == 0 )
+			return;
+		var board = RideSign.For( Name );
+		foreach ( var (material, slots) in signSlots )
+		{
+			for ( int i = 0; i < slots.Length; i++ )
+				if ( RideSign.IsSignTexture( slots[i] ) )
+					slots[i] = board;
+			var bound = new Texture[MaterialSlots.Count];
+			for ( int i = 0; i < bound.Length; i++ )
+				bound[i] = i < slots.Length ? slots[i] : Texture.Missing;
+			material.Set( "Color", bound );
+		}
+		Log.Info( $"[ride] '{Name}': name board repainted ({signSlots.Count} part(s))" );
+	}
+
 	private List<ModelEntity> BuildMeshEntities( string md2Path, string rideArchive )
 	{
 		var modelFile = new ModelFile( md2Path );
@@ -863,6 +885,10 @@ public class Ride : Entity
 			// rest (static floor tiles in practice) are extra entities the ride owns.
 			var models = MaterialSlots.BuildModels( [.. vertices], mesh.Indices, textures,
 				() => new Material<ObjectUniformBuffer>( "content/shaders/test.shader" ) );
+			// Remember where the name board is drawn, to repaint it when the ride is renamed (a mesh of up to 16
+			// materials is one model, its slots the mesh's textures in order).
+			if ( models.Count == 1 && sign != null && textures.Contains( sign ) )
+				signSlots.Add( (models[0].Material, textures.ToArray()) );
 			Matrix4x4.Decompose( mesh.TransformMatrix, out var scl, out var rot, out var pos );
 
 			// Placement rotation (T-041): spin the whole ride about its footprint centre (= Position) by

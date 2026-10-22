@@ -20,8 +20,21 @@ public static class RideSign
 	public static bool IsSignMaterial( string materialName ) =>
 		materialName.Trim( '\0', ' ' ) is var n && (n.Equals( "sign1", StringComparison.OrdinalIgnoreCase ) || n.Equals( "sign2", StringComparison.OrdinalIgnoreCase ));
 
+	// The boards made so far, so a repaint can tell them among a material's textures.
+	private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<Texture, object> boards = new();
+
+	/// <summary>Whether <paramref name="texture"/> is a name board made by <see cref="For"/>.</summary>
+	public static bool IsSignTexture( Texture texture ) => boards.TryGetValue( texture, out _ );
+
 	/// <summary>The sign texture for <paramref name="name"/> (falls back to a blank board without the font).</summary>
 	public static Texture For( string name )
+	{
+		var board = Make( name );
+		boards.AddOrUpdate( board, true );
+		return board;
+	}
+
+	private static Texture Make( string name )
 	{
 		try
 		{
