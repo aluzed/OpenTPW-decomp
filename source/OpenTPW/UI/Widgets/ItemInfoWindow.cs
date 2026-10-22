@@ -152,6 +152,8 @@ internal sealed class ItemInfoWindow : GameWindow
 		StatRow( Localization.Get( UIStrings.Age, "Age" ), $"{ride.AgeDays} days" );
 		StatRow( Localization.Get( UIStrings.Excitement, "Excitement" ), null, ride.Excitement / 100f );
 		StatRow( Localization.Get( UIStrings.Reliability, "Reliability" ), null, ride.Reliability );
+		if ( !ride.IsSideshow && ride.Upgrades.Count > 1 )
+			StatRow( Localization.Get( UIStrings.Upgrades, "Upgrades" ), $"level {ride.UpgradeLevel + 1} / {ride.Upgrades.Count}" );
 		if ( ride.IsResearching )
 			StatRow( "Upgrade research", null, ride.ResearchFraction );
 		StatRow( Localization.Get( UIStrings.ScrapValue, "Scrap value" ), $"$ {ride.BuildCost * Ride.SellRefundFraction:0}" );
@@ -169,19 +171,19 @@ internal sealed class ItemInfoWindow : GameWindow
 		else
 		{
 			// Fewer seats, shorter waits to fill a cycle (the original's capacity box); up to the upgrade's capacity.
-			SettingBox( 0, $"Capacity : {ride.Capacity} / {ride.MaxCapacity}", maxCapacity > 0 ? (float)ride.Capacity / maxCapacity : 1f,
+			// The original's three boxes: speed, capacity, duration.
+			SettingBox( 0, $"Speed : {ride.SpeedScale * 100f:0} %", (ride.SpeedScale - 0.5f) / 1.5f,
+				ride.SpeedScale > 0.5f ? () => ride.SpeedScale -= 0.25f : null, ride.SpeedScale < 2f ? () => ride.SpeedScale += 0.25f : null );
+			SettingBox( 1, $"Capacity : {ride.Capacity} / {ride.MaxCapacity}", maxCapacity > 0 ? (float)ride.Capacity / maxCapacity : 1f,
 				ride.Capacity > 1 ? () => ride.SeatLimit = ride.Capacity - 1 : null,
 				ride.Capacity < ride.MaxCapacity ? () => ride.SeatLimit = ride.Capacity + 1 >= ride.MaxCapacity ? null : ride.Capacity + 1 : null );
 			// Longer rides, fewer riders an hour (the original's duration box).
-			SettingBox( 1, $"Duration : {ride.RideDuration:0} secs", (ride.DurationScale - 0.5f) / 2.5f,
+			SettingBox( 2, $"Duration : {ride.RideDuration:0} secs", (ride.DurationScale - 0.5f) / 2.5f,
 				() => ride.DurationScale -= 0.25f, () => ride.DurationScale += 0.25f );
 		}
 		if ( ride.IsSideshow )
 			SettingBox( 2, $"Price : $ {ride.TicketPrice:0}", Math.Clamp( ride.TicketPrice / 20f, 0f, 1f ),
 				() => ride.TicketPrice = Math.Max( 1f, ride.TicketPrice - 1f ), () => ride.TicketPrice += 1f );
-		else
-			SettingBox( 2, $"Level : {ride.UpgradeLevel + 1} / {Math.Max( 1, ride.Upgrades.Count )}",
-				ride.Upgrades.Count > 0 ? (ride.UpgradeLevel + 1f) / ride.Upgrades.Count : 1f );
 
 		if ( RoundButton( Action( 143f ), "b_delete_login", hint: 15 ) )
 			build.SellSelected();

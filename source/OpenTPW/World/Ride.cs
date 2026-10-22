@@ -137,9 +137,27 @@ public class Ride : Entity
 	}
 	private float durationScale = 1f;
 
-	/// <summary>How exciting the ride is (<c>UsageInfo.ExcitementLevel</c>) — its draw: peeps pick rides
-	/// weighted by this, so more exciting rides build longer queues.</summary>
-	public int Excitement { get; private set; } = 50;
+	/// <summary>How exciting the ride is (<c>UsageInfo.ExcitementLevel</c>, more or less with its speed) — its draw:
+	/// peeps pick rides weighted by this, so more exciting rides build longer queues.</summary>
+	public int Excitement
+	{
+		get => Math.Clamp( (int)MathF.Round( baseExcitement * (0.6f + 0.4f * SpeedScale) ), 1, 100 );
+		private set => baseExcitement = value;
+	}
+	private int baseExcitement = 50;
+
+	/// <summary>The ride's speed (the ride window's speed box, UIHELPTEXT 5), 0.5–2: it runs its motion that much
+	/// faster, is more exciting for it, and wears out faster.</summary>
+	public float SpeedScale
+	{
+		get => speedScale;
+		set
+		{
+			speedScale = Math.Clamp( value, 0.5f, 2f );
+			engine.BodySpeed = speedScale;
+		}
+	}
+	private float speedScale = 1f;
 
 	// Ride rating (T-050): a running average of how satisfied riders were (0..100), seeded from Excitement.
 	// Peeps weight their ride choice by this, and it feeds back into park rating via rider happiness. A
@@ -250,7 +268,7 @@ public class Ride : Entity
 	// dev breakdowns" — every ride broke after 25 s of use and one mechanic couldn't keep up, so most rides stood
 	// broken beside their lines and a 250-visitor park managed ~1 ride per visitor in 2½ minutes.
 	private const float WearPerRatePoint = 0.0008f; // reliability lost per second of use per WearRate point
-	internal float WearPerSecond => WearPerRatePoint * (upgrades.Count > 0 ? upgrades[Math.Min( UpgradeLevel, upgrades.Count - 1 )].WearRate : DefaultWearRates[0]);
+	internal float WearPerSecond => WearPerRatePoint * SpeedScale * (upgrades.Count > 0 ? upgrades[Math.Min( UpgradeLevel, upgrades.Count - 1 )].WearRate : DefaultWearRates[0]);
 
 	/// <summary>Mechanical condition, 1 = perfect, 0 = broken down.</summary>
 	public float Reliability { get; private set; } = 1f;

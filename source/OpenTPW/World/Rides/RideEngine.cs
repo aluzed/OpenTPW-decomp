@@ -822,6 +822,9 @@ public sealed class RideEngine : IRideEngine
 		GoIdle( body );
 	}
 
+	/// <summary>How much faster than authored the body runs its motion (the ride's speed setting).</summary>
+	public float BodySpeed { get; set; } = 1f;
+
 	private bool bodyBuilt; // the body's Create has played
 	private int bodyLoopAnim = -1;
 	private int bodyIdleAnim = -1;
@@ -945,7 +948,7 @@ public sealed class RideEngine : IRideEngine
 				continue;
 
 			var anim = obj.AnimId.Value;
-			var t = ( now - obj.AnimStart ) * obj.AnimSpeed;
+			var t = ( now - obj.AnimStart ) * obj.AnimSpeed * ( obj.Id == SelfId ? BodySpeed : 1f );
 			if ( !obj.AnimLoop && t > DurationOf( anim ) )
 			{
 				// The ride body steps through its boarding/unloading cycle: when a one-shot stage
