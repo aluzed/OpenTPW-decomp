@@ -1083,6 +1083,7 @@ public sealed class Peep : ModelEntity
 	private void StinkBomb()
 	{
 		StinkBombs++;
+		Advisor.Notice( "PrankStinkBomb" ); // "Some prankster has left a stink bomb in your park. …"
 		ParticleEmitter.World.Spawn( YellowStinkEffect, Position + Vector3.Up * 3f );
 		float r2 = StinkRadius * StinkRadius;
 		foreach ( var e in Entity.All )

@@ -50,6 +50,7 @@ public static class AdvisorTips
 		["SideshowsSlimChances"] = "Visitors think their chances of winning some of your sideshows are too slim.",
 		["ParkNowOpen"] = "Your park is now open.",
 		["ParkNowClosed"] = "Your park is now closed.",
+		["PrankStinkBomb"] = "Some prankster has left a stink bomb in your park. Get it cleaned up before too many people get ill.",
 		["SideshowsBuildSideshows"] = "Your park has no sideshows yet.",
 		["FeaturesNoToilets"] = "Your park needs some toilets.",
 		["ShopsBuildMoreShops"] = "A park this size should have more shops.",
@@ -116,6 +117,7 @@ public static class AdvisorTips
 		["SideshowsCheapPrizes"] = 112,    // "… some of your sideshow prizes are too cheap. …"
 		["SideshowsSlimChances"] = 113,    // "… their chances of winning some of your sideshows are too slim. …"
 		["ParkNowOpen"] = 149, ["ParkNowClosed"] = 150, // "Your park is now open." / "… closed."
+		["PrankStinkBomb"] = 146,          // "Some prankster has left a stink bomb in your park. …"
 		// Research: hire scientists (21: most rides built, 22: all built) / research more rides (66).
 		["StaffHireResearchers1"] = 21, ["StaffHireResearchers2"] = 22, ["RidesResearchMore"] = 66,
 		["ShopsBuildMoreShops"] = 78,
