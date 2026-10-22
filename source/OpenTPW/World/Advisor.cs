@@ -443,6 +443,16 @@ public sealed class Advisor : Entity
 	{
 		var staff = Entity.All.OfType<Staff>().ToList();
 		int Hired( StaffRole r ) => staff.Count( s => s.Role == r );
+		// The attractions outside every patrol area of a job — only when all of its staff have one.
+		int Uncovered( StaffRole r, IEnumerable<Vector3> places )
+		{
+			var of = staff.Where( s => s.Role == r ).ToList();
+			if ( of.Count == 0 || of.Any( s => s.Zone == null ) )
+				return 0;
+			return places.Count( p => !of.Any( s => s.Zone!.Value.Contains( p ) ) );
+		}
+		IEnumerable<Vector3> Attractions() => Entity.All.OfType<Ride>().Where( r => !r.IsFeature ).Select( r => r.Position )
+			.Concat( Shop.Stalls.Select( s => s.Position ) );
 		int Unzoned( StaffRole r ) => staff.All( s => s.Role != r || !s.HasPatrolZone ) ? Hired( r ) : 0; // none zoned at all
 		var rides = Entity.All.OfType<Ride>().Where( r => !r.IsFeature ).ToList();
 		var recent = ParkFinances.Current?.RecentWagesAndIncome( (int)(config.Param( "WagesHigh", "AverageOverMonths" ) ?? 3f) ) ?? (0f, 0f);
@@ -463,6 +473,10 @@ public sealed class Advisor : Entity
 			ShopsToResearch: ToResearch( BuildCategory.Shops ), SideshowsToResearch: ToResearch( BuildCategory.Sideshows ),
 			FeatureKindsAvailable: Kinds( BuildCategory.Features, available: true ), FeatureKindsBuilt: Kinds( BuildCategory.Features, available: false ),
 			FeaturesToResearch: ToResearch( BuildCategory.Features ),
+			UncoveredByMechanics: Uncovered( StaffRole.Mechanic, rides.Select( r => r.Position ) ),
+			UncoveredByHandymen: Uncovered( StaffRole.Handyman, Attractions() ),
+			UncoveredByGuards: Uncovered( StaffRole.Guard, Attractions() ),
+			UncoveredByEntertainers: Uncovered( StaffRole.Entertainer, Attractions() ),
 			Misbehaving: Peep.CountUnhappy(),
 			Days: GameClock.Current?.TotalDays ?? 0,
 			WaitingAtGate: Level.WaitingAtGate,

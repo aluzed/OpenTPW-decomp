@@ -57,7 +57,9 @@ public readonly record struct ParkFacilities(
 	int DevelopedCells = -1,
 	// Stalls, sideshows and scenery still to be researched (Shops / Sideshows / FeaturesResearchMore).
 	int ShopsToResearch = 0, int SideshowsToResearch = 0, int FeatureKindsAvailable = -1, int FeatureKindsBuilt = 0,
-	int FeaturesToResearch = 0 );
+	int FeaturesToResearch = 0,
+	// Attractions outside every patrol area of a job whose staff all have one (TAG_SYSTEM 25 / 27 / 30 / 32).
+	int UncoveredByMechanics = 0, int UncoveredByHandymen = 0, int UncoveredByGuards = 0, int UncoveredByEntertainers = 0 );
 
 /// <summary>
 /// Maps the live park state to advisor message candidates — <c>(id, group, score)</c> for the
@@ -278,6 +280,12 @@ public static class AdvisorAdvice
 			("StaffZoneGuards", f.UnzonedGuards), ("StaffZoneEntertainers", f.UnzonedEntertainers) } )
 			if ( count >= UnzonedEnough )
 				Add( id, P( id, "Score", 40f ) );
+
+		// Every one of a job zoned, yet attractions outside all their areas: "parts of your park without a … patrolling".
+		foreach ( var (id, count) in new[] { ("StaffUncoveredMechanics", f.UncoveredByMechanics), ("StaffUncoveredHandymen", f.UncoveredByHandymen),
+			("StaffUncoveredGuards", f.UncoveredByGuards), ("StaffUncoveredEntertainers", f.UncoveredByEntertainers) } )
+			if ( count > 0 )
+				Add( id, P( id, "Score", 35f ) + 5f * (count - 1) );
 
 		// The shop and sideshow settings (the windows' sliders): what visitors complain about.
 		foreach ( var (id, count) in new[] { ("ShopsPoorFood", f.PoorFood), ("ShopsPoorGoods", f.PoorGoods), ("ShopsTooFatty", f.Fatty),

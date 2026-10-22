@@ -55,6 +55,10 @@ public static class AdvisorTips
 		["FeaturesFarToToilets"] = "Some visitors are having to walk miles to a toilet. Perhaps you should build some more?",
 		["StaffHireHandymen3"] = "Your park is filthy because you don't have enough cleaners. You should hire some more.",
 		["ShopsResearchMore"] = "You've built all your shops. You could get more by doing research.",
+		["StaffUncoveredMechanics"] = "There are parts of your park without a mechanic patrolling them.",
+		["StaffUncoveredHandymen"] = "Some areas of your park don't have a cleaner patrolling them.",
+		["StaffUncoveredGuards"] = "Some parts of the park don't have a guard patrolling them or even a security camera.",
+		["StaffUncoveredEntertainers"] = "There are areas of your park that aren't being patrolled by an entertainer.",
 		["SideshowsResearchMore"] = "All the available sideshows have now been built. Perhaps it's time to research some more?",
 		["FeaturesResearchMore"] = "All the available features have been built. Maybe you should research some more?",
 		["StaffHireGuards1"] = "The park is getting busy and you don't have any guards. Maybe you should hire some?",
@@ -143,6 +147,7 @@ public static class AdvisorTips
 		["FeaturesFarToToilets"] = 87,     // "Some visitors are having to walk miles to a toilet. …"
 		["StaffHireHandymen3"] = 16, ["StaffHireGuards1"] = 17, ["StaffHireGuards3"] = 19,
 		["ShopsResearchMore"] = 76, ["SideshowsResearchMore"] = 80, ["FeaturesResearchMore"] = 84,
+		["StaffUncoveredMechanics"] = 25, ["StaffUncoveredHandymen"] = 27, ["StaffUncoveredGuards"] = 30, ["StaffUncoveredEntertainers"] = 32,
 		// "You have employed the maximum number of … for a park … you'll have to train them."
 		["StaffMaxHandyman"] = 136, ["StaffMaxEntertainer"] = 138, ["StaffMaxMechanic"] = 140, ["StaffMaxGuard"] = 142,
 		["StaffMaxResearcher"] = 144,
