@@ -200,3 +200,7 @@ Follow-ups the same night:
   which has the bind pose, reads each track in the order that makes its first key the object's bind rotation.
 - The body's Create plays once, when it is placed: the script's later Create triggers are ignored (the totem kept
   rebuilding itself, its pole sunk while the construction morph ran).
+- Breakdowns play the ride's Break channel (held while broken), repairs its Repair channel; after a one-shot the
+  body goes back to its run or idle loop. A loaded park's rides and stalls don't replay their construction.
+- `KeyframePoser` (the same tree pose and morphs) animates the stalls (`<name>c` build once, then `m` / `i`) and the
+  windows' turning previews (`P<name>m`).
