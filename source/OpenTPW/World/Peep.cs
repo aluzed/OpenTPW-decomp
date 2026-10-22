@@ -282,6 +282,9 @@ public sealed class Peep : ModelEntity
 	public int Thought => CrowdThoughts.For( hunger / HungerThreshold, thirst / ThirstThreshold, bladder / BladderThreshold,
 		happiness, amidLitter, route != null && route.PositionOf( this ) >= LongQueue, illness / VomitCapacity );
 	private const int LongQueue = 12; // a place this far back in a line is "Queue too long"
+	private const float BoredAfter = 20f;        // seconds in line before it starts to drag
+	private const float QueueBoredomPerSec = 0.3f; // mood lost a second after that (an entertainer lifts 4–20)
+	private float queuedAt;
 
 	/// <summary>How many live visitors think each thought (by THOUGHTS.str index).</summary>
 	public static Dictionary<int, int> CrowdThoughtTally()
@@ -686,7 +689,13 @@ public sealed class Peep : ModelEntity
 			}
 			route.Enqueue( this );
 			pos = route.PositionOf( this );
+			queuedAt = Time.Now;
 		}
+
+		// A long wait bores (LongQueuesBoredVisitors): the mood slips after a while in line — an entertainer nearby
+		// lifts it more than that (Staff.DoEntertainer).
+		if ( Time.Now - queuedAt > BoredAfter )
+			happiness = MathF.Max( 0f, happiness - QueueBoredomPerSec * Time.Delta );
 
 		var standPt = route.StandPoint( pos );
 		bool atSpot = MoveTo( standPt );
