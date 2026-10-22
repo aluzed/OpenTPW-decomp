@@ -34,7 +34,12 @@ internal sealed class MinimapPanel : GameWindow
 	private static readonly Rectangle Ok = At( 712f, 410f, 42f, 42f );
 
 	/// <summary>Show / hide the map (the handheld's map button, or M).</summary>
-	public void Toggle() => IsOpen = !IsOpen;
+	public void Toggle()
+	{
+		IsOpen = !IsOpen;
+		if ( IsOpen )
+			Advisor.ShowProp( "map" ); // the advisor holds his map up
+	}
 	private bool wasToggleDown;
 
 	// The layers, toggled from the legend; each button's hint is "show …" (its index) or "hide …" (the next one).
@@ -107,7 +112,7 @@ internal sealed class MinimapPanel : GameWindow
 		// M toggles the whole minimap (edge-detected like the other overlays).
 		var toggle = Input.Keyboard.KeysDown.Contains( Key.M );
 		if ( toggle && !wasToggleDown )
-			IsOpen = !IsOpen;
+			Toggle();
 		wasToggleDown = toggle;
 
 		if ( !IsOpen || !Input.MouseLeftPressed )

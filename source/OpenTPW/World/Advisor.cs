@@ -594,6 +594,13 @@ public sealed class Advisor : Entity
 		part.Model.UploadVertices();
 	}
 
+	/// <summary>Bring out a prop with its gesture ("map" when the map window opens), unless he is busy gesturing.</summary>
+	public static void ShowProp( string prop )
+	{
+		if ( Current is { } advisor && advisor.gesture == null )
+			advisor.StartGesture( float.MaxValue, prop );
+	}
+
 	private GestureFile.Track? TrackOf( int index ) => gesture?.Tracks.FirstOrDefault( t => t.Target == index );
 
 	// Every mesh's placement for the gesture at `frame`, in the parts' terms (the loader's Y/Z swap): each object's
