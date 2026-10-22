@@ -79,6 +79,9 @@ Rebuilt on captures of the PC version (docs/10-ui-reference.md) and `ui.wad`'s o
 - The queue tool (ride window's queue button): lay the queue a piece at a time in any direction from its open end,
   with the world's straights, bend and open end; saved with the park.
 
-Still to do: the advisor's gesture animations (`Advisor_<theme>m*.MD2` — the ride keyframe container but with extra
-record types, addressed against the global 25-mesh model; see T-046) and the exact UI camera (positions are
-measured, not read from `tp.exe`).
+- The advisor gestures as he speaks (head, hands and fingers, blinks, the golden ticket; T-046).
+- Also: renaming (rides, stalls, staff, the park), sortable / filtered lists, locate, follow, the park gates window,
+  the map's twelve layers, the loans' two lists, the finance graph's eight series, picking research and the
+  scientists' work rate, the game's hover hints in the park.
+
+Still to do: the exact UI camera (positions are measured, not read from `tp.exe`).

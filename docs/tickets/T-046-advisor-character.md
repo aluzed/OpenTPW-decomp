@@ -203,7 +203,7 @@ file offset; its matrix (`+0x10`) is local to the parent. The jungle advisor: ro
 → neck node 25 → eyes, mouths, hat, and the shoulder nodes 26 / 27 → the hands (14 / 15).
 
 A record (`GestureFile`): flags `+0x04` (`0x8` rotation, `0x80` scale, `0x20000` visibility; `0x1` translation is
-all zeros for him, `0x1000` / `0x2000` hand morphs not read), `+0x10` / `+0x12` the rotation / scale key counts,
+all zeros for him, `0x1000` the gloves' finger morphs, in the rides' vertex-morph format by mesh position; `0x2000` not read), `+0x10` / `+0x12` the rotation / scale key counts,
 `+0x14` the object. Rotation keys are 20 bytes, `(index << 16 | frame)` with the last index `0xFFFF`, then the
 object's whole local rotation as `(x, y, z, w)` — the first key is the bind pose (the right hand's matrix is exactly
 m1's first key). Scale keys are 16 bytes. Visibility is a list of signed u16 frames, `+f` shown / `−f` hidden: his
