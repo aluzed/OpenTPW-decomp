@@ -160,6 +160,8 @@ internal sealed class ItemInfoWindow : GameWindow
 		StatRow( Localization.Get( UIStrings.Age, "Age" ), $"{ride.AgeDays} days" );
 		StatRow( Localization.Get( UIStrings.Excitement, "Excitement" ), null, ride.Excitement / 100f );
 		StatRow( Localization.Get( UIStrings.Reliability, "Reliability" ), null, ride.Reliability );
+		if ( ride.Queue is { } queue )
+			StatRow( "Queue", $"{queue.LineLength} / {Math.Max( 1, queue.Waypoints.Count - 1 ) * RideQueue.PeepsPerCell}{(queue.IsFull ? "  full" : "")}" );
 		if ( !ride.IsSideshow && ride.Upgrades.Count > 1 )
 			StatRow( Localization.Get( UIStrings.Upgrades, "Upgrades" ), $"level {ride.UpgradeLevel + 1} / {ride.Upgrades.Count}" );
 		if ( ride.IsResearching )
