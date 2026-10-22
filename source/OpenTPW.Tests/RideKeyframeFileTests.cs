@@ -276,6 +276,25 @@ public class RideKeyframeFileTests
 	}
 
 	[TestMethod]
+	public void AnObjectsVariantsPlayOnePerPass()
+	{
+		// Two files moving object 5 (variants) and one moving object 7 (always on).
+		var kf = new RideKeyframeFile( BuildFrame( 5, new[] { (0, RotZ( 0 )), (50, RotZ( 90 )) } ) );
+		kf.AddVariant( new RideKeyframeFile( BuildFrame( 5, new[] { (0, RotZ( 0 )), (50, RotZ( 180 )) } ) ) );
+		kf.AddVariant( new RideKeyframeFile( BuildFrame( 7, new[] { (0, RotZ( 0 )), (50, RotZ( 45 )) } ) ) );
+		var (first, second, other) = (kf.Surfaces[0], kf.Surfaces[1], kf.Surfaces[2]);
+
+		Assert.IsTrue( KeyframePoser.Playing( first, kf, 10f, loop: true, out var t ) );
+		Assert.AreEqual( 10f, t );
+		Assert.IsFalse( KeyframePoser.Playing( second, kf, 10f, loop: true, out _ ) );
+		Assert.IsTrue( KeyframePoser.Playing( second, kf, 60f, loop: true, out t ), "the second pass plays the second variant" );
+		Assert.AreEqual( 10f, t );
+		Assert.IsTrue( KeyframePoser.Playing( other, kf, 60f, loop: true, out _ ), "an object with one track always plays it" );
+		Assert.IsTrue( KeyframePoser.Playing( first, kf, 60f, loop: false, out t ), "a one-shot plays the first, held at its end" );
+		Assert.AreEqual( 50f, t );
+	}
+
+	[TestMethod]
 	public void EmptyOrBadDataYieldsNoAnimation()
 	{
 		Assert.AreEqual( 0, new RideKeyframeFile( new byte[0x20] ).Surfaces.Count );      // too short / no magic
