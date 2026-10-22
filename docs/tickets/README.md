@@ -45,6 +45,13 @@ All format/VM decoding and the core gameplay loop are done. Open work falls into
   own ride sounds (T-047); the game's lip-sync viseme choice (T-020); a bankrupt end screen (T-042); the original's
   icons on the HUD (T-065); faster loads (T-030); no memory leak in a 15-minute soak (T-075); the original's exact ground blend (T-071); the advisor's own voice per message (T-046); tour rides fly the original's flight sim (T-048).
   The original in-game HUD and windows (T-065, `ui.wad` art, measured on captures of the PC version, docs/10).
+- **2026-10-22 night pass**: the rest of the original's windows and tools (T-065) — the queue builder, renaming,
+  sortable / filtered lists, locate / follow, the park gates, the map's twelve layers, two-tab loans, eight finance
+  series, staff training budgets, research picks and work rate, ride speed / seats, toilets calling a cleaner, the
+  game's hover hints. The advisor's **gestures** decoded and played (T-046: the model's object tree, rotation /
+  scale / visibility / finger-morph tracks). That decoding corrected the **ride keyframe records** (T-033: object at
+  `+0x14`, key counts, whole local rotations in two quaternion orders, per-mesh morphs, variants, Break / Repair),
+  and `KeyframePoser` now animates the rides, stalls, scenery, window previews and the lobby (islands, gates, bats).
 - **Blocked / deferred** (need an external sample or have no consumer): **T-017** (`SAD_*` save stream —
   no sample), **T-022** (EA-ADPCM mono waveform — no sample), **T-021** (`.TQI` exact dequant — decoder
   already renders correctly). *(T-019 `.PLB` field labels — now **done**: the spawn path reads the record
