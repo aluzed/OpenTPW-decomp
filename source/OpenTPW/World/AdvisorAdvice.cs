@@ -46,7 +46,9 @@ public readonly record struct ParkFacilities(
 	// The shop and sideshow windows' settings gone too far (TAG_SYSTEM 104-113): stalls of poor quality food or goods,
 	// too much fat / salt / ice / sugar or too little sugar, prizes too cheap, chances too slim.
 	int PoorFood = 0, int PoorGoods = 0, int Fatty = 0, int Salty = 0, int Icy = 0, int TooSweet = 0, int NotSweet = 0,
-	int CheapPrizes = 0, int SlimChances = 0 );
+	int CheapPrizes = 0, int SlimChances = 0,
+	// Staff left to roam the whole park, by role, among roles with at least three hired (TAG_SYSTEM 24 / 26 / 29 / 31).
+	int UnzonedMechanics = 0, int UnzonedHandymen = 0, int UnzonedGuards = 0, int UnzonedEntertainers = 0 );
 
 /// <summary>
 /// Maps the live park state to advisor message candidates — <c>(id, group, score)</c> for the
@@ -89,6 +91,9 @@ public static class AdvisorAdvice
 	private const float GoldenTicketScore = 200f, ChallengeWonScore = 90f, ChallengeLostScore = 70f;
 
 	/// <summary>The candidate tips justified by <paramref name="s"/>, scored via <paramref name="c"/>.</summary>
+	// How many of a job left without a patrol area are worth the patrol-area advice.
+	private const int UnzonedEnough = 3;
+
 	public static List<(string Id, int Group, float Score)> Evaluate( ParkSnapshot s, AdvisorConfig c )
 	{
 		var list = new List<(string, int, float)>();
@@ -215,6 +220,12 @@ public static class AdvisorAdvice
 		// Full queues (LongQueuesBoredVisitors; Advisor.sam gives it no parameters): shorter rides, or an entertainer.
 		if ( f.FullQueues > 0 )
 			Add( "LongQueuesBoredVisitors", P( "LongQueuesBoredVisitors", "Score", 60f ) + 10f * (f.FullQueues - 1) );
+
+		// Three or more of a job and none given a patrol area: "they'd be more efficient if you set their patrol areas".
+		foreach ( var (id, count) in new[] { ("StaffZoneMechanics", f.UnzonedMechanics), ("StaffZoneHandymen", f.UnzonedHandymen),
+			("StaffZoneGuards", f.UnzonedGuards), ("StaffZoneEntertainers", f.UnzonedEntertainers) } )
+			if ( count >= UnzonedEnough )
+				Add( id, P( id, "Score", 40f ) );
 
 		// The shop and sideshow settings (the windows' sliders): what visitors complain about.
 		foreach ( var (id, count) in new[] { ("ShopsPoorFood", f.PoorFood), ("ShopsPoorGoods", f.PoorGoods), ("ShopsTooFatty", f.Fatty),

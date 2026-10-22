@@ -406,6 +406,7 @@ public sealed class Advisor : Entity
 	{
 		var staff = Entity.All.OfType<Staff>().ToList();
 		int Hired( StaffRole r ) => staff.Count( s => s.Role == r );
+		int Unzoned( StaffRole r ) => staff.All( s => s.Role != r || !s.HasPatrolZone ) ? Hired( r ) : 0; // none zoned at all
 		var rides = Entity.All.OfType<Ride>().Where( r => !r.IsFeature ).ToList();
 		var recent = ParkFinances.Current?.RecentWagesAndIncome( (int)(config.Param( "WagesHigh", "AverageOverMonths" ) ?? 3f) ) ?? (0f, 0f);
 		return new ParkFacilities(
@@ -443,6 +444,8 @@ public sealed class Advisor : Entity
 			NotSweet: Dosing( ShopBuilding.Sugar ).Count( s => s.IngredientAmount < TooLittle ),
 			CheapPrizes: rides.Count( r => r.IsSideshow && r.SideshowCostOfGoods < CheapPrize ),
 			SlimChances: rides.Count( r => r.IsSideshow && r.SideshowChanceOfLoosing > SlimChance ),
+			UnzonedMechanics: Unzoned( StaffRole.Mechanic ), UnzonedHandymen: Unzoned( StaffRole.Handyman ),
+			UnzonedGuards: Unzoned( StaffRole.Guard ), UnzonedEntertainers: Unzoned( StaffRole.Entertainer ),
 			RideKindsAvailable: RideKinds( available: true ), RideKindsBuilt: RideKinds( available: false ),
 			RidesToResearch: BuildMode.Current?.Catalog.Count( c => c.Category == BuildCategory.Rides && !(ItemResearch.Current?.IsUnlocked( c.Name ) ?? true) ) ?? 0 );
 	}
