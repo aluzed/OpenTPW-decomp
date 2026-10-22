@@ -193,10 +193,24 @@ index**}. 610 responses: every advisor text has 2–3 recorded takes (e.g. text 
 the welcome plays). Advice the game never voiced keeps the level's `sp_001`. Verified in game: "StaffHireMechanics3"
 → `sp_032`/`sp_033`, "CongratVisitorsHappy" → `sp_405`/`sp_407`, "FeaturesNotEnoughToilets" → `sp_233`/`sp_234`.
 
-## Gestures (2026-10-22) — not decoded
+## Gestures (2026-10-22) — decoded and played
 
-Each advisor model ships its gestures next to it (`Advisor_<THEME>m1..20.MD2`, `Advisorm1..15.MD2`). They are not
-the ride keyframe format: read with `RideKeyframeFile` they yield surface indices past the model's 18 meshes
-(s22), denormal translations (6e-40) and every morph block starting at slots 50..51 — so the header/record layout
-differs. Playing them needs that format reversed first (the loader in `tp.exe`); left for later. The advisor stays
-in his rest pose (both gloves, smiling mouth), lip-synced.
+Each advisor model ships its gestures next to it (`Advisor_<THEME>m1..20.MD2`, `Advisorm1..15.MD2`). They keep the
+ride keyframe files' trailer (`0x98`; count `+0x12`, 0x40-byte records `+0x2c`, length in frames `+0x08`) but the
+records address the model's whole **object tree** (`ModelHierarchy`): the 18 meshes, then 11 nodes stored right
+after the mesh table (header `0x42` = 29 objects). Every mesh / node entry starts with a type word and its parent's
+file offset; its matrix (`+0x10`) is local to the parent. The jungle advisor: root node 24 (a −90° X turn) → Bug Head
+→ neck node 25 → eyes, mouths, hat, and the shoulder nodes 26 / 27 → the hands (14 / 15).
+
+A record (`GestureFile`): flags `+0x04` (`0x8` rotation, `0x80` scale, `0x20000` visibility; `0x1` translation is
+all zeros for him, `0x1000` / `0x2000` hand morphs not read), `+0x10` / `+0x12` the rotation / scale key counts,
+`+0x14` the object. Rotation keys are 20 bytes, `(index << 16 | frame)` with the last index `0xFFFF`, then the
+object's whole local rotation as `(x, y, z, w)` — the first key is the bind pose (the right hand's matrix is exactly
+m1's first key). Scale keys are 16 bytes. Visibility is a list of signed u16 frames, `+f` shown / `−f` hidden: his
+blink swaps the eyes (1, 2) for the shut ones (3, 4). Each segment also has an 8-byte easing table (`+0x34`), not
+used: keys are slerped. Frames run at 30 a second.
+
+The advisor now poses his tree every frame (the root's turn left out, the loader's Y/Z swap standing in for it, so
+the bind pose is exactly the old look) and plays a gesture as he speaks — one no longer than the clip — and a short
+one now and then between tips. Gestures that bring out a prop (the golden ticket: m18–20; the map: m16) only go
+with the advice about it. `OPENTPW_ADVISOR_GESTURE=n` loops gesture n.

@@ -11,6 +11,9 @@ namespace OpenTPW;
 /// the one matching the current viseme and hide the other four. The viseme is driven from a real speech
 /// clip + its companion <c>.LIP</c> (the timing wired in T-020). The advisor is anchored upright in front
 /// of the camera so it reads as a corner overlay. Enabled by <c>OPENTPW_ADVISOR_DEMO=1</c>.
+/// He gestures as he speaks, and now and then between tips: the model's object tree (<see cref="ModelHierarchy"/>:
+/// his neck and shoulders are nodes above the meshes) is posed from one of his <c>m*.MD2</c> gestures
+/// (<see cref="GestureFile"/>), which also blink his eyes and bring out the ticket or the map.
 /// </summary>
 public sealed class Advisor : Entity
 {
@@ -36,7 +39,17 @@ public sealed class Advisor : Entity
 		public Vector3 LocalScale;
 		public bool AlwaysShown;
 		public MouthShape? Viseme; // set for the five "Mouth - *" parts
+		public int Mesh;           // its number in the model's object tree
 	}
+
+	// The model's object tree and his gestures; the one playing (null: at rest) and when it started.
+	private ModelHierarchy? tree;
+	private readonly List<GestureFile> gestures = new();
+	// The props a gesture brings out (the golden ticket, the map): such gestures go with the advice about them only.
+	private readonly Dictionary<GestureFile, string> gestureProp = new();
+	private GestureFile? gesture;
+	private float gestureStart, nextIdleGesture = 6f;
+	private const float IdleGestureMin = 8f, IdleGestureMax = 16f, IdleGestureLongest = 2.5f;
 
 	private readonly List<Part> parts = new();
 	private LipSyncFile? lip;
@@ -90,17 +103,31 @@ public sealed class Advisor : Entity
 			var theme = Level.Current?.Name ?? "";
 			string? themed = theme.Length >= 3 && Level.Current?.InPark == true ? $"Advisor_{theme[..3].ToUpperInvariant()}.MD2" : null; // the lobby's is the plain one
 			var themeWad = Path.Join( GameDir.GamePath, "data", "levels", theme, "advisor.wad" );
+			WadArchive wad;
+			string name;
 			if ( themed != null && File.Exists( themeWad ) && new WadArchive( themeWad ) is var levelWad
 				&& levelWad.GetFile( themed ) is { } themedFile )
 			{
-				model = new ModelFile( new MemoryStream( themedFile.GetData() ) );
+				(wad, name) = (levelWad, themed);
 				themeTextures = $"levels/{theme}/advisor/textures";
 			}
 			else
-			{
-				var wad = new WadArchive( Path.Join( GameDir.GamePath, "data", "global", "advisor.wad" ) );
-				model = new ModelFile( new MemoryStream( wad.GetFile( "Advisor.MD2" ).GetData() ) );
-			}
+				(wad, name) = (new WadArchive( Path.Join( GameDir.GamePath, "data", "global", "advisor.wad" ) ), "Advisor.MD2");
+			var bytes = wad.GetFile( name ).GetData();
+			model = new ModelFile( new MemoryStream( bytes ) );
+			tree = ModelHierarchy.Read( bytes );
+			// His gestures sit beside him: Advisor_JUNm1..20.MD2, Advisorm1..15.MD2.
+			var stem = Path.GetFileNameWithoutExtension( name );
+			for ( int n = 1; n <= 30; n++ )
+				if ( wad.GetFile( $"{stem}m{n}.MD2" ) is { } file && new GestureFile( file.GetData() ) is { Tracks.Count: > 0 } g )
+					gestures.Add( g );
+			foreach ( var g in gestures )
+				foreach ( var t in g.Tracks )
+					if ( t.Target < model.Meshes.Count && (t.Visibility.Any( v => v.Visible ) || t.Scale.Count > 0 || t.Rotation.Count > 0)
+						&& model.Meshes[t.Target].Name.Replace( "\0", "" ).Trim() is var part
+						&& (part.Contains( "ticket", StringComparison.OrdinalIgnoreCase ) || part.Contains( "map", StringComparison.OrdinalIgnoreCase )) )
+						gestureProp[g] = part.Contains( "map", StringComparison.OrdinalIgnoreCase ) ? "map" : "ticket";
+			Log.Info( $"[advisor] {gestures.Count} gesture(s) ({gestureProp.Count} with a prop), tree of {tree?.ObjectCount ?? 0} object(s)" );
 			Log.Info( $"[advisor] {themed ?? "Advisor.MD2"} loaded: {model.Meshes.Count} mesh(es): {string.Join( ", ", model.Meshes.Select( m => m.Name.Trim( '\0', ' ' ) ) )}" );
 		}
 		catch ( Exception e )
@@ -109,8 +136,9 @@ public sealed class Advisor : Entity
 			return;
 		}
 
-		foreach ( var mesh in model.Meshes )
+		for ( int index = 0; index < model.Meshes.Count; index++ )
 		{
+			var mesh = model.Meshes[index];
 			var name = (mesh.Name ?? "").Replace( "\0", "" ).Trim();
 			var viseme = VisemeForMesh( name );
 			var isBase = viseme == null;
@@ -121,7 +149,9 @@ public sealed class Advisor : Entity
 				float lo = mesh.Vertices.Min( v => v.Position.Z ), hi = mesh.Vertices.Max( v => v.Position.Z );
 				headUnits = MathF.Max( 1f, (hi - lo) * hs.Z );
 			}
-			if ( IsHidden( name ) )
+			// The parts only a gesture shows are kept, hidden, when he can gesture.
+			bool hiddenAtRest = IsHidden( name );
+			if ( hiddenAtRest && (tree == null || gestures.Count == 0) )
 				continue;
 
 			var built = BuildMesh( mesh );
@@ -137,8 +167,9 @@ public sealed class Advisor : Entity
 				LocalOffset = new Vector3( pos.X, pos.Z, pos.Y ),
 				LocalRotation = new Quaternion( rot.X, rot.Z, rot.Y, -rot.W ),
 				LocalScale = new Vector3( scl.X, scl.Z, scl.Y ),
-				AlwaysShown = isBase,
+				AlwaysShown = isBase && !hiddenAtRest,
 				Viseme = viseme,
+				Mesh = index,
 			} );
 		}
 		Log.Info( $"[advisor] built {parts.Count} part(s) (5 visemes + body), head {headUnits:0.#} units" );
@@ -269,6 +300,7 @@ public sealed class Advisor : Entity
 				"Advisor", AdvisorTips.TextFor( messageId ) );
 		Audio.PlaySpeech( $"advisor_{clip.Name}", clip.SoundData );
 		startTime = Time.Now;
+		StartGesture( ClipLength + 1f, messageId.Contains( "GoldenTicket" ) ? "ticket" : null );
 		Log.Info( $"[advisor] message '{messageId}' → speaking '{clipName}', {lip.Keyframes.Count} keyframes, {ClipLength:0.0}s" );
 		return true;
 	}
@@ -474,23 +506,102 @@ public sealed class Advisor : Entity
 		var groupRot = Quaternion.CreateFromRotationMatrix( basis )
 			* Quaternion.CreateFromAxisAngle( System.Numerics.Vector3.UnitX, -LeanBack );
 
+		// The gesture playing, if any (one now and then between tips, when he isn't speaking).
+		if ( gesture != null && Time.Now - gestureStart > gesture.Seconds )
+			gesture = null;
+		bool speakingNow = startTime >= 0f && Time.Now - startTime <= ClipLength;
+		if ( gesture == null && (!speakingNow || Environment.GetEnvironmentVariable( "OPENTPW_ADVISOR_GESTURE" ) != null) && Time.Now >= nextIdleGesture )
+		{
+			StartGesture( IdleGestureLongest );
+			nextIdleGesture = Environment.GetEnvironmentVariable( "OPENTPW_ADVISOR_GESTURE" ) != null ? Time.Now
+				: Time.Now + IdleGestureMin + (float)Random.Shared.NextDouble() * (IdleGestureMax - IdleGestureMin);
+		}
+		float frame = gesture == null ? 0f : (Time.Now - gestureStart) * GestureFile.FramesPerSecond;
+		var pose = Pose( frame );
+
 		// He steps out of view while the player rides a ride (the scenery is close and would cut through him).
 		bool hidden = RideItCameraMode.Target != null || CamcorderCameraMode.Active;
 		foreach ( var part in parts )
 		{
-			// Only the active viseme's mouth is visible.
+			// Only the active viseme's mouth is visible; the gesture shows or hides the rest (a blink, the ticket).
 			if ( hidden )
 				part.Entity.Model = null;
 			else if ( part.Viseme is { } v )
 				part.Entity.Model = v == (CurrentShape == MouthShape.Closed ? MouthShape.Normal : CurrentShape) ? part.Model : null; // at rest he smiles
-			else if ( part.AlwaysShown )
-				part.Entity.Model = part.Model;
+			else
+				part.Entity.Model = (TrackOf( part.Mesh )?.VisibleAt( frame ) ?? part.AlwaysShown) ? part.Model : null;
 
-			var offset = System.Numerics.Vector3.Transform( (part.LocalOffset * groupScale).GetSystemVector3(), groupRot );
+			var (localOffset, localRotation, localScale) = pose?[part.Mesh] ?? (part.LocalOffset, part.LocalRotation, part.LocalScale);
+			var offset = System.Numerics.Vector3.Transform( (localOffset * groupScale).GetSystemVector3(), groupRot );
 			part.Entity.Position = groupPos + (Vector3)offset;
-			part.Entity.Rotation = groupRot * part.LocalRotation;
-			part.Entity.Scale = part.LocalScale * groupScale;
+			part.Entity.Rotation = groupRot * localRotation;
+			part.Entity.Scale = localScale * groupScale;
 		}
+	}
+
+	// Start one of his gestures, at random among those no longer than `longest` seconds (else the shortest): one that
+	// brings out `prop` when it's given (the golden ticket's), else one with no prop.
+	private void StartGesture( float longest, string? prop = null )
+	{
+		if ( gestures.Count == 0 || tree == null )
+			return;
+		// Dev aid: OPENTPW_ADVISOR_GESTURE=n plays gesture n (1-based) over and over.
+		if ( int.TryParse( Environment.GetEnvironmentVariable( "OPENTPW_ADVISOR_GESTURE" ), out int forced ) && forced >= 1 && forced <= gestures.Count )
+		{
+			gesture = gestures[forced - 1];
+			gestureStart = Time.Now;
+			return;
+		}
+		var kind = gestures.Where( g => gestureProp.GetValueOrDefault( g ) == prop ).ToList();
+		if ( kind.Count == 0 )
+			kind = gestures.Where( g => !gestureProp.ContainsKey( g ) ).ToList();
+		if ( kind.Count == 0 )
+			return;
+		var fitting = kind.Where( g => g.Seconds <= longest ).ToList();
+		gesture = fitting.Count > 0 ? fitting[Random.Shared.Next( fitting.Count )] : kind.MinBy( g => g.Seconds );
+		gestureStart = Time.Now;
+	}
+
+	private GestureFile.Track? TrackOf( int index ) => gesture?.Tracks.FirstOrDefault( t => t.Target == index );
+
+	// Every mesh's placement for the gesture at `frame`, in the parts' terms (the loader's Y/Z swap): each object's
+	// local matrix — the gesture's rotation and scale over its bind translation, or its bind pose — times its
+	// parents' up the tree, the root's own turn left out (the Y/Z swap stands in for it); at rest, the bind pose.
+	// Null without a tree: then each mesh keeps its own placement.
+	private (Vector3 Offset, Quaternion Rotation, Vector3 Scale)[]? Pose( float frame )
+	{
+		if ( tree == null )
+			return null;
+		var world = new Matrix4x4?[tree.ObjectCount];
+		Matrix4x4 World( int i )
+		{
+			if ( world[i] is { } done )
+				return done;
+			int parent = tree.Parent[i];
+			var m = parent < 0 ? Matrix4x4.Identity : LocalAt( i, frame ) * World( parent );
+			world[i] = m;
+			return m;
+		}
+		var pose = new (Vector3, Quaternion, Vector3)[tree.MeshCount];
+		for ( int i = 0; i < tree.MeshCount; i++ )
+		{
+			Matrix4x4.Decompose( World( i ), out var scl, out var rot, out var pos );
+			pose[i] = (new Vector3( pos.X, pos.Z, pos.Y ), new Quaternion( rot.X, rot.Z, rot.Y, -rot.W ), new Vector3( scl.X, scl.Z, scl.Y ));
+		}
+		return pose;
+	}
+
+	private Matrix4x4 LocalAt( int i, float frame )
+	{
+		var bind = tree!.Local[i];
+		if ( TrackOf( i ) is not { } track || (track.Rotation.Count == 0 && track.Scale.Count == 0) )
+			return bind;
+		Matrix4x4.Decompose( bind, out var scl, out var rot, out var pos );
+		if ( track.Rotation.Count > 0 )
+			rot = GestureFile.Sample( track.Rotation, frame );
+		if ( track.Scale.Count > 0 )
+			scl = GestureFile.Sample( track.Scale, frame );
+		return Matrix4x4.CreateScale( scl ) * Matrix4x4.CreateFromQuaternion( rot ) * Matrix4x4.CreateTranslation( pos );
 	}
 
 	protected override void OnDelete()
