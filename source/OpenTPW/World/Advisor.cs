@@ -474,6 +474,13 @@ public sealed class Advisor : Entity
 			announcements.Add( messageId );
 	}
 
+	/// <summary>Have the advisor say <paramref name="messageId"/> once, as it stands (the park opening or closing).</summary>
+	public static void Notice( string messageId )
+	{
+		lock ( announcements )
+			announcements.Add( messageId );
+	}
+
 	// Strike announcements wait up to StaffNoticeLife seconds for the advisor to have a free moment.
 	private readonly Dictionary<string, float> staffNotices = new();
 	private const float StaffNoticeLife = 30f;

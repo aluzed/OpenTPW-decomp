@@ -642,6 +642,7 @@ public class Level
 			SpawnVisitors( WaitingAtGate );
 			WaitingAtGate = 0;
 		}
+		Advisor.Notice( GatesOpen ? "ParkNowOpen" : "ParkNowClosed" );
 		Log.Info( $"[park] gates {(GatesOpen ? "opened" : "closed")}" );
 	}
 

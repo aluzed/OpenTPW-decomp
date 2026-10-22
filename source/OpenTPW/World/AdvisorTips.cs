@@ -48,6 +48,8 @@ public static class AdvisorTips
 		["ShopsNotSweet"] = "Visitors think your ice creams aren't sweet enough. If you increased the sugar, they might buy more.",
 		["SideshowsCheapPrizes"] = "Some of your sideshow prizes are too cheap. Increasing the prizes might keep visitors happy.",
 		["SideshowsSlimChances"] = "Visitors think their chances of winning some of your sideshows are too slim.",
+		["ParkNowOpen"] = "Your park is now open.",
+		["ParkNowClosed"] = "Your park is now closed.",
 		["SideshowsBuildSideshows"] = "Your park has no sideshows yet.",
 		["FeaturesNoToilets"] = "Your park needs some toilets.",
 		["ShopsBuildMoreShops"] = "A park this size should have more shops.",
@@ -113,6 +115,7 @@ public static class AdvisorTips
 		["ShopsTooFatty"] = 106, ["ShopsTooSalty"] = 107, ["ShopsTooIcy"] = 108, ["ShopsTooSweet"] = 109, ["ShopsNotSweet"] = 110,
 		["SideshowsCheapPrizes"] = 112,    // "… some of your sideshow prizes are too cheap. …"
 		["SideshowsSlimChances"] = 113,    // "… their chances of winning some of your sideshows are too slim. …"
+		["ParkNowOpen"] = 149, ["ParkNowClosed"] = 150, // "Your park is now open." / "… closed."
 		// Research: hire scientists (21: most rides built, 22: all built) / research more rides (66).
 		["StaffHireResearchers1"] = 21, ["StaffHireResearchers2"] = 22, ["RidesResearchMore"] = 66,
 		["ShopsBuildMoreShops"] = 78,
