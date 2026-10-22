@@ -82,7 +82,10 @@ public sealed class Advisor : Entity
 	/// <summary>The id of the advice currently being spoken (for the HUD tip text); empty when idle.</summary>
 	public string ActiveMessage => activeMessage;
 	public float Elapsed => startTime < 0f ? 0f : Time.Now - startTime;
-	public float ClipLength => (float)(lip?.Duration.TotalSeconds ?? 0);
+	/// <summary>How long the clip speaks: its audio (samples over rate) — the lip-sync's last keyframe can come
+	/// early (a one-keyframe take ends at 0 s, and he spoke over himself).</summary>
+	public float ClipLength => MathF.Max( (float)(lip?.Duration.TotalSeconds ?? 0), audioSeconds );
+	private float audioSeconds;
 
 	public Advisor()
 	{
@@ -243,8 +246,8 @@ public sealed class Advisor : Entity
 	}
 
 	// Speak the message with id `messageId`: one of the game's recorded takes of its TAG_SYSTEM text
-	// (AdvisorSpeech — global speech + lips.wad), else the level's own welcome clip sp_001 (the welcome itself,
-	// and the fallback for advice the game never voiced). Returns true when audio actually started.
+	// (AdvisorSpeech — global speech + lips.wad); the welcome is the level's own clip sp_001. Advice the game never
+	// voiced is shown (hint strip, message tag) with a short silent gesture — it used to replay the 28 s welcome.
 	private bool Speak( string messageId )
 	{
 		try
@@ -252,6 +255,8 @@ public sealed class Advisor : Entity
 			if ( AdvisorTips.TextIndexOf( messageId ) is { } text && AdvisorSpeech.ClipFor( text ) is { } number
 				&& SpeakGlobal( messageId, $"sp_{number:000}" ) )
 				return true;
+			if ( messageId != "WelcomeTutorial" )
+				return Show( messageId );
 
 			var theme = Level.Current?.Name ?? "jungle"; // the welcome is per-theme (T-062)
 			// The level's speech (the language overlay's voice when there is one — GameDir.DataFile).
@@ -296,17 +301,45 @@ public sealed class Advisor : Entity
 		return Say( messageId, clip, new LipSyncFile( stream ) );
 	}
 
+	// Advice without a recording: its text, a gesture, and the time to read it.
+	private const float SilentSeconds = 5f;
+
+	// Starting a clip (decoding it) can stall that frame for seconds, which the frame clock then counts as already
+	// spoken — the next advice cut in at once: the clip's start is set again on the next frame, when it really plays.
+	private bool anchorPending;
+
+	private bool Show( string messageId )
+	{
+		lip = null;
+		clipName = "(text)";
+		activeMessage = messageId;
+		Post( messageId );
+		startTime = Time.Now;
+		audioSeconds = SilentSeconds;
+		StartGesture( SilentSeconds + 1f );
+		Log.Info( $"[advisor] message '{messageId}' → shown (no recording), {SilentSeconds:0}s" );
+		return true;
+	}
+
+	// The message tag down the right edge for a spoken / shown message.
+	private static void Post( string messageId )
+	{
+		if ( Level.Current?.InPark == true )
+			MessageTags.Post( messageId.StartsWith( "InTheRed" ) || messageId.StartsWith( "Staff" ) && messageId.Contains( "Strik" ) || messageId == "Bankrupted"
+				? MessageTags.Kind.Alert : messageId.StartsWith( "Research" ) ? MessageTags.Kind.News : MessageTags.Kind.Advice,
+				"Advisor", AdvisorTips.TextFor( messageId ) );
+	}
+
 	private bool Say( string messageId, MP2File clip, LipSyncFile lipSync )
 	{
 		lip = lipSync;
 		clipName = clip.Name;
 		activeMessage = messageId;
-		if ( Level.Current?.InPark == true )
-			MessageTags.Post( messageId.StartsWith( "InTheRed" ) || messageId.StartsWith( "Staff" ) && messageId.Contains( "Strik" ) || messageId == "Bankrupted"
-				? MessageTags.Kind.Alert : messageId.StartsWith( "Research" ) ? MessageTags.Kind.News : MessageTags.Kind.Advice,
-				"Advisor", AdvisorTips.TextFor( messageId ) );
+		Post( messageId );
 		Audio.PlaySpeech( $"advisor_{clip.Name}", clip.SoundData );
 		startTime = Time.Now;
+		anchorPending = true;
+		audioSeconds = clip.SampleRate > 0 && clip.Samples > 0 ? (float)clip.Samples / clip.SampleRate : 0f;
 		StartGesture( ClipLength + 1f, messageId.Contains( "GoldenTicket" ) ? "ticket" : null );
 		Log.Info( $"[advisor] message '{messageId}' → speaking '{clipName}', {lip.Keyframes.Count} keyframes, {ClipLength:0.0}s" );
 		return true;
@@ -321,6 +354,9 @@ public sealed class Advisor : Entity
 			return;
 		bool speaking = startTime >= 0f && Time.Now - startTime <= ClipLength;
 		if ( speaking )
+			return;
+		// After the welcome, wait for the speech bank (reading it inside an advice would stall that frame for seconds).
+		if ( startTime >= 0f && globalSpeech is { IsCompleted: false } )
 			return;
 		// The park snapshot walks every entity several times: weigh the advice twice a second, not every frame.
 		if ( Time.Now < nextConsider )
@@ -523,6 +559,14 @@ public sealed class Advisor : Entity
 	{
 		if ( parts.Count == 0 )
 			return;
+
+		if ( anchorPending )
+		{
+			anchorPending = false;
+			startTime = Time.Now;
+			if ( gesture != null )
+				gestureStart = Time.Now;
+		}
 
 		// Let the message scheduler decide if/which tip fires (governed by the real Advisor.sam rules), then
 		// advance the active clip's lip-sync.
