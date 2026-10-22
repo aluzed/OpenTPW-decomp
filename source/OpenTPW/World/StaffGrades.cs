@@ -48,6 +48,16 @@ public sealed class StaffGrades
 		[StaffRole.Handyman] = 2, [StaffRole.Mechanic] = 1, [StaffRole.Entertainer] = 1,
 		[StaffRole.Guard] = 2, [StaffRole.Researcher] = 1,
 	};
+	// StaffPoolInfo.Max<Role>InPark: how many of each a park may employ.
+	private readonly Dictionary<StaffRole, int> maxInPark = new()
+	{
+		[StaffRole.Handyman] = 30, [StaffRole.Mechanic] = 15, [StaffRole.Entertainer] = 30,
+		[StaffRole.Guard] = 15, [StaffRole.Researcher] = 10,
+	};
+
+	/// <summary>How many of <paramref name="role"/> a park may employ (<c>StaffPoolInfo.Max&lt;Role&gt;InPark</c>).</summary>
+	public int MaxInPark( StaffRole role ) => maxInPark.GetValueOrDefault( role, 30 );
+
 	private readonly Dictionary<StaffRole, float> chanceOfGreat = new()
 	{
 		[StaffRole.Handyman] = 20, [StaffRole.Mechanic] = 10, [StaffRole.Entertainer] = 35,
@@ -97,6 +107,7 @@ public sealed class StaffGrades
 			s.poundsPerPoint[role] = Table( $"{ConstsName( role )}ConstsPerGrade", "PoundsPerTrainingPoint", d.poundsPerPoint[role] );
 			s.averageGrade[role] = F( $"StaffPoolInfo.AvgGradeOf{SamName( role )}" ) ?? d.averageGrade[role];
 			s.chanceOfGreat[role] = F( $"StaffPoolInfo.ChanceToGetGreat{SamName( role )}" ) ?? d.chanceOfGreat[role];
+			s.maxInPark[role] = (int)(F( $"StaffPoolInfo.Max{SamName( role )}InPark" ) ?? d.maxInPark[role]);
 		}
 		return s;
 	}

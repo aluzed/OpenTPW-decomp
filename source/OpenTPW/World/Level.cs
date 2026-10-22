@@ -1195,6 +1195,9 @@ public class Level
 				StaffCandidates.Pending = null;
 			}
 			if ( charge ) fin?.PayBuild( item.Cost );
+			// The job's quota filled (StaffPoolInfo.Max<Role>InPark): from now on, train them instead.
+			if ( charge && Entity.All.Count( e => e is Staff s && s.Role == role ) >= StaffGrades.Current.MaxInPark( role ) )
+				Advisor.Notice( $"StaffMax{role}" );
 			return true;
 		}
 

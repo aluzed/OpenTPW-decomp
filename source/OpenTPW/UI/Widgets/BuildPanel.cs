@@ -229,14 +229,15 @@ internal sealed class BuildPanel : GameWindow
 			if ( entry.Heading )
 			{
 				// The job: its name and what hiring costs.
-				Text( Small, $"{StaffNames.For( item.Staff!.Value )}  (hire $ {item.Cost:0})", 487f, top + 1f, 11f, TitleInk );
+				Text( Small, build.IsBuildable( i ) ? $"{StaffNames.For( item.Staff!.Value )}  (hire $ {item.Cost:0})"
+					: $"{StaffNames.For( item.Staff!.Value )}  (as many as a park may employ)", 487f, top + 1f, 11f, build.IsBuildable( i ) ? TitleInk : LockedInk );
 				continue;
 			}
 			if ( entry.Candidate is { } candidate )
 			{
 				if ( Equals( hoveredRow, entry ) )
 					Fill( RowRect( row ), Selected );
-				var candidateInk = fin?.CanAfford( item.Cost ) == false ? LockedInk : default;
+				var candidateInk = fin?.CanAfford( item.Cost ) == false || !build.IsBuildable( i ) ? LockedInk : default;
 				Text( Small, $"   {candidate.Name}  (grade {candidate.Grade + 1})", 487f, top + 1f, 11f, candidateInk );
 				Text( Small, $"$ {candidate.MonthlyWage:0}", 776f, top + 1f, 11f, candidateInk, TextAlign.Right );
 				continue;

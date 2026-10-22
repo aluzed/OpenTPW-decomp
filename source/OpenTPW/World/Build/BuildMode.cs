@@ -79,8 +79,10 @@ public sealed class BuildMode : Entity
 		Selected = (index >= 0 && index < Catalog.Count && index != Selected && IsBuildable( index )) ? index : -1;
 	}
 
-	/// <summary>Whether catalog item <paramref name="index"/> has been researched (or needed no research).</summary>
-	public bool IsBuildable( int index ) => ItemResearch.Current?.IsUnlocked( Catalog[index].Name ) ?? true;
+	/// <summary>Whether catalog item <paramref name="index"/> has been researched (or needed no research).
+	/// A job whose park quota is filled (<c>StaffPoolInfo.Max&lt;Role&gt;InPark</c>) can't be hired any more.</summary>
+	public bool IsBuildable( int index ) => (ItemResearch.Current?.IsUnlocked( Catalog[index].Name ) ?? true)
+		&& (Catalog[index].Staff is not { } role || Entity.All.Count( e => e is Staff s && s.Role == role ) < StaffGrades.Current.MaxInPark( role ));
 
 	public (int X, int Y)? HoveredTile { get; private set; }
 
