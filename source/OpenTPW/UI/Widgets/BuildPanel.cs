@@ -280,7 +280,7 @@ internal sealed class BuildPanel : GameWindow
 		if ( UiTexture( portrait ) is { } face )
 			Fill( At( 230f, 120f, 120f, 120f ), face );
 		Text( Small, StaffNames.For( c.Role ), 133f, 300f, 11f );
-		Text( Small, "Grade", 133f, 324f, 11f );
+		Text( Small, Localization.Get( UIStrings.Skill, "Skill" ), 133f, 324f, 11f );
 		DrawGauge( At( 338f, 325f, 110f, 9f ), (c.Grade + 1f) / (StaffGrades.MaxGrade + 1f) );
 		Text( Small, Localization.Get( UIStrings.MonthlyWage, "Monthly wage" ), 133f, 348f, 11f );
 		Text( Small, $"$ {c.MonthlyWage:0}", 338f, 348f, 11f );
