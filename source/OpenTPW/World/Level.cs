@@ -84,6 +84,11 @@ public class Level
 				{
 					_ = new LobbyIsland( spots[i], display );
 					LobbyWorlds.Add( (folder, spots[i]) ); // only islands that loaded are clickable to enter
+					// A few bats round the Halloween island, butterflies round the jungle and fantasy ones.
+					var flyers = folder switch { "hallow" => new[] { "Bat", "Bat", "Bat" }, "jungle" or "fantasy" => new[] { "Bfly_PINK", "Bfly_YELL" }, _ => Array.Empty<string>() };
+					for ( int f = 0; f < flyers.Length; f++ )
+						try { _ = new LobbyFlyer( flyers[f], spots[i] + new Vector3( 0, 0, 22f + f * 5f ), 30f + f * 6f, (f % 2 == 0 ? 0.5f : -0.4f), f * 2.1f ); }
+						catch ( Exception e ) { Log.Warning( $"[lobby] {flyers[f]}: {e.Message}" ); }
 				}
 				catch ( Exception e ) { Log.Warning( $"[lobby] island {display} failed: {e.Message}" ); }
 			}
