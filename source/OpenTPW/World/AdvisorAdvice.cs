@@ -102,6 +102,9 @@ public static class AdvisorAdvice
 	private const float GoldenTicketScore = 200f, ChallengeWonScore = 90f, ChallengeLostScore = 70f;
 
 	/// <summary>The candidate tips justified by <paramref name="s"/>, scored via <paramref name="c"/>.</summary>
+	// The average grade (0–4) that counts as well trained.
+	private const float WellTrained = 3.5f;
+
 	// How many visitors far from a toilet are worth FeaturesFarToToilets.
 	private const int FarFromToiletEnough = 3;
 
@@ -324,6 +327,17 @@ public static class AdvisorAdvice
 				if ( !float.IsNaN( grades[i] ) && grades[i] < P( id, "WorseThan", 1f ) )
 					Add( id, P( id, "Score", 30f ) );
 			}
+
+		// Well trained staff (TAG_SYSTEM 162–166: "Your mechanics are highly skilled now thanks to your training"): an
+		// average grade of WellTrained or better among at least two of them — a congratulation.
+		if ( f.AverageGrades is { } trained )
+		{
+			var hiredByRole = new[] { f.Mechanics, f.Handymen, f.Guards, f.Entertainers, f.Researchers };
+			for ( int i = 0; i < trained.Length && i < StaffStrikes.Roles.Length; i++ )
+				if ( !float.IsNaN( trained[i] ) && trained[i] >= WellTrained && hiredByRole[i] >= 2 )
+					list.Add( ($"CongratTrained{StaffStrikes.AdvisorName( StaffStrikes.Roles[i] )}", GroupCongrats,
+						c.Param( $"CongratTrained{StaffStrikes.AdvisorName( StaffStrikes.Roles[i] )}", "Score" ) ?? CongratScore) );
+		}
 
 		// Too many of one kind of staff (Max*.MoreThan 10).
 		foreach ( var (id, hired) in new[] { ("MaxHandymen", f.Handymen), ("MaxEntertainers", f.Entertainers),

@@ -75,6 +75,16 @@ public class FeatureAdviceTests
 	}
 
 	[TestMethod]
+	public void WellTrainedStaffAreCongratulated()
+	{
+		var park = new ParkFacilities( 3, 1, 1, 1, 3, 0, 0, 2, 0, 1, 0, 50, 0, 0, Days: 10, Features: 2 );
+		var grades = new[] { 3.8f, 4f, float.NaN, float.NaN, float.NaN };
+		var ids = Ids( park with { AverageGrades = grades } );
+		CollectionAssert.Contains( ids, "CongratTrainedMechanics" );
+		CollectionAssert.DoesNotContain( ids, "CongratTrainedHandymen", "one cleaner is not a trained team" );
+	}
+
+	[TestMethod]
 	public void FullQueuesBoreVisitors()
 	{
 		var park = new ParkFacilities( 1, 1, 1, 1, 3, 0, 0, 2, 0, 1, 0, 50, 0, 0, Days: 10, Features: 2 );
