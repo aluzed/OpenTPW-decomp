@@ -826,7 +826,21 @@ public sealed class RideEngine : IRideEngine
 	}
 
 	/// <summary>How much faster than authored the body runs its motion (the ride's speed setting).</summary>
-	public float BodySpeed { get; set; } = 1f;
+	public float BodySpeed
+	{
+		get => bodySpeed;
+		set
+		{
+			// Keep the body where it is in its animation: rebase its start so the new pace picks up from here.
+			if ( value > 0f && value != bodySpeed && objects.TryGetValue( SelfId, out var body ) && body.AnimId != null )
+			{
+				float into = (Time.Now - body.AnimStart) * bodySpeed;
+				body.AnimStart = Time.Now - into / value;
+			}
+			bodySpeed = value;
+		}
+	}
+	private float bodySpeed = 1f;
 
 	private bool bodyBuilt; // the body's Create has played
 	private bool bodyBroken; // broken down: the Break animation holds its last frame
