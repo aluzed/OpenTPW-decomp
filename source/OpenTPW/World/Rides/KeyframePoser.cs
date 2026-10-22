@@ -50,6 +50,19 @@ public sealed class KeyframePoser
 			.Select( position => Enumerable.Range( 0, order.Length ).Where( v => order[v] == position ).ToArray() ).ToArray() ).ToArray();
 	}
 
+	/// <summary>Back to rest: the placements, and the shapes morphs left.</summary>
+	public void Rest()
+	{
+		Array.Copy( placed, Pose, placed.Length );
+		foreach ( int p in morphed )
+			if ( models[p] is { } model )
+			{
+				Array.Copy( rest[p], model.Vertices, Math.Min( rest[p].Length, model.Vertices.Length ) );
+				model.UploadVertices();
+			}
+		morphed.Clear();
+	}
+
 	/// <summary>An entity per part: their matrices at rest.</summary>
 	public static List<Matrix4x4> PlacementsOf( IEnumerable<ModelEntity> parts ) => parts.Select( e =>
 		Matrix4x4.CreateScale( e.Scale.GetSystemVector3() ) * Matrix4x4.CreateFromQuaternion( e.Rotation ) * Matrix4x4.CreateTranslation( e.Position.GetSystemVector3() ) ).ToList();
