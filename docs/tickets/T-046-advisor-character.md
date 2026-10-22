@@ -223,5 +223,5 @@ quality food or goods and overdone ingredients (104–110); cheap prizes and sli
 a toilet (87); guards for a busy park and cleaners / guards for its size (16 / 17 / 19); patrol areas (24 / 26 / 29 /
 31) and parts no patrol covers (25 / 27 / 30 / 32); research more stalls / sideshows / scenery (76 / 80 / 84); a job's quota filled (136–144); upgrades need a
 mechanic / not during a strike (151 / 152); a prankster's stink bomb (146); the park opening / closing (149 / 150); congratulations for well trained staff
-(162–166) and all the staff happy (160).
+(162–166) and all the staff happy (160); balloons / costumes / souvenirs selling well (174–176).
 He no longer talks over himself (a clip's start is taken when it plays; its length is its audio's).
