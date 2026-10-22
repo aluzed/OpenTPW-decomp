@@ -125,9 +125,17 @@ internal sealed class ItemInfoWindow : GameWindow
 	}
 
 	// One of the three setting boxes: the green label strip, a value gauge, and −/+ buttons when it can be changed.
-	private static void SettingBox( int i, string label, float fraction, Action? less = null, Action? more = null )
+	// The game's hint for a stall's special-ingredient slider (UIHELPTEXT 25–28: sugar, salt, ice, fat).
+	private static int IngredientHint( int ingredient ) => ingredient switch
+	{
+		ShopBuilding.Sugar => 25, ShopBuilding.Salt => 26, ShopBuilding.Ice => 27, _ => 28,
+	};
+
+	private static void SettingBox( int i, string label, float fraction, Action? less = null, Action? more = null, int hint = -1 )
 	{
 		var b = Boxes[i];
+		if ( hint >= 0 && Contains( b, MouseBase() ) )
+			Hint( hint ); // the game's "Drag the slider to adjust …" / "Left-click the plus and minus …"
 		Fill( b, BoxBg );
 		DrawGauge( new Rectangle( b.X + 30f, b.Y + 36f, b.Width - 60f, 10f ), fraction );
 		Fill( new Rectangle( b.X + 6f, b.Y + 5f, b.Width - 12f, 19f ), LabelBg );
@@ -163,27 +171,27 @@ internal sealed class ItemInfoWindow : GameWindow
 		{
 			// A game: the prize it costs to give away, and the chance of winning it (the original's sideshow boxes).
 			SettingBox( 0, $"Cost of prize : $ {ride.SideshowCostOfGoods}", Math.Clamp( ride.SideshowCostOfGoods / 20f, 0f, 1f ),
-				() => ride.SideshowCostOfGoods = Math.Max( 0, ride.SideshowCostOfGoods - 1 ), () => ride.SideshowCostOfGoods++ );
+				() => ride.SideshowCostOfGoods = Math.Max( 0, ride.SideshowCostOfGoods - 1 ), () => ride.SideshowCostOfGoods++, hint: 40 );
 			SettingBox( 1, $"Chance of winning : {100 - ride.SideshowChanceOfLoosing} %", (100 - ride.SideshowChanceOfLoosing) / 100f,
 				() => ride.SideshowChanceOfLoosing = Math.Min( 100, ride.SideshowChanceOfLoosing + 5 ),
-				() => ride.SideshowChanceOfLoosing = Math.Max( 0, ride.SideshowChanceOfLoosing - 5 ) );
+				() => ride.SideshowChanceOfLoosing = Math.Max( 0, ride.SideshowChanceOfLoosing - 5 ), hint: 39 );
 		}
 		else
 		{
 			// Fewer seats, shorter waits to fill a cycle (the original's capacity box); up to the upgrade's capacity.
 			// The original's three boxes: speed, capacity, duration.
 			SettingBox( 0, $"Speed : {ride.SpeedScale * 100f:0} %", (ride.SpeedScale - 0.5f) / 1.5f,
-				ride.SpeedScale > 0.5f ? () => ride.SpeedScale -= 0.25f : null, ride.SpeedScale < 2f ? () => ride.SpeedScale += 0.25f : null );
+				ride.SpeedScale > 0.5f ? () => ride.SpeedScale -= 0.25f : null, ride.SpeedScale < 2f ? () => ride.SpeedScale += 0.25f : null, hint: 5 );
 			SettingBox( 1, $"Capacity : {ride.Capacity} / {ride.MaxCapacity}", maxCapacity > 0 ? (float)ride.Capacity / maxCapacity : 1f,
 				ride.Capacity > 1 ? () => ride.SeatLimit = ride.Capacity - 1 : null,
-				ride.Capacity < ride.MaxCapacity ? () => ride.SeatLimit = ride.Capacity + 1 >= ride.MaxCapacity ? null : ride.Capacity + 1 : null );
+				ride.Capacity < ride.MaxCapacity ? () => ride.SeatLimit = ride.Capacity + 1 >= ride.MaxCapacity ? null : ride.Capacity + 1 : null, hint: 6 );
 			// Longer rides, fewer riders an hour (the original's duration box).
 			SettingBox( 2, $"Duration : {ride.RideDuration:0} secs", (ride.DurationScale - 0.5f) / 2.5f,
-				() => ride.DurationScale -= 0.25f, () => ride.DurationScale += 0.25f );
+				() => ride.DurationScale -= 0.25f, () => ride.DurationScale += 0.25f, hint: 7 );
 		}
 		if ( ride.IsSideshow )
 			SettingBox( 2, $"Price : $ {ride.TicketPrice:0}", Math.Clamp( ride.TicketPrice / 20f, 0f, 1f ),
-				() => ride.TicketPrice = Math.Max( 1f, ride.TicketPrice - 1f ), () => ride.TicketPrice += 1f );
+				() => ride.TicketPrice = Math.Max( 1f, ride.TicketPrice - 1f ), () => ride.TicketPrice += 1f, hint: 41 );
 
 		if ( RoundButton( Action( 143f ), "b_delete_login", hint: 15 ) )
 			build.SellSelected();
@@ -250,14 +258,14 @@ internal sealed class ItemInfoWindow : GameWindow
 		if ( !shop.IsFree )
 		{
 			SettingBox( 0, $"{Localization.Get( UIStrings.QualityOfGoods, "Quality of goods" )} : {shop.Quality:0} %", shop.Quality / 100f,
-				() => shop.Quality = Math.Max( 0f, shop.Quality - 10f ), () => shop.Quality = Math.Min( 100f, shop.Quality + 10f ) );
+				() => shop.Quality = Math.Max( 0f, shop.Quality - 10f ), () => shop.Quality = Math.Min( 100f, shop.Quality + 10f ), hint: 24 );
 			if ( shop.Stats is { Ingredient: > 0 } st )
 				SettingBox( 1, $"Amount of {ShopBuilding.IngredientName( st.Ingredient )} : {shop.IngredientAmount:0} %", shop.IngredientAmount / 100f,
-					() => shop.IngredientAmount = Math.Max( 0f, shop.IngredientAmount - 10f ), () => shop.IngredientAmount = Math.Min( 100f, shop.IngredientAmount + 10f ) );
+					() => shop.IngredientAmount = Math.Max( 0f, shop.IngredientAmount - 10f ), () => shop.IngredientAmount = Math.Min( 100f, shop.IngredientAmount + 10f ), hint: IngredientHint( st.Ingredient ) );
 		}
 		if ( !shop.IsFree )
 			SettingBox( 2, $"{Localization.Get( UIStrings.SalePrice, "Sale price" )} : $ {shop.Price:0}", Math.Clamp( shop.Price / 10f, 0f, 1f ),
-				() => shop.Price = Math.Max( 1f, shop.Price - 1f ), () => shop.Price += 1f );
+				() => shop.Price = Math.Max( 1f, shop.Price - 1f ), () => shop.Price += 1f, hint: 29 );
 
 		// A toilet's buttons have their own hints (UIHELPTEXT 77–81), and it can call a cleaner.
 		if ( RoundButton( Action( 143f ), "b_delete_login", hint: toilet ? 81 : 33 ) )
