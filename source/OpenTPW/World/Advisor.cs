@@ -459,6 +459,7 @@ public sealed class Advisor : Entity
 			Visitors: Entity.All.Count( e => e is Peep ),
 			NeedingToilet: Peep.CountNeedingToilet(),
 			FarFromToilet: Peep.CountFarFromToilet( FarToToilet ),
+			DevelopedCells: BuildMode.Current?.Grid.OccupiedCells ?? -1,
 			Misbehaving: Peep.CountUnhappy(),
 			Days: GameClock.Current?.TotalDays ?? 0,
 			WaitingAtGate: Level.WaitingAtGate,

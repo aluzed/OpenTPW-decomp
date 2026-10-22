@@ -52,7 +52,9 @@ public readonly record struct ParkFacilities(
 	// Variety: the kinds of stall and sideshow the park may build and how many of them it has (-1 = not counted).
 	int ShopKindsAvailable = -1, int ShopKindsBuilt = 0, int SideshowKindsAvailable = -1, int SideshowKindsBuilt = 0,
 	// Visitors needing a toilet with none nearby (FeaturesFarToToilets: "walking miles to a toilet").
-	int FarFromToilet = 0 );
+	int FarFromToilet = 0,
+	// The park's developed area in cells (StaffHireHandymen3 / StaffHireGuards3; -1 = not counted).
+	int DevelopedCells = -1 );
 
 /// <summary>
 /// Maps the live park state to advisor message candidates — <c>(id, group, score)</c> for the
@@ -194,6 +196,20 @@ public static class AdvisorAdvice
 		// Guards: none while visitors misbehave. Entertainers: none in a busy park.
 		if ( f.Guards == 0 && f.Misbehaving > 0 )
 			Add( "StaffHireGuards2", P( "StaffHireGuards2", "Score", 10f ) + P( "StaffHireGuards2", "AdditionalPerMisbehavingKid", 5f ) * f.Misbehaving );
+		// No guards in a busy park (StaffHireGuards1), too few for its size (StaffHireGuards3); too few cleaners for its
+		// size (StaffHireHandymen3) — Advisor.sam's IdealDevelopedCellsPer<Job>, above MinCellsForConsideration.
+		float busyForGuards = P( "StaffHireGuards1", "AtLeastThisBusy", 70f );
+		if ( f.Guards == 0 && f.Visitors >= busyForGuards )
+			Add( "StaffHireGuards1", MathF.Min( FacilityScoreCap, P( "StaffHireGuards1", "ScorePerExtraBusyPoint", 1f ) * (f.Visitors - busyForGuards + 1) ) );
+		void TooFewForSize( string id, int hired, float ideal )
+		{
+			float cells = f.DevelopedCells, cover = hired * P( id, $"IdealDevelopedCellsPer{(id.Contains( "Guards" ) ? "Guard" : "Handyman")}", ideal );
+			if ( hired > 0 && cells >= P( id, "MinCellsForConsideration", 300f ) && cells > cover )
+				Add( id, MathF.Min( FacilityScoreCap, P( id, "ScorePerExtra10Cells", 1f ) * (cells - cover) / 10f ) );
+		}
+		TooFewForSize( "StaffHireHandymen3", f.Handymen, 400f );
+		TooFewForSize( "StaffHireGuards3", f.Guards, 750f );
+
 		float busy = P( "StaffHireEntertainers1", "AtLeastThisBusy", 35f );
 		if ( f.Entertainers == 0 && f.Visitors >= busy )
 			Add( "StaffHireEntertainers1", MathF.Min( FacilityScoreCap, P( "StaffHireEntertainers1", "ScorePerExtraBusyPoint", 3f ) * (f.Visitors - busy + 1) ) );

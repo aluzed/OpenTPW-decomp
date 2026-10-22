@@ -56,6 +56,17 @@ public class FeatureAdviceTests
 	}
 
 	[TestMethod]
+	public void ABigParkNeedsMoreCleanersAndGuards()
+	{
+		var park = new ParkFacilities( 1, 1, 1, 1, 3, 0, 0, 2, 0, 1, 0, 50, 0, 0, Days: 10, Features: 2 );
+		CollectionAssert.DoesNotContain( Ids( park with { DevelopedCells = 350 } ), "StaffHireHandymen3" );
+		var big = Ids( park with { DevelopedCells = 1200 } );
+		CollectionAssert.Contains( big, "StaffHireHandymen3" );
+		CollectionAssert.Contains( big, "StaffHireGuards3" );
+		CollectionAssert.Contains( Ids( park with { Guards = 0, Visitors = 120 } ), "StaffHireGuards1" );
+	}
+
+	[TestMethod]
 	public void FullQueuesBoreVisitors()
 	{
 		var park = new ParkFacilities( 1, 1, 1, 1, 3, 0, 0, 2, 0, 1, 0, 50, 0, 0, Days: 10, Features: 2 );

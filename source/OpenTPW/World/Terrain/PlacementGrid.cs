@@ -71,6 +71,21 @@ public sealed class PlacementGrid
 		return true;
 	}
 
+	/// <summary>How many cells rides and stalls stand on (not the walkable ones: the gates' forecourt, queues): the
+	/// park's developed area, for the advisor.</summary>
+	public int OccupiedCells
+	{
+		get
+		{
+			int n = 0;
+			for ( int y = 0; y < Height; y++ )
+				for ( int x = 0; x < Width; x++ )
+					if ( occupied[x, y] && !path[x, y] )
+						n++;
+			return n;
+		}
+	}
+
 	/// <summary>Marks the fw×fh footprint at (tx,ty) occupied if it can be placed; returns success.</summary>
 	public bool TryPlace( int tx, int ty, int fw, int fh )
 	{
