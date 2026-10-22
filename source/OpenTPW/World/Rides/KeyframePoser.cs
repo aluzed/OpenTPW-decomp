@@ -86,7 +86,8 @@ public sealed class KeyframePoser
 		FixRotationOrder( tree, kf );
 		var tracks = new Dictionary<int, RideKeyframeFile.SurfaceAnim>();
 		foreach ( var sa in kf.Surfaces )
-			if ( sa.SurfaceIndex < tree.ObjectCount && (sa.Rotation.Count > 0 || sa.Scale.Count > 0) && Playing( sa, kf, frame, loop, out _ ) )
+			if ( sa.SurfaceIndex < tree.ObjectCount && (sa.Rotation.Count > 0 || sa.Scale.Count > 0 || sa.Translation.Count > 0)
+				&& Playing( sa, kf, frame, loop, out _ ) )
 				tracks[sa.SurfaceIndex] = sa;
 
 		Matrix4x4 Local( int i )
@@ -99,6 +100,8 @@ public sealed class KeyframePoser
 				rot = RideKeyframeFile.SampleRotation( sa.Rotation, t );
 			if ( sa.Scale.Count > 0 )
 				scl = RideKeyframeFile.SampleVector( sa.Scale, t, scl );
+			if ( sa.Translation.Count > 0 ) // an offset from the bind position
+				pos += RideKeyframeFile.SampleVector( sa.Translation, t, System.Numerics.Vector3.Zero );
 			return Matrix4x4.CreateScale( scl ) * Matrix4x4.CreateFromQuaternion( rot ) * Matrix4x4.CreateTranslation( pos );
 		}
 
