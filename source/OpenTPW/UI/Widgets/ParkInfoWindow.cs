@@ -107,14 +107,14 @@ internal sealed class ParkInfoWindow : GameWindow
 		Text( Small, Localization.Get( UIStrings.Top3Thoughts, "Top 3 Thoughts" ), 235f, 348f, 11f, default, TextAlign.Center );
 
 		DrawInset( HappinessBox );
-		Text( Small, Localization.Get( UIStrings.AvgHappiness, "Happiness Levels" ), 142f, 392f, 11f );
+		Text( Small, Localization.Get( UIStrings.HappinessLevels, "Happiness Levels" ), 142f, 392f, 11f );
 		DrawGauge( At( 142f, 412f, 266f, 16f ), Peep.AverageHappiness / 100f );
 
 		DrawInset( CountsBox );
 		int inPark = Entity.All.Count( e => e is Peep );
 		Text( Small, Localization.Get( UIStrings.PeopleInPark, "People in park" ), 450f, 396f, 11f );
 		Text( Small, $"{inPark}", 660f, 396f, 11f );
-		Text( Small, "Total park visitors", 450f, 418f, 11f );
+		Text( Small, Localization.Get( UIStrings.TotalParkVisitors, "Total park visitors" ), 450f, 418f, 11f );
 		Text( Small, $"{fin.VisitorsTotal}", 660f, 418f, 11f );
 
 		// The lists: all items, all staff, all visitors.
