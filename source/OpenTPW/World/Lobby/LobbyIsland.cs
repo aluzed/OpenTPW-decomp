@@ -10,6 +10,19 @@ public sealed class LobbyIsland : Entity
 
 		var modelPrefix = themeName[0..3];
 		var modelFile = new ModelFile( $"lobby/terrain/{modelPrefix}_isle.md2" );
+		parts.AddRange( Spawn( modelFile, themeName ) );
+		LoadAnimation( $"lobby/terrain/{modelPrefix}_isle", modelFile );
+
+		// The park's gates stand on the island, modelled in its frame (Jun_gate …).
+		try { Spawn( new ModelFile( $"lobby/terrain/{modelPrefix}_gate.md2" ), themeName ); }
+		catch ( Exception e ) { Log.Warning( $"[lobby] {themeName} gates: {e.Message}" ); }
+	}
+
+	// One entity per mesh's material group, the loader's Y/Z swap applied, placed on the island; returns each mesh's
+	// first (its part for the animation).
+	private List<ModelEntity> Spawn( ModelFile modelFile, string themeName )
+	{
+		var meshParts = new List<ModelEntity>();
 
 		// Loading an island's meshes (each decompresses up to 16 textures + uploads a GPU buffer) is
 		// the bulk of the load. Report per mesh so the loading screen pumps events between meshes and
@@ -63,11 +76,10 @@ public sealed class LobbyIsland : Entity
 					Position = position + Position,
 				};
 				if ( m == 0 )
-					parts.Add( entity ); // the mesh's part (the rest are extra material groups)
+					meshParts.Add( entity ); // the mesh's part (the rest are extra material groups)
 			}
 		}
-
-		LoadAnimation( $"lobby/terrain/{modelPrefix}_isle", modelFile );
+		return meshParts;
 	}
 
 	// The island's own animation (its M1, M2 … files: the waterfalls, the windmill), posed through its object tree.
