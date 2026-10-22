@@ -214,3 +214,13 @@ The advisor now poses his tree every frame (the root's turn left out, the loader
 the bind pose is exactly the old look) and plays a gesture as he speaks — one no longer than the clip — and a short
 one now and then between tips. Gestures that bring out a prop (the golden ticket: m18–20; the map: m16) only go
 with the advice about it. `OPENTPW_ADVISOR_GESTURE=n` loops gesture n.
+
+## 2026-10-22 (night) — more of the original's advice
+
+Wired to the original's `TAG_SYSTEM` sentences (voiced when the game recorded them, else shown with a silent
+gesture): long queues bore visitors (63); a poor selection of rides / shops / sideshows (65 / 75 / 79); poor
+quality food or goods and overdone ingredients (104–110); cheap prizes and slim chances (112 / 113); walking miles to
+a toilet (87); guards for a busy park and cleaners / guards for its size (16 / 17 / 19); patrol areas (24 / 26 / 29 /
+31); research more stalls / sideshows / scenery (76 / 80 / 84); a job's quota filled (136–144); upgrades need a
+mechanic / not during a strike (151 / 152); a prankster's stink bomb (146); the park opening / closing (149 / 150).
+He no longer talks over himself (a clip's start is taken when it plays; its length is its audio's).
