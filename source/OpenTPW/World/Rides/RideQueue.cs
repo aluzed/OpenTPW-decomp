@@ -40,6 +40,12 @@ public sealed class RideQueue
 	/// <summary>How many peeps are currently lined up (waiting, not yet aboard).</summary>
 	public int LineLength => line.Count;
 
+	/// <summary>How many visitors a queue cell holds: a longer queue (the queue tool) holds more of them.</summary>
+	public const int PeepsPerCell = 2;
+
+	/// <summary>Whether the queue path is full: visitors then pick another ride rather than pile up at its end.</summary>
+	public bool IsFull => LineLength >= Math.Max( 1, Waypoints.Count - 1 ) * PeepsPerCell;
+
 	/// <summary>Join the back of the queue (idempotent).</summary>
 	public void Enqueue( Peep peep )
 	{
@@ -55,12 +61,13 @@ public sealed class RideQueue
 
 	/// <summary>
 	/// Where the peep <paramref name="position"/> places back from the front should stand: the front
-	/// stands at the entrance (last waypoint) and each place back steps one waypoint out along the path,
+	/// stands at the entrance (last waypoint), the next ones <see cref="PeepsPerCell"/> to a cell out along the path,
 	/// clamping at the outer end so a longer line simply gathers there.
 	/// </summary>
 	public Vector3 StandPoint( int position )
 	{
-		int idx = Math.Clamp( Waypoints.Count - 1 - Math.Max( 0, position ), 0, Waypoints.Count - 1 );
+		int back = position <= 0 ? 0 : (position + PeepsPerCell - 1) / PeepsPerCell;
+		int idx = Math.Clamp( Waypoints.Count - 1 - back, 0, Waypoints.Count - 1 );
 		return Waypoints[idx];
 	}
 

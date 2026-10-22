@@ -1249,7 +1249,7 @@ public sealed class Peep : ModelEntity
 			return;
 		}
 
-		var open = queues.Where( q => !q.Ride.IsClosed ).ToList();
+		var open = queues.Where( q => !q.Ride.IsClosed && !q.IsFull ).ToList(); // a full queue turns visitors away
 		if ( open.Count == 0 )
 		{
 			route = null;
