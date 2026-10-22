@@ -42,4 +42,5 @@ original front-end never showed. Commits `4482bfd` + `4d7c0ea` restored it and m
 - Each island has its park gates (`<prefix>_gate.MD2`, in the island's frame; their M1–M3 aren't played).
 - Bats circle the Halloween island, butterflies the jungle and fantasy ones (`LobbyFlyer`: `Bat`, `Bfly_PINK`,
   `Bfly_YELL`, flapping with their `m1`).
-- Not placed yet: the globe, the plane (`plane` / `plane_anim`), the golden ticket and the pins (`Hpin`, `Lpin`).
+- The plane circles high over the islands (`globe/plane`, `plane_anim`).
+- Not placed yet: the globe, the golden ticket and the pins (`Hpin`, `Lpin`).

@@ -4,9 +4,9 @@ using SQuaternion = System.Numerics.Quaternion;
 namespace OpenTPW;
 
 /// <summary>
-/// A bat or a butterfly of the front-end lobby (<c>lobby.wad</c> <c>terrain/Bat</c>, <c>Bfly_PINK</c>, <c>Bfly_YELL</c>):
-/// it circles its island, bobbing, flapping its wings with its own <c>m1</c> animation (through
-/// <see cref="KeyframePoser"/>).
+/// A flyer of the front-end lobby (<c>lobby.wad</c>): a bat or a butterfly (<c>terrain/Bat</c>, <c>Bfly_PINK</c>,
+/// <c>Bfly_YELL</c>) circling its island, or the plane (<c>globe/plane</c>) circling them all — bobbing, playing its
+/// own animation (<c>m1</c>, <c>plane_anim</c>) through <see cref="KeyframePoser"/>.
 /// </summary>
 public sealed class LobbyFlyer : Entity
 {
@@ -17,20 +17,20 @@ public sealed class LobbyFlyer : Entity
 	private readonly Vector3 centre;
 	private readonly float radius, speed, phase;
 
-	public LobbyFlyer( string model, Vector3 centre, float radius, float speed, float phase )
+	public LobbyFlyer( string model, Vector3 centre, float radius, float speed, float phase, string folder = "terrain", string? animation = null )
 	{
 		this.centre = centre;
 		this.radius = radius;
 		this.speed = speed;
 		this.phase = phase;
 
-		var path = $"lobby/terrain/{model}.md2";
+		var path = $"lobby/{folder}/{model}.md2";
 		var file = new ModelFile( path );
 		foreach ( var mesh in file.Meshes )
 		{
 			var textures = mesh.Materials.Select( m =>
 			{
-				try { return new Texture( $"lobby/terrain/textures/{m.Name}.wct", TextureFlags.Repeat ); }
+				try { return new Texture( $"lobby/{folder}/textures/{m.Name}.wct", TextureFlags.Repeat ); }
 				catch { return Texture.Missing; }
 			} ).ToList();
 			var vertices = new Vertex[mesh.Vertices.Length];
@@ -54,7 +54,7 @@ public sealed class LobbyFlyer : Entity
 
 		try
 		{
-			using var stream = FileSystem.OpenRead( $"lobby/terrain/{model}m1.md2" );
+			using var stream = FileSystem.OpenRead( $"lobby/{folder}/{animation ?? model + "m1"}.md2" );
 			flap = new RideKeyframeFile( stream );
 			using var bytes = new MemoryStream();
 			using ( var modelStream = FileSystem.OpenRead( path ) )
