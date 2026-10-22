@@ -42,6 +42,7 @@ public sealed class RideQueue
 
 	/// <summary>How many visitors a queue cell holds: a longer queue (the queue tool) holds more of them.</summary>
 	public const int PeepsPerCell = 2;
+	private const float SideStep = 1.8f; // how far either side of the path's middle a pair stands
 
 	/// <summary>Whether the queue path is full: visitors then pick another ride rather than pile up at its end.</summary>
 	public bool IsFull => LineLength >= Math.Max( 1, Waypoints.Count - 1 ) * PeepsPerCell;
@@ -68,7 +69,15 @@ public sealed class RideQueue
 	{
 		int back = position <= 0 ? 0 : (position + PeepsPerCell - 1) / PeepsPerCell;
 		int idx = Math.Clamp( Waypoints.Count - 1 - back, 0, Waypoints.Count - 1 );
-		return Waypoints[idx];
+		if ( position <= 0 || Waypoints.Count < 2 )
+			return Waypoints[idx];
+		// Two to a cell: side by side across the path, not one on the other.
+		var along = Waypoints[Math.Min( idx + 1, Waypoints.Count - 1 )] - Waypoints[Math.Max( idx - 1, 0 )];
+		float length = MathF.Sqrt( along.X * along.X + along.Y * along.Y );
+		if ( length < 1e-3f )
+			return Waypoints[idx];
+		float side = position % PeepsPerCell == 0 ? SideStep : -SideStep;
+		return Waypoints[idx] + new Vector3( -along.Y / length * side, along.X / length * side, 0f );
 	}
 
 	/// <summary>The front peep boards: leave the line, take a slot, and start the boarding cycle on the
