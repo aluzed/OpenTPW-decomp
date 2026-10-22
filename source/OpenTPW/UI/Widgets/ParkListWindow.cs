@@ -229,7 +229,7 @@ internal sealed class ParkListWindow : GameWindow
 			LocateMarkers.Toggle( LocateMarkers.Target.Staff );
 		if ( tab == Tab.Visitors && RoundButton( Locate, "b_peeploc", LocateMarkers.Showing == LocateMarkers.Target.Visitors, hint: 139 ) )
 			LocateMarkers.Toggle( LocateMarkers.Target.Visitors );
-		if ( tab == Tab.Staff && RoundButton( Training, "b_staffcost" ) )
+		if ( tab == Tab.Staff && RoundButton( Training, "b_staffcost", hint: 195 ) )
 		{
 			IsOpen = false;
 			TrainingWindow.Current?.Toggle();
