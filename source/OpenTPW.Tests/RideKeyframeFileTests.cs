@@ -264,6 +264,18 @@ public class RideKeyframeFileTests
 	}
 
 	[TestMethod]
+	public void FilesMovingTheSameObjectsAreVariants()
+	{
+		var a = new RideKeyframeFile( BuildFrame( 5, new[] { (0, RotZ( 0 )), (40, RotZ( 90 )) } ) );
+		var b = new RideKeyframeFile( BuildFrame( 5, new[] { (0, RotZ( 90 )), (60, RotZ( 0 )) } ) );
+		a.AddVariant( b );
+		Assert.AreEqual( 2, a.Variants );
+		Assert.AreEqual( 60f, a.Duration, "as long as the longest variant" );
+		Assert.AreEqual( 0, a.Surfaces[0].Variant );
+		Assert.AreEqual( 1, a.Surfaces[1].Variant );
+	}
+
+	[TestMethod]
 	public void EmptyOrBadDataYieldsNoAnimation()
 	{
 		Assert.AreEqual( 0, new RideKeyframeFile( new byte[0x20] ).Surfaces.Count );      // too short / no magic

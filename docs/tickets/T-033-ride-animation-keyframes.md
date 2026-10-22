@@ -190,3 +190,13 @@ generations — older (the jungle monkey: every key tagged 0xFFFF, `(w,x,y,z)`) 
 `RideEngine` now poses the parts through the tree (`L · B⁻¹ · A`: the loaded look at rest, everything moving with
 what it hangs from) and morphs the right mesh. Visible result: the Crazy Ape now pops out of its crate and the crate
 bursts. Rides that ship only Create no longer loop their construction as their running motion.
+
+Follow-ups the same night:
+- A channel's numbered files (`totemm1..m10`, `monkeym1..`) all play together; an object several of them move takes
+  them as **variants**, one per pass (the totem's legs, bodies and heads three each) — not one long sequence, which
+  made the totem's run 100 s. The channel lasts as long as its longest file; a ride never runs shorter than its
+  `DurationUnit` band (×4 s), since one monkey trick is under 4 s.
+- The tag style doesn't tell the quaternion order (the totem tags every key 0xFFFF yet stores x,y,z,w): the engine,
+  which has the bind pose, reads each track in the order that makes its first key the object's bind rotation.
+- The body's Create plays once, when it is placed: the script's later Create triggers are ignored (the totem kept
+  rebuilding itself, its pole sunk while the construction morph ran).

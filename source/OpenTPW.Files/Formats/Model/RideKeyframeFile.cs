@@ -41,6 +41,25 @@ public sealed class RideKeyframeFile
 		public int SurfaceIndex { get; init; }
 		public uint Flags { get; init; }
 
+		/// <summary>Which of the channel's variants this track belongs to (<see cref="AddVariant"/>; 0 for a single file).</summary>
+		public int Variant { get; set; }
+
+		/// <summary>Whether the rotation keys were read as stored <c>(w,x,y,z)</c> (else <c>(x,y,z,w)</c>).</summary>
+		public bool WFirst { get; set; }
+
+		/// <summary>Re-read the rotation keys in the other component order — for a file whose order the tag style
+		/// didn't tell (the jungle totem tags every key 0xFFFF yet stores x,y,z,w); a caller holding the bind pose can
+		/// tell, as the first key is it.</summary>
+		public void SwapRotationOrder()
+		{
+			for ( int k = 0; k < Rotation.Count; k++ )
+			{
+				var q = Rotation[k].Value;
+				Rotation[k] = (Rotation[k].Time, WFirst ? new Quaternion( q.W, q.X, q.Y, q.Z ) : new Quaternion( q.Y, q.Z, q.W, q.X ));
+			}
+			WFirst = !WFirst;
+		}
+
 		public List<(float Time, Quaternion Value)> Rotation { get; } = new();
 		public List<(float Time, SVector3 Value)> Translation { get; } = new();
 		public List<(float Time, SVector3 Value)> Scale { get; } = new();
@@ -92,13 +111,45 @@ public sealed class RideKeyframeFile
 	/// <summary>The longest track's last keyframe time — the animation's loop length (0 if none).</summary>
 	public float Duration { get; private set; }
 
+	/// <summary>How many variants the channel has (<see cref="AddVariant"/>).</summary>
+	public int Variants { get; private set; } = 1;
+
+	// The tracks moving each object (its variants, in file order), split between morph-only tracks and the others.
+	private Dictionary<(int, bool), List<SurfaceAnim>>? variantsOf;
+
+	/// <summary>The tracks moving <paramref name="surface"/> (morph-only ones, or the others), in file order: when there
+	/// are several, each is a variant of the object's motion.</summary>
+	public IReadOnlyList<SurfaceAnim> VariantsOf( int surface, bool morphOnly )
+	{
+		variantsOf ??= surfaces.GroupBy( s => (s.SurfaceIndex, s.Morph.Count > 0 && s.Rotation.Count == 0 && s.Scale.Count == 0 && s.Translation.Count == 0) )
+			.ToDictionary( g => g.Key, g => g.ToList() );
+		return variantsOf.TryGetValue( (surface, morphOnly), out var list ) ? list : Array.Empty<SurfaceAnim>();
+	}
+
 	/// <summary>
-	/// Appends another keyframe file's surfaces (used to merge a channel's numbered frame files, each of
-	/// which animates different surfaces of the ride — see docs/08-ghidra-animation.md).
+	/// Adds <paramref name="other"/> as another variant of the channel: a channel's numbered files that move the same
+	/// objects (the totem's ten equally long runs, the monkey's tricks) are alternatives, played one per loop (T-033).
+	/// The channel lasts as long as its longest variant.
+	/// </summary>
+	public void AddVariant( RideKeyframeFile other )
+	{
+		foreach ( var s in other.surfaces )
+		{
+			s.Variant = Variants;
+			surfaces.Add( s );
+		}
+		Variants++;
+		variantsOf = null;
+		Duration = MathF.Max( Duration, other.Duration );
+	}
+
+	/// <summary>
+	/// Appends another keyframe file's surfaces to play at the same time (see <see cref="Append"/> for a sequence).
 	/// </summary>
 	public void Merge( RideKeyframeFile other )
 	{
 		surfaces.AddRange( other.surfaces );
+		variantsOf = null;
 		Duration = MathF.Max( Duration, other.Duration );
 	}
 
@@ -173,7 +224,7 @@ public sealed class RideKeyframeFile
 			// A record: flags +0x04, the rotation / scale key counts +0x10 / +0x12, the object it moves +0x14 (an index
 			// into the model's object tree — its meshes, then its nodes; see ModelHierarchy).
 			uint flags = U32( rec + 0x04 );
-			var anim = new SurfaceAnim { SurfaceIndex = U16( rec + 0x14 ), Flags = flags };
+			var anim = new SurfaceAnim { SurfaceIndex = U16( rec + 0x14 ), Flags = flags, WFirst = older };
 
 			if ( (flags & FlagRotation) != 0 )
 			{

@@ -621,7 +621,8 @@ public class Ride : Entity
 		// length we have (monkey ~11 s, totem ~14 s). Fall back to Info.DurationUnit (a 0–3 band; the exact
 		// band→seconds table lives in TP.EXE and isn't RE'd yet — ~4 s/unit matches the decoded loop lengths)
 		// then a flat default for rides whose loop has no decoded keyframes.
-		RideDuration = engine.BodyLoopDuration is float loop && loop > 0 ? loop
+		// A loop that is one short variant (the monkey's tricks) doesn't make a short ride: never under the band's.
+		RideDuration = engine.BodyLoopDuration is float loop && loop > 0 ? MathF.Max( loop, DurationUnit * 4f )
 			: DurationUnit > 0 ? DurationUnit * 4f
 			: 5f;
 		Log.Info( $"[ride] '{Name}' duration {RideDuration:0.0}s (DurationUnit {DurationUnit}), capacity {Capacity}" );
@@ -681,10 +682,12 @@ public class Ride : Entity
 					var kf = TryLoadKeyframe( $"{rideArchive}/{rideName}{c}{n}.md2", anim );
 					if ( kf == null || kf.Surfaces.Count == 0 )
 						continue;
+					// The numbered files play together; an object several of them move takes them as variants, one per
+					// pass (the totem's legs, bodies and heads, the monkey's tricks — see RideEngine.Playing).
 					if ( merged == null )
 						merged = kf;
 					else
-						merged.Merge( kf );
+						merged.AddVariant( kf );
 				}
 			}
 			else

@@ -22,6 +22,9 @@ public sealed class RideObject
 	/// <summary>Script-set parameters (SETOBJPARAM), by parameter index.</summary>
 	public Dictionary<int, int> Params { get; } = new();
 
+	/// <summary>The parts a vertex morph changed last frame (put back to rest once no morph moves them).</summary>
+	public HashSet<int> Morphed { get; } = new();
+
 	// Animation state (procedural for now). AnimId null = not animating.
 	public int? AnimId { get; set; }
 	public bool AnimLoop { get; set; }

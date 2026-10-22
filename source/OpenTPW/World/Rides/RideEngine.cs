@@ -217,6 +217,13 @@ public sealed class RideEngine : IRideEngine
 		// keep resetting its start time.
 		if ( obj.AnimId == anim && obj.AnimLoop == loop )
 			return;
+		// The body builds itself once, when placed: a later Create from the script would show it half-built again.
+		if ( obj.Id == SelfId && anim == (int)ScriptDefs.Animations.ANIM_Create )
+		{
+			if ( bodyBuilt )
+				return;
+			bodyBuilt = true;
+		}
 
 		StartAnim( obj, anim, loop );
 		var frames = FrameCount( anim );
@@ -771,6 +778,18 @@ public sealed class RideEngine : IRideEngine
 	/// </summary>
 	public void SetChannelKeyframes( int anim, RideKeyframeFile keyframes )
 	{
+		// A rotation track's first key is its object's bind rotation: read in the order that makes it so.
+		if ( tree != null )
+			foreach ( var sa in keyframes.Surfaces )
+			{
+				if ( sa.Rotation.Count == 0 || sa.SurfaceIndex >= tree.ObjectCount
+					|| !Matrix4x4.Decompose( tree.Local[sa.SurfaceIndex], out _, out var bind, out _ ) )
+					continue;
+				var q = sa.Rotation[0].Value;
+				var other = sa.WFirst ? new Quaternion( q.W, q.X, q.Y, q.Z ) : new Quaternion( q.Y, q.Z, q.W, q.X );
+				if ( MathF.Abs( Quaternion.Dot( bind, other ) ) > MathF.Abs( Quaternion.Dot( bind, q ) ) + 0.01f )
+					sa.SwapRotationOrder();
+			}
 		if ( keyframes.Surfaces.Count > 0 )
 			channelAnims[anim] = keyframes;
 	}
@@ -814,6 +833,7 @@ public sealed class RideEngine : IRideEngine
 		GoIdle( body );
 	}
 
+	private bool bodyBuilt; // the body's Create has played
 	private int bodyLoopAnim = -1;
 	private int bodyIdleAnim = -1;
 	private bool bodyRunning;
@@ -1098,12 +1118,24 @@ public sealed class RideEngine : IRideEngine
 		return m;
 	}
 
+	// Whether a track is the one playing for its object at `clock`, and the time within the pass. An object moved by
+	// several of the channel's files has that many variants (the totem's legs, bodies and heads three each): a looping
+	// channel takes them in turn, one per pass; a one-shot plays the first.
+	private static bool Playing( RideKeyframeFile.SurfaceAnim sa, RideKeyframeFile kf, float clock, bool loop, out float local )
+	{
+		int pass = loop && kf.Duration > 0f ? (int)(clock / kf.Duration) : 0;
+		local = kf.Duration <= 0f ? 0f : loop ? clock % kf.Duration : MathF.Min( clock, kf.Duration );
+		var variants = kf.VariantsOf( sa.SurfaceIndex, sa.Morph.Count > 0 && sa.Rotation.Count == 0 && sa.Scale.Count == 0 && sa.Translation.Count == 0 );
+		return variants.Count <= 1 || variants[pass % variants.Count] == sa;
+	}
+
 	private void ApplyTreeKeyframes( RideObject obj, RideKeyframeFile kf, float clock )
 	{
-		// The tracks by object (a merged channel may carry several; the last of each kind wins).
+		// The tracks by object, from the file of the channel's sequence playing now.
 		var byObject = new Dictionary<int, RideKeyframeFile.SurfaceAnim>();
 		foreach ( var sa in kf.Surfaces )
-			if ( sa.SurfaceIndex < tree!.ObjectCount && (sa.Rotation.Count > 0 || sa.Scale.Count > 0 || sa.Translation.Count > 0) )
+			if ( sa.SurfaceIndex < tree!.ObjectCount && (sa.Rotation.Count > 0 || sa.Scale.Count > 0 || sa.Translation.Count > 0)
+				&& Playing( sa, kf, clock, obj.AnimLoop, out _ ) )
 				byObject[sa.SurfaceIndex] = sa;
 		if ( byObject.Count == 0 )
 			return;
@@ -1111,15 +1143,15 @@ public sealed class RideEngine : IRideEngine
 		Matrix4x4 Local( int i )
 		{
 			var bind = tree!.Local[i];
-			if ( !byObject.TryGetValue( i, out var sa ) )
+			if ( !byObject.TryGetValue( i, out var sa ) || !Playing( sa, kf, clock, obj.AnimLoop, out var t ) )
 				return bind;
 			Matrix4x4.Decompose( bind, out var scl, out var rot, out var pos );
 			if ( sa.Rotation.Count > 0 )
-				rot = RideKeyframeFile.SampleRotation( sa.Rotation, TrackTime( clock, sa.Rotation[^1].Time, obj.AnimLoop ) );
+				rot = RideKeyframeFile.SampleRotation( sa.Rotation, t );
 			if ( sa.Scale.Count > 0 )
-				scl = RideKeyframeFile.SampleVector( sa.Scale, TrackTime( clock, sa.Scale[^1].Time, obj.AnimLoop ), scl );
+				scl = RideKeyframeFile.SampleVector( sa.Scale, t, scl );
 			if ( sa.Translation.Count > 0 )
-				pos += RideKeyframeFile.SampleVector( sa.Translation, TrackTime( clock, sa.Translation[^1].Time, obj.AnimLoop ), System.Numerics.Vector3.Zero );
+				pos += RideKeyframeFile.SampleVector( sa.Translation, t, System.Numerics.Vector3.Zero );
 			return Matrix4x4.CreateScale( scl ) * Matrix4x4.CreateFromQuaternion( rot ) * Matrix4x4.CreateTranslation( pos );
 		}
 
@@ -1164,12 +1196,14 @@ public sealed class RideEngine : IRideEngine
 			// vertex order, fall back to one combined buffer across the parts.
 			int[][]? positions = obj.Id == SelfId && vertexOfPosition != null && sa.SurfaceIndex < vertexOfPosition.Count
 				&& sa.SurfaceIndex < obj.Parts.Count ? vertexOfPosition[sa.SurfaceIndex] : null;
+			if ( sa.Morph.Count == 0 || !Playing( sa, kf, clock, obj.AnimLoop, out var within ) )
+				continue;
 			foreach ( var m in sa.Morph )
 			{
 				if ( m.VertexSlots.Length == 0 || m.Times.Length == 0 )
 					continue;
 
-				var t = TrackTime( clock, m.Times[^1], obj.AnimLoop );
+				var t = within;
 				for ( int i = 0; i < m.VertexSlots.Length; i++ )
 				{
 					var p = m.Sample( i, t );
@@ -1206,6 +1240,15 @@ public sealed class RideEngine : IRideEngine
 		for ( int part = 0; part < touched.Length; part++ )
 			if ( touched[part] )
 				obj.Parts[part].Entity.Model?.UploadVertices();
+			else if ( obj.Morphed.Contains( part ) )
+			{
+				ResetPartVerts( obj, part ); // its morph is over (the next file of the sequence leaves it alone)
+				obj.Parts[part].Entity.Model?.UploadVertices();
+			}
+		obj.Morphed.Clear();
+		for ( int part = 0; part < touched.Length; part++ )
+			if ( touched[part] )
+				obj.Morphed.Add( part );
 	}
 
 	// Maps a global morph vertex slot to its part + local index (parts hold contiguous global ranges).
