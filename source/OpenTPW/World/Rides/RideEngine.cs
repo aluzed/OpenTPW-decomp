@@ -826,6 +826,35 @@ public sealed class RideEngine : IRideEngine
 	public float BodySpeed { get; set; } = 1f;
 
 	private bool bodyBuilt; // the body's Create has played
+	private bool bodyBroken; // broken down: the Break animation holds its last frame
+
+	/// <summary>The ride broke down: it stops, and plays its Break animation (the totem's figures slump, the crates
+	/// burst), holding the last frame until it is repaired.</summary>
+	public void BreakDown()
+	{
+		if ( !objects.TryGetValue( SelfId, out var body ) )
+			return;
+		bodyRunning = false;
+		bodyBroken = true;
+		bodyQueue.Clear();
+		if ( channelAnims.ContainsKey( (int)ScriptDefs.Animations.ANIM_Break ) )
+			StartAnim( body, (int)ScriptDefs.Animations.ANIM_Break, loop: false );
+		else
+			StopAnim( body );
+	}
+
+	/// <summary>A mechanic fixed the ride: it plays its Repair animation, then settles back to idle.</summary>
+	public void Repaired()
+	{
+		if ( !objects.TryGetValue( SelfId, out var body ) )
+			return;
+		bodyBroken = false;
+		bodyQueue.Clear();
+		if ( channelAnims.ContainsKey( (int)ScriptDefs.Animations.ANIM_Repair ) )
+			StartAnim( body, (int)ScriptDefs.Animations.ANIM_Repair, loop: false );
+		else
+			GoIdle( body );
+	}
 	private int bodyLoopAnim = -1;
 	private int bodyIdleAnim = -1;
 	private bool bodyRunning;
@@ -847,8 +876,8 @@ public sealed class RideEngine : IRideEngine
 	/// </summary>
 	public void SetActive( bool active )
 	{
-		if ( !objects.TryGetValue( SelfId, out var body ) )
-			return;
+		if ( !objects.TryGetValue( SelfId, out var body ) || bodyBroken )
+			return; // a broken ride holds its breakdown until repaired
 
 		if ( active )
 		{
@@ -949,7 +978,7 @@ public sealed class RideEngine : IRideEngine
 
 			var anim = obj.AnimId.Value;
 			var t = ( now - obj.AnimStart ) * obj.AnimSpeed * ( obj.Id == SelfId ? BodySpeed : 1f );
-			if ( !obj.AnimLoop && t > DurationOf( anim ) )
+			if ( !obj.AnimLoop && t > DurationOf( anim ) && !(obj.Id == SelfId && bodyBroken && anim == (int)ScriptDefs.Animations.ANIM_Break) )
 			{
 				// The ride body steps through its boarding/unloading cycle: when a one-shot stage
 				// (Load/Start/End/Unload) finishes, advance to the next queued stage rather than stopping.

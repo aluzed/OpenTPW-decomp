@@ -352,6 +352,8 @@ public class Ride : Entity
 	private const float BreakdownFxPeriod = 1.8f; // seconds between spark bursts
 	private float breakdownFxTimer;
 
+	private bool breakDemoDone;
+
 	private void BreakDown()
 	{
 		if ( IsBroken )
@@ -359,7 +361,7 @@ public class Ride : Entity
 		IsBroken = true;
 		Reliability = 0f;
 		Breakdowns++;
-		SetActive( false );          // halt the ride animation/cycle
+		engine.BreakDown();          // halt the ride and play its breakdown (Break), held while it stays broken
 		breakdownFxTimer = 0f;       // spark immediately on the next tick
 		Log.Info( $"[ride] {Name} broke down (total {Breakdowns})" );
 	}
@@ -397,6 +399,7 @@ public class Ride : Entity
 		IsBroken = false;
 		Reliability = 1f;
 		Repairs++;
+		engine.Repaired();                // its Repair animation, then back to idle
 		engine.SpawnParticleEffect( 51 ); // P_EFFECT_Repair (T-019 .PLB / T-007)
 		Log.Info( $"[ride] {Name} repaired (total {Repairs})" );
 	}
@@ -979,6 +982,14 @@ public class Ride : Entity
 			Reliability -= WearPerSecond * Time.Delta;
 			if ( Reliability <= 0f )
 				BreakDown();
+		}
+
+		// Dev aid: OPENTPW_BREAK_DEMO=<name> breaks that ride down half a minute in, to look at its Break animation.
+		if ( !breakDemoDone && Time.Now > 30f && Environment.GetEnvironmentVariable( "OPENTPW_BREAK_DEMO" ) is { Length: > 0 } demo
+			&& Name.Contains( demo, StringComparison.OrdinalIgnoreCase ) )
+		{
+			breakDemoDone = true;
+			BreakDown();
 		}
 
 		// While broken, periodically spark + zap at the ride so the fault is visible/audible until repaired.
