@@ -50,7 +50,9 @@ public readonly record struct ParkFacilities(
 	// Staff left to roam the whole park, by role, among roles with at least three hired (TAG_SYSTEM 24 / 26 / 29 / 31).
 	int UnzonedMechanics = 0, int UnzonedHandymen = 0, int UnzonedGuards = 0, int UnzonedEntertainers = 0,
 	// Variety: the kinds of stall and sideshow the park may build and how many of them it has (-1 = not counted).
-	int ShopKindsAvailable = -1, int ShopKindsBuilt = 0, int SideshowKindsAvailable = -1, int SideshowKindsBuilt = 0 );
+	int ShopKindsAvailable = -1, int ShopKindsBuilt = 0, int SideshowKindsAvailable = -1, int SideshowKindsBuilt = 0,
+	// Visitors needing a toilet with none nearby (FeaturesFarToToilets: "walking miles to a toilet").
+	int FarFromToilet = 0 );
 
 /// <summary>
 /// Maps the live park state to advisor message candidates — <c>(id, group, score)</c> for the
@@ -93,6 +95,9 @@ public static class AdvisorAdvice
 	private const float GoldenTicketScore = 200f, ChallengeWonScore = 90f, ChallengeLostScore = 70f;
 
 	/// <summary>The candidate tips justified by <paramref name="s"/>, scored via <paramref name="c"/>.</summary>
+	// How many visitors far from a toilet are worth FeaturesFarToToilets.
+	private const int FarFromToiletEnough = 3;
+
 	// How many of a job left without a patrol area are worth the patrol-area advice.
 	private const int UnzonedEnough = 3;
 
@@ -222,6 +227,10 @@ public static class AdvisorAdvice
 		// Full queues (LongQueuesBoredVisitors; Advisor.sam gives it no parameters): shorter rides, or an entertainer.
 		if ( f.FullQueues > 0 )
 			Add( "LongQueuesBoredVisitors", P( "LongQueuesBoredVisitors", "Score", 60f ) + 10f * (f.FullQueues - 1) );
+
+		// Visitors walking miles to a toilet: some, though the park has toilets (else FeaturesNoToilets speaks).
+		if ( f.Toilets > 0 && f.FarFromToilet >= FarFromToiletEnough )
+			Add( "FeaturesFarToToilets", P( "FeaturesFarToToilets", "Score", 60f ) );
 
 		// A poor selection (<X>PoorSelection.PoorerThan % of the kinds on offer built, with more than MoreXThan of them):
 		// "your selection of rides / shops / sideshows isn't so good".

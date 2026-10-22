@@ -48,6 +48,14 @@ public class FeatureAdviceTests
 	}
 
 	[TestMethod]
+	public void VisitorsFarFromAToiletDrawAdvice()
+	{
+		var park = new ParkFacilities( 1, 1, 1, 1, 3, 0, 0, 2, 0, 1, 0, 50, 0, 0, Days: 10, Features: 2 );
+		CollectionAssert.DoesNotContain( Ids( park with { FarFromToilet = 2 } ), "FeaturesFarToToilets" );
+		CollectionAssert.Contains( Ids( park with { FarFromToilet = 3 } ), "FeaturesFarToToilets" );
+	}
+
+	[TestMethod]
 	public void FullQueuesBoreVisitors()
 	{
 		var park = new ParkFacilities( 1, 1, 1, 1, 3, 0, 0, 2, 0, 1, 0, 50, 0, 0, Days: 10, Features: 2 );

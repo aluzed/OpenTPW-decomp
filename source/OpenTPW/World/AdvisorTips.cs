@@ -52,6 +52,7 @@ public static class AdvisorTips
 		["ParkNowClosed"] = "Your park is now closed.",
 		["PrankStinkBomb"] = "Some prankster has left a stink bomb in your park. Get it cleaned up before too many people get ill.",
 		["UpgradeNeedsMechanic"] = "You need to hire a mechanic before you can upgrade your rides.",
+		["FeaturesFarToToilets"] = "Some visitors are having to walk miles to a toilet. Perhaps you should build some more?",
 		["UpgradeMechanicsStrike"] = "You can't upgrade your rides until your mechanics' strike is over!",
 		["StaffMaxHandyman"] = "You have employed the maximum number of cleaners for a park: train them to do better.",
 		["StaffZoneMechanics"] = "Your mechanics could be more efficient if you set their patrol areas.",
@@ -133,6 +134,7 @@ public static class AdvisorTips
 		["ParkNowOpen"] = 149, ["ParkNowClosed"] = 150, // "Your park is now open." / "… closed."
 		["PrankStinkBomb"] = 146,          // "Some prankster has left a stink bomb in your park. …"
 		["UpgradeNeedsMechanic"] = 151, ["UpgradeMechanicsStrike"] = 152,
+		["FeaturesFarToToilets"] = 87,     // "Some visitors are having to walk miles to a toilet. …"
 		// "You have employed the maximum number of … for a park … you'll have to train them."
 		["StaffMaxHandyman"] = 136, ["StaffMaxEntertainer"] = 138, ["StaffMaxMechanic"] = 140, ["StaffMaxGuard"] = 142,
 		["StaffMaxResearcher"] = 144,

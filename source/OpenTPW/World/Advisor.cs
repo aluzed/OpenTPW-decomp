@@ -433,6 +433,7 @@ public sealed class Advisor : Entity
 
 	// The shop and sideshow settings visitors complain about (the windows' sliders pushed too far).
 	private const float PoorQuality = 30f, TooMuch = 80f, TooLittle = 15f;
+	private const float FarToToilet = 250f; // 25 tiles: "walking miles to a toilet"
 	private const int CheapPrize = 10, SlimChance = 85; // a prize under a third of the usual 30; under 15 % to win
 	private static IEnumerable<Shop> Selling() => Shop.Stalls.Where( s => !s.IsFree && !s.IsClosed );
 	private static IEnumerable<Shop> Dosing( int ingredient ) => Selling().Where( s => s.Stats?.Ingredient == ingredient );
@@ -457,6 +458,7 @@ public sealed class Advisor : Entity
 			Litter: Litter.Active.Count,
 			Visitors: Entity.All.Count( e => e is Peep ),
 			NeedingToilet: Peep.CountNeedingToilet(),
+			FarFromToilet: Peep.CountFarFromToilet( FarToToilet ),
 			Misbehaving: Peep.CountUnhappy(),
 			Days: GameClock.Current?.TotalDays ?? 0,
 			WaitingAtGate: Level.WaitingAtGate,

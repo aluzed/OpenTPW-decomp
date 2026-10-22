@@ -171,6 +171,10 @@ public sealed class Peep : ModelEntity
 	/// <summary>Visitors whose bladder has passed the toilet threshold (FeaturesNoToilets.NeedingMoreThan 60 %).</summary>
 	public static int CountNeedingToilet() => Entity.All.Count( e => e is Peep { riding: false } p && p.bladder >= BladderThreshold );
 
+	/// <summary>Visitors needing a toilet with none within <paramref name="reach"/> (FeaturesFarToToilets).</summary>
+	public static int CountFarFromToilet( float reach ) => Entity.All.Count( e => e is Peep { riding: false } p && p.bladder >= BladderThreshold
+		&& (Shop.Nearest( ShopKind.Toilet, p.Position ) is not { } loo || (loo.Position - p.Position).WithZ( 0 ).Length > reach) );
+
 	/// <summary>Visitors unhappy enough to misbehave (see <see cref="Unhappy"/>).</summary>
 	public static int CountUnhappy() => Entity.All.Count( e => e is Peep { Unhappy: true } );
 
