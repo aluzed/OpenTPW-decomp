@@ -70,10 +70,10 @@ internal sealed class StaffWindow : GameWindow
 				DrawGauge( At( 616f, y + 1f, 110f, 10f ), g );
 			y += 24f;
 		}
-		Row( "Grade", $"{staff.Grade + 1} / {StaffGrades.MaxGrade + 1}" );
-		Row( "Monthly wage", $"$ {Staff.MonthlyWage( staff.Role, staff.Grade ):0}" );
-		Row( "Energy", null, staff.Energy / 100f );
-		Row( "Happiness", null, staff.Morale / 100f );
+		Row( Localization.Get( UIStrings.Skill, "Skill" ), $"{staff.Grade + 1} / {StaffGrades.MaxGrade + 1}" );
+		Row( Localization.Get( UIStrings.MonthlyWage, "Monthly wage" ), $"$ {Staff.MonthlyWage( staff.Role, staff.Grade ):0}" );
+		Row( Localization.Get( UIStrings.Energy, "Energy" ), null, staff.Energy / 100f );
+		Row( Localization.Get( UIStrings.Happiness, "Happiness" ), null, staff.Morale / 100f );
 		Row( "Training", null, staff.TrainingPoints / 100f );
 		Row( "Patrol", staff.Zone is { } zone ? $"zone, radius {zone.Radius:0}" : "free roam" );
 

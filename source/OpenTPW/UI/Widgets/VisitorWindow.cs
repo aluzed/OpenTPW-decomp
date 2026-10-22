@@ -67,13 +67,13 @@ internal sealed class VisitorWindow : GameWindow
 			DrawGauge( At( 520f, y + 1f, 100f, 10f ), gauge );
 			y += 26f;
 		}
-		Row( "Happiness", peep.Happiness / 100f );
+		Row( Localization.Get( UIStrings.Happiness, "Happiness" ), peep.Happiness / 100f );
 		// Needs: full green when satisfied, red when pressing.
 		Row( "Not hungry", 1f - peep.Hunger );
 		Row( "Not thirsty", 1f - peep.ThirstLevel );
 		Row( "Toilet", 1f - peep.Bladder );
-		Row( "Energy", peep.EnergyLevel );
-		Text( Small, "Money", 428f, y, 11f );
+		Row( Localization.Get( UIStrings.Energy, "Energy" ), peep.EnergyLevel );
+		Text( Small, Localization.Get( UIStrings.CashRemaining, "Cash remaining" ), 428f, y, 11f );
 		Text( Small, $"$ {peep.Cash:0}", 520f, y, 11f );
 		y += 18f;
 		Text( Small, Localization.Get( UIStrings.TimeInPark, "Time in park" ), 428f, y, 11f );
