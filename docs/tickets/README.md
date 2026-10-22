@@ -52,6 +52,9 @@ All format/VM decoding and the core gameplay loop are done. Open work falls into
   scale / visibility / finger-morph tracks). That decoding corrected the **ride keyframe records** (T-033: object at
   `+0x14`, key counts, whole local rotations in two quaternion orders, per-mesh morphs, variants, Break / Repair),
   and `KeyframePoser` now animates the rides, stalls, scenery, window previews and the lobby (islands, gates, bats).
+  Some thirty more of the original advisor messages are wired (settings complaints, queues, selection, staff coverage
+  and quotas, research, congratulations), unvoiced ones shown rather than replaying the welcome; upgrades are fitted
+  by a mechanic; queues hold two visitors a cell and bore them.
 - **Blocked / deferred** (need an external sample or have no consumer): **T-017** (`SAD_*` save stream —
   no sample), **T-022** (EA-ADPCM mono waveform — no sample), **T-021** (`.TQI` exact dequant — decoder
   already renders correctly). *(T-019 `.PLB` field labels — now **done**: the spawn path reads the record
