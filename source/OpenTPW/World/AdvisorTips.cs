@@ -54,6 +54,9 @@ public static class AdvisorTips
 		["UpgradeNeedsMechanic"] = "You need to hire a mechanic before you can upgrade your rides.",
 		["FeaturesFarToToilets"] = "Some visitors are having to walk miles to a toilet. Perhaps you should build some more?",
 		["StaffHireHandymen3"] = "Your park is filthy because you don't have enough cleaners. You should hire some more.",
+		["ShopsResearchMore"] = "You've built all your shops. You could get more by doing research.",
+		["SideshowsResearchMore"] = "All the available sideshows have now been built. Perhaps it's time to research some more?",
+		["FeaturesResearchMore"] = "All the available features have been built. Maybe you should research some more?",
 		["StaffHireGuards1"] = "The park is getting busy and you don't have any guards. Maybe you should hire some?",
 		["StaffHireGuards3"] = "You need more guards to deal with a park of this size. Have you considered hiring more?",
 		["UpgradeMechanicsStrike"] = "You can't upgrade your rides until your mechanics' strike is over!",
@@ -139,6 +142,7 @@ public static class AdvisorTips
 		["UpgradeNeedsMechanic"] = 151, ["UpgradeMechanicsStrike"] = 152,
 		["FeaturesFarToToilets"] = 87,     // "Some visitors are having to walk miles to a toilet. …"
 		["StaffHireHandymen3"] = 16, ["StaffHireGuards1"] = 17, ["StaffHireGuards3"] = 19,
+		["ShopsResearchMore"] = 76, ["SideshowsResearchMore"] = 80, ["FeaturesResearchMore"] = 84,
 		// "You have employed the maximum number of … for a park … you'll have to train them."
 		["StaffMaxHandyman"] = 136, ["StaffMaxEntertainer"] = 138, ["StaffMaxMechanic"] = 140, ["StaffMaxGuard"] = 142,
 		["StaffMaxResearcher"] = 144,

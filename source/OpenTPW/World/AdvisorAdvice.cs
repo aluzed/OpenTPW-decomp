@@ -54,7 +54,10 @@ public readonly record struct ParkFacilities(
 	// Visitors needing a toilet with none nearby (FeaturesFarToToilets: "walking miles to a toilet").
 	int FarFromToilet = 0,
 	// The park's developed area in cells (StaffHireHandymen3 / StaffHireGuards3; -1 = not counted).
-	int DevelopedCells = -1 );
+	int DevelopedCells = -1,
+	// Stalls, sideshows and scenery still to be researched (Shops / Sideshows / FeaturesResearchMore).
+	int ShopsToResearch = 0, int SideshowsToResearch = 0, int FeatureKindsAvailable = -1, int FeatureKindsBuilt = 0,
+	int FeaturesToResearch = 0 );
 
 /// <summary>
 /// Maps the live park state to advisor message candidates — <c>(id, group, score)</c> for the
@@ -235,6 +238,17 @@ public static class AdvisorAdvice
 			else if ( f.Researchers > 0 && f.RideKindsBuilt >= f.RideKindsAvailable )
 				Add( "RidesResearchMore", P( "RidesResearchMore", "Score", 100f ) );
 		}
+
+		// Every stall / sideshow / scenery kind on offer built, more to research, and scientists to do it:
+		// "You've built all your shops. You could get more by doing research." (and the sideshows', the features').
+		void ResearchMore( string id, int built, int available, int toResearch, float score )
+		{
+			if ( f.Researchers > 0 && available > 0 && built >= available && toResearch > 0 )
+				Add( id, P( id, "Score", score ) );
+		}
+		ResearchMore( "ShopsResearchMore", f.ShopKindsBuilt, f.ShopKindsAvailable, f.ShopsToResearch, 100f );
+		ResearchMore( "SideshowsResearchMore", f.SideshowKindsBuilt, f.SideshowKindsAvailable, f.SideshowsToResearch, 75f );
+		ResearchMore( "FeaturesResearchMore", f.FeatureKindsBuilt, f.FeatureKindsAvailable, f.FeaturesToResearch, 60f );
 
 		// Toilet queues (FeaturesNotEnoughToilets.AverageQueueLongerThan 2.5): "a park this size should have more".
 		if ( f.Toilets > 0 && f.ToiletQueue > P( "FeaturesNotEnoughToilets", "AverageQueueLongerThan", 2.5f ) )

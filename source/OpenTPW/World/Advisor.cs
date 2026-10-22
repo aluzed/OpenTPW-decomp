@@ -460,6 +460,9 @@ public sealed class Advisor : Entity
 			NeedingToilet: Peep.CountNeedingToilet(),
 			FarFromToilet: Peep.CountFarFromToilet( FarToToilet ),
 			DevelopedCells: BuildMode.Current?.Grid.OccupiedCells ?? -1,
+			ShopsToResearch: ToResearch( BuildCategory.Shops ), SideshowsToResearch: ToResearch( BuildCategory.Sideshows ),
+			FeatureKindsAvailable: Kinds( BuildCategory.Features, available: true ), FeatureKindsBuilt: Kinds( BuildCategory.Features, available: false ),
+			FeaturesToResearch: ToResearch( BuildCategory.Features ),
 			Misbehaving: Peep.CountUnhappy(),
 			Days: GameClock.Current?.TotalDays ?? 0,
 			WaitingAtGate: Level.WaitingAtGate,
@@ -492,6 +495,10 @@ public sealed class Advisor : Entity
 	}
 
 	// The researched kinds of ride in the catalog (available) or those of them the park has built.
+	// How many items of a category are still to be researched.
+	private static int ToResearch( BuildCategory category )
+		=> BuildMode.Current?.Catalog.Count( c => c.Category == category && !(ItemResearch.Current?.IsUnlocked( c.Name ) ?? true) ) ?? 0;
+
 	// The kinds of stall or sideshow on offer (researched), or how many of them the park has built.
 	private static int Kinds( BuildCategory category, bool available )
 	{
