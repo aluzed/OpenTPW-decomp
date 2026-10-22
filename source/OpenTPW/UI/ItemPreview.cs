@@ -7,13 +7,17 @@ namespace OpenTPW;
 /// The turning 3D model in a window's preview box (the buy window, the ride / shop window), as in the original. The
 /// item's model (its build-menu <c>P&lt;name&gt;.md2</c> when the wad ships one, else <c>&lt;name&gt;.md2</c>) is drawn
 /// after the interface, over a cleared depth buffer, a short way in front of the camera behind the box and fitted
-/// into it, seen from a little above and slowly turning. Models are built once per archive.
+/// into it, seen from a little above and slowly turning, playing its own animation when it has one
+/// (<c>P&lt;name&gt;m.md2</c> — the totem's figures turn, through <see cref="KeyframePoser"/>). Models are built once
+/// per archive.
 /// </summary>
 internal sealed class ItemPreview
 {
 	private readonly record struct Part( Model Model, Matrix4x4 Local );
 
 	private readonly List<Part> parts = new();
+	private KeyframePoser? poser;
+	private RideKeyframeFile? animation;
 	private SVector3 centre;
 	private float radius = 1f;
 
@@ -46,8 +50,13 @@ internal sealed class ItemPreview
 	private ItemPreview( string archive, string name )
 	{
 		ModelFile file;
-		try { file = new ModelFile( $"{archive}/P{name}.md2" ); }
-		catch { file = new ModelFile( $"{archive}/{name}.md2" ); }
+		string stem = $"{archive}/P{name}";
+		try { file = new ModelFile( $"{stem}.md2" ); }
+		catch
+		{
+			stem = $"{archive}/{name}";
+			file = new ModelFile( $"{stem}.md2" );
+		}
 
 		var points = new List<SVector3>();
 		foreach ( var mesh in file.Meshes )
@@ -75,10 +84,39 @@ internal sealed class ItemPreview
 		}
 		if ( points.Count == 0 )
 			return;
+		if ( parts.Count == file.Meshes.Count )
+			LoadAnimation( stem, file );
 		var min = points.Aggregate( SVector3.Min );
 		var max = points.Aggregate( SVector3.Max );
 		centre = (min + max) / 2f;
 		radius = MathF.Max( 1f, points.Max( p => SVector3.Distance( p, centre ) ) );
+	}
+
+	// The model's own animation (its main channel), posed through its object tree.
+	private void LoadAnimation( string stem, ModelFile file )
+	{
+		static byte[]? Read( string path )
+		{
+			try
+			{
+				using var stream = FileSystem.OpenRead( path );
+				using var bytes = new MemoryStream();
+				stream.CopyTo( bytes );
+				return bytes.ToArray();
+			}
+			catch { return null; }
+		}
+		var data = Read( $"{stem}m.md2" ) ?? Read( $"{stem}m1.md2" );
+		if ( data == null || Read( $"{stem}.md2" ) is not { } model || ModelHierarchy.Read( model ) is not { } tree )
+			return;
+		animation = new RideKeyframeFile( data );
+		if ( animation.Surfaces.Count == 0 || animation.Duration <= 0f )
+		{
+			animation = null;
+			return;
+		}
+		poser = new KeyframePoser( tree, parts.Select( p => p.Local ).ToList(), parts.Select( p => (Model?)p.Model ).ToList(),
+			file.Meshes.Select( m => m.VertexOrder ).ToList() );
 	}
 
 	/// <summary>Show the preview in <paramref name="box"/> (base 1280×720 space) this frame.</summary>
@@ -109,11 +147,15 @@ internal sealed class ItemPreview
 			float fit = MathF.Min( box.Width, box.Height ) * 0.42f * pixel / preview.radius;
 			var world = Matrix4x4.CreateTranslation( -preview.centre ) * spin * Matrix4x4.CreateScale( fit ) * basis * Matrix4x4.CreateTranslation( where );
 
-			foreach ( var part in preview.parts )
+			if ( preview.poser != null && preview.animation != null )
+				preview.poser.Apply( preview.animation, Time.Now * GestureFile.FramesPerSecond, loop: true );
+			for ( int i = 0; i < preview.parts.Count; i++ )
 			{
+				var part = preview.parts[i];
+				var local = preview.poser?.Pose[i] ?? part.Local;
 				var ubo = new ObjectUniformBuffer
 				{
-					g_mModel = part.Local * world,
+					g_mModel = local * world,
 					g_mView = Camera.ViewMatrix,
 					g_mProj = Camera.ProjMatrix,
 					g_vLightPos = Level.Current?.SunLight?.Position ?? Vector3.Zero,

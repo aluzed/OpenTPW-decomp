@@ -322,7 +322,7 @@ public sealed class Shop : ModelEntity
 			var orders = new ModelFile( new MemoryStream( data ) ).Meshes.Select( m => m.VertexOrder ).ToList();
 			if ( orders.Count != buildingParts.Count )
 				return; // a mesh split over several models (more than 16 materials): parts no longer match meshes
-			poser = new KeyframePoser( tree, buildingParts, orders );
+			poser = new KeyframePoser( tree, KeyframePoser.PlacementsOf( buildingParts ), buildingParts.Select( e => e.Model ).ToList(), orders );
 			placedAt = Time.Now;
 			if ( Level.Restoring )
 				buildAnim = null; // a loaded park's stalls stand built
@@ -343,6 +343,7 @@ public sealed class Shop : ModelEntity
 					poser.Apply( buildAnim, frame, loop: false );
 				else if ( loopAnim != null )
 					poser.Apply( loopAnim, frame - (buildAnim?.Duration ?? 0f), loop: true );
+				poser.PoseEntities( buildingParts );
 			}
 			return;
 		}
