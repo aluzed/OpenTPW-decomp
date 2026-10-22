@@ -63,6 +63,8 @@ public static class AdvisorTips
 		["CongratTrainedMechanics"] = "Your mechanics are highly skilled now thanks to your training initiative.",
 		["CongratStaffHappy"] = "Your staff are all happy. You should try to keep them that way to avoid strikes.",
 		["CongratBalloons"] = "Lots of visitors are buying balloons. This is a good indication that they're really happy.",
+		["ArrivalBus"] = "New visitors have arrived at your park on a bus.",
+		["ArrivalHugeBusload"] = "A huge busload of visitors has just arrived. Your park is becoming very popular.",
 		["CongratCostumes"] = "Lots of visitors are buying costumes, which means they liked most of the rides they have been on. Well done!",
 		["CongratSouvenirs"] = "Many of your visitors are buying souvenirs from the gift shop before they leave. They enjoyed their day.",
 		["StaffUncoveredHandymen"] = "Some areas of your park don't have a cleaner patrolling them.",
@@ -160,6 +162,7 @@ public static class AdvisorTips
 		["CongratTrainedGuards"] = 162, ["CongratTrainedResearchers"] = 163, ["CongratTrainedHandymen"] = 164,
 		["CongratTrainedEntertainers"] = 165, ["CongratTrainedMechanics"] = 166, ["CongratStaffHappy"] = 160,
 		["CongratBalloons"] = 174, ["CongratCostumes"] = 175, ["CongratSouvenirs"] = 176,
+		["ArrivalBus"] = 155, ["ArrivalHugeBusload"] = 158,
 		// "You have employed the maximum number of … for a park … you'll have to train them."
 		["StaffMaxHandyman"] = 136, ["StaffMaxEntertainer"] = 138, ["StaffMaxMechanic"] = 140, ["StaffMaxGuard"] = 142,
 		["StaffMaxResearcher"] = 144,

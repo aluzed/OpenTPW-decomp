@@ -603,7 +603,17 @@ public class Level
 		arrivals = new ArrivalScheduler( arrivalSettings );
 		arrivalBus = ArrivalBus.TryCreate( $"levels/{Current.Name}", gate, terrain );
 		if ( arrivalBus != null )
-			arrivalBus.Offload = SpawnVisitors;
+			arrivalBus.Offload = count =>
+			{
+				SpawnVisitors( count );
+				// The advisor notes the first bus, and a huge busload (TAG_SYSTEM 155 / 158).
+				if ( count >= HugeBusload )
+					Advisor.Notice( "ArrivalHugeBusload" );
+				else if ( !firstBusNoted )
+					Advisor.Notice( "ArrivalBus" );
+				firstBusNoted = true;
+			};
+		firstBusNoted = false;
 		Peep.LeaveOnExit = true;
 		if ( Environment.GetEnvironmentVariable( "OPENTPW_AUTOPLACE" ) != null )
 			ToggleGates();
@@ -673,6 +683,8 @@ public class Level
 	public static bool IsNearGates( Vector3 p ) => GatePosition is { } g && (p - g).WithZ( 0 ).Length <= 2.5f * PlacementGrid.WorldTileSize;
 	private static ArrivalBus? arrivalBus; // brings each arriving group to the gate (null: they appear there)
 	private static int visitorSerial;
+	private static bool firstBusNoted;
+	private const int HugeBusload = 20; // visitors off one bus that make "your park is becoming very popular"
 
 	// Spawn a group of visitors fanned out just outside the gate so they don't all stack on one tile.
 	private static void SpawnVisitors( int count )
