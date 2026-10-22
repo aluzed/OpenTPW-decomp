@@ -77,7 +77,8 @@ Rebuilt on captures of the PC version (docs/10-ui-reference.md) and `ui.wad`'s o
 - Staff training budgets (UITEXT 147–149): a monthly budget per kind of staff, spent on training when the month
   closes; opened from the staff list.
 - The queue tool (ride window's queue button): lay the queue a piece at a time in any direction from its open end,
-  with the world's straights, bend and open end; saved with the park.
+  with the world's straights, bend and open end; saved with the park. A queue holds two visitors a cell: when it is
+  full, visitors pick another ride and the advisor warns that long queues bore them (TAG_SYSTEM 63).
 
 - The advisor gestures as he speaks (head, hands and fingers, blinks, the golden ticket; T-046).
 - Also: renaming (rides, stalls, staff, the park), sortable / filtered lists, locate, follow, the park gates window,
