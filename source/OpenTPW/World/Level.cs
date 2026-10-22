@@ -142,7 +142,9 @@ public class Level
 		try
 		{
 			var lenders = new StringFile( GameLanguage.File( "LOANNAMES.str" ) ).Entries;
-			ParkFinances.Current.SetLoanOffers( ParkFinances.LoadLoanOffers( globalSam, new SettingsFile( $"/levels/{Current.Name}/Standard.sam" ), lenders ) );
+			var standardSam = new SettingsFile( $"/levels/{Current.Name}/Standard.sam" );
+			ParkFinances.Current.SetLoanOffers( ParkFinances.LoadLoanOffers( globalSam, standardSam, lenders ) );
+			QueuePath.CellCost = float.TryParse( standardSam["Costs.QueueCell"], out var queueCell ) ? queueCell : 75f;
 		}
 		catch ( Exception e ) { Log.Warning( $"[loans] offers unavailable: {e.Message}" ); }
 		ResearchQueue.Reset(); // fresh park-wide research queue for this level (T-044)

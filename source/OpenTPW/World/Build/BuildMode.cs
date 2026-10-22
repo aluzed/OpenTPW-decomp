@@ -314,15 +314,22 @@ public sealed class BuildMode : Entity
 			highlight.Position = Offscreen;
 			return;
 		}
-		bool ok = track!.CanExtend( tx, ty ) && (track is not TileTrack tt || (ParkFinances.Current?.CanAfford( tt.PieceCost ) ?? true));
+		float pieceCost = track switch { TileTrack t => t.PieceCost, QueuePath => QueuePath.CellCost, _ => 0f };
+		bool ok = track!.CanExtend( tx, ty ) && (ParkFinances.Current?.CanAfford( pieceCost ) ?? true);
 		mat.Set( "Color", ok ? green : red );
 		highlight.Scale = new Vector3( grid.TileSize / 2f );
 		var c = grid.TileToWorld( tx, ty );
 		highlight.Position = c.WithZ( terrain.SampleHeight( c.X, c.Y ) + 0.3f );
-		if ( Input.MouseLeftPressed && ok && track.Extend( tx, ty ) && track is TileTrack laid )
-			ParkFinances.Current?.PayBuild( laid.PieceCost ); // Costs.KartTrackCell / WaterTrackCell per piece
-		if ( Input.MouseLeftPressed && track is QueuePath { Cells.Count: > 0 } queue && queue.Cells[^1] == (tx, ty) )
-			queue.Backtrack(); // clicking the queue's open end takes that piece back
+		if ( !Input.MouseLeftPressed )
+			return;
+		// Clicking the queue's open end takes that piece back (refunded); else a click next to the end lays one.
+		if ( track is QueuePath { Cells.Count: > 1 } queue && queue.Cells[^1] == (tx, ty) )
+		{
+			queue.Backtrack();
+			ParkFinances.Current?.RefundBuild( QueuePath.CellCost );
+		}
+		else if ( ok && track.Extend( tx, ty ) && pieceCost > 0f )
+			ParkFinances.Current?.PayBuild( pieceCost ); // Costs.KartTrackCell / WaterTrackCell / QueueCell per piece
 	}
 
 	// Number keys pick a catalog item; Esc/0 cancels; economy keys adjust prices/fee/loans (T-042).

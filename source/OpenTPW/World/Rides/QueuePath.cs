@@ -10,6 +10,9 @@ namespace OpenTPW;
 public sealed class QueuePath : ITrackTool
 {
 	public const int DefaultLength = 6;
+
+	/// <summary>What a piece laid with the queue tool costs (<c>Costs.QueueCell</c>, 75; the ride's own run is free).</summary>
+	public static float CellCost { get; set; } = 75f;
 	public const int MaxLength = 40;
 
 	public Ride Owner { get; }
