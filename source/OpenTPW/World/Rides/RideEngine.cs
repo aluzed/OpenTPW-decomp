@@ -1118,24 +1118,10 @@ public sealed class RideEngine : IRideEngine
 	private Matrix4x4[]? bindWorld;
 	private static readonly Matrix4x4 SwapYZ = new( 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1 );
 
-	// A rotation track's first key is its object's bind rotation: read each track in the component order that makes
-	// it so (once the tree is known — the keyframes may come before or after it).
-	private readonly HashSet<RideKeyframeFile.SurfaceAnim> orderChecked = new();
-
 	private void FixRotationOrder( RideKeyframeFile keyframes )
 	{
-		if ( tree == null )
-			return;
-		foreach ( var sa in keyframes.Surfaces )
-		{
-			if ( sa.Rotation.Count == 0 || sa.SurfaceIndex >= tree.ObjectCount || !orderChecked.Add( sa )
-				|| !Matrix4x4.Decompose( tree.Local[sa.SurfaceIndex], out _, out var bind, out _ ) )
-				continue;
-			var q = sa.Rotation[0].Value;
-			var other = sa.WFirst ? new Quaternion( q.W, q.X, q.Y, q.Z ) : new Quaternion( q.Y, q.Z, q.W, q.X );
-			if ( MathF.Abs( Quaternion.Dot( bind, other ) ) > MathF.Abs( Quaternion.Dot( bind, q ) ) + 0.01f )
-				sa.SwapRotationOrder();
-		}
+		if ( tree != null )
+			KeyframePoser.FixRotationOrder( tree, keyframes );
 	}
 
 	/// <summary>The ride model's object tree (from its .md2), so keyframes pose the parts through it.</summary>
@@ -1165,16 +1151,8 @@ public sealed class RideEngine : IRideEngine
 		return m;
 	}
 
-	// Whether a track is the one playing for its object at `clock`, and the time within the pass. An object moved by
-	// several of the channel's files has that many variants (the totem's legs, bodies and heads three each): a looping
-	// channel takes them in turn, one per pass; a one-shot plays the first.
 	private static bool Playing( RideKeyframeFile.SurfaceAnim sa, RideKeyframeFile kf, float clock, bool loop, out float local )
-	{
-		int pass = loop && kf.Duration > 0f ? (int)(clock / kf.Duration) : 0;
-		local = kf.Duration <= 0f ? 0f : loop ? clock % kf.Duration : MathF.Min( clock, kf.Duration );
-		var variants = kf.VariantsOf( sa.SurfaceIndex, sa.Morph.Count > 0 && sa.Rotation.Count == 0 && sa.Scale.Count == 0 && sa.Translation.Count == 0 );
-		return variants.Count <= 1 || variants[pass % variants.Count] == sa;
-	}
+		=> KeyframePoser.Playing( sa, kf, clock, loop, out local );
 
 	private readonly Dictionary<int, RideKeyframeFile.SurfaceAnim> poseTracks = new();
 	private Matrix4x4[] poseWorld = Array.Empty<Matrix4x4>();

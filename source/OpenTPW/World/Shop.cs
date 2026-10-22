@@ -239,6 +239,7 @@ public sealed class Shop : ModelEntity
 		if ( Archive != null && ShopBuilding.TryLoadArchive( Archive, Position, footprintSize, buildingParts ) )
 		{
 			isBuilding = true;
+			LoadAnimations( Archive );
 			Model = ModelFor( Kind );  // retained for the click/selection bounds, but rendered invisibly
 			Scale = Vector3.Zero;      // the real building renders through buildingParts
 		}
@@ -287,11 +288,62 @@ public sealed class Shop : ModelEntity
 		return model;
 	}
 
+	// The stall's own animations (its archive's <name>c / m / i files): it builds itself once when placed, then runs
+	// its main (or idle) loop — the burger flipping, the balloons bobbing.
+	private KeyframePoser? poser;
+	private RideKeyframeFile? buildAnim, loopAnim;
+	private float placedAt;
+
+	private void LoadAnimations( string archive )
+	{
+		var name = Path.GetFileName( archive );
+		RideKeyframeFile? Channel( char letter )
+		{
+			var path = $"{archive}/{name}{letter}.md2";
+			try
+			{
+				using var stream = FileSystem.OpenRead( path ); // throws when the stall has no such channel
+				return new RideKeyframeFile( stream ) is { Surfaces.Count: > 0, Duration: > 0 } kf ? kf : null;
+			}
+			catch { return null; }
+		}
+		try
+		{
+			buildAnim = Channel( 'c' );
+			loopAnim = Channel( 'm' ) ?? Channel( 'i' );
+			if ( buildAnim == null && loopAnim == null )
+				return;
+			using var file = FileSystem.OpenRead( $"{archive}/{name}.md2" );
+			using var bytes = new MemoryStream();
+			file.CopyTo( bytes );
+			var data = bytes.ToArray();
+			if ( ModelHierarchy.Read( data ) is not { } tree )
+				return;
+			var orders = new ModelFile( new MemoryStream( data ) ).Meshes.Select( m => m.VertexOrder ).ToList();
+			if ( orders.Count != buildingParts.Count )
+				return; // a mesh split over several models (more than 16 materials): parts no longer match meshes
+			poser = new KeyframePoser( tree, buildingParts, orders );
+			placedAt = Time.Now;
+			Log.Info( $"[shop] {name} animated (build {(buildAnim != null ? "yes" : "no")}, loop {(loopAnim != null ? $"{loopAnim.Duration:0} frames" : "none")})" );
+		}
+		catch ( Exception e ) { Log.Warning( $"[shop] {name}: no animation ({e.Message})" ); }
+	}
+
 	protected override void OnUpdate()
 	{
 		// A real building has a fixed authored orientation; only the fallback billboard faces the camera.
 		if ( isBuilding )
+		{
+			if ( poser != null )
+			{
+				float frame = (Time.Now - placedAt) * GestureFile.FramesPerSecond;
+				if ( buildAnim != null && frame <= buildAnim.Duration )
+					poser.Apply( buildAnim, frame, loop: false );
+				else if ( loopAnim != null )
+					poser.Apply( loopAnim, frame - (buildAnim?.Duration ?? 0f), loop: true );
+			}
 			return;
+		}
 
 		// Stalls face the camera like the other billboards.
 		var cam = Camera.Position;
