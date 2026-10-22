@@ -958,6 +958,10 @@ public sealed class RideEngine : IRideEngine
 					var (next, loop) = bodyQueue.Dequeue();
 					StartAnim( obj, next, loop );
 				}
+				else if ( obj.Id == SelfId && bodyRunning && bodyLoopAnim >= 0 )
+					StartAnim( obj, bodyLoopAnim, loop: true ); // a one-shot (the build, a repair) over: back to the run
+				else if ( obj.Id == SelfId )
+					GoIdle( obj );                              // … or to the idle loop
 				else
 					StopAnim( obj );
 				continue;
@@ -1143,10 +1147,15 @@ public sealed class RideEngine : IRideEngine
 		return variants.Count <= 1 || variants[pass % variants.Count] == sa;
 	}
 
+	private readonly Dictionary<int, RideKeyframeFile.SurfaceAnim> poseTracks = new();
+	private Matrix4x4[] poseWorld = Array.Empty<Matrix4x4>();
+	private bool[] poseDone = Array.Empty<bool>();
+
 	private void ApplyTreeKeyframes( RideObject obj, RideKeyframeFile kf, float clock )
 	{
 		// The tracks by object, from the file of the channel's sequence playing now.
-		var byObject = new Dictionary<int, RideKeyframeFile.SurfaceAnim>();
+		var byObject = poseTracks;
+		byObject.Clear();
 		foreach ( var sa in kf.Surfaces )
 			if ( sa.SurfaceIndex < tree!.ObjectCount && (sa.Rotation.Count > 0 || sa.Scale.Count > 0 || sa.Translation.Count > 0)
 				&& Playing( sa, kf, clock, obj.AnimLoop, out _ ) )
@@ -1169,8 +1178,15 @@ public sealed class RideEngine : IRideEngine
 			return Matrix4x4.CreateScale( scl ) * Matrix4x4.CreateFromQuaternion( rot ) * Matrix4x4.CreateTranslation( pos );
 		}
 
-		var world = new Matrix4x4[tree!.ObjectCount];
-		var done = new bool[tree.ObjectCount];
+		// Reused every frame (a pose per ride per frame would otherwise be steady garbage).
+		if ( poseWorld.Length != tree!.ObjectCount )
+		{
+			poseWorld = new Matrix4x4[tree.ObjectCount];
+			poseDone = new bool[tree.ObjectCount];
+		}
+		var world = poseWorld;
+		var done = poseDone;
+		Array.Clear( done );
 		for ( int p = 0; p < obj.Parts.Count && p < tree.MeshCount; p++ )
 		{
 			// Only parts with something animated at or above them move.
@@ -1321,6 +1337,14 @@ public sealed class RideEngine : IRideEngine
 			entity.Rotation = baseRot;
 			entity.Scale = baseScale;
 		}
+		// And the shapes a morph left (the crates the Crazy Ape burst).
+		foreach ( int part in o.Morphed )
+			if ( part < o.Parts.Count )
+			{
+				ResetPartVerts( o, part );
+				o.Parts[part].Entity.Model?.UploadVertices();
+			}
+		o.Morphed.Clear();
 	}
 
 	// Unknown ids fall back to the ride body, so a script animating a part we don't model yet still
