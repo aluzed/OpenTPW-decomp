@@ -53,6 +53,9 @@ public static class AdvisorTips
 		["PrankStinkBomb"] = "Some prankster has left a stink bomb in your park. Get it cleaned up before too many people get ill.",
 		["StaffMaxHandyman"] = "You have employed the maximum number of cleaners for a park: train them to do better.",
 		["StaffZoneMechanics"] = "Your mechanics could be more efficient if you set their patrol areas.",
+		["RidesPoorSelection"] = "Your selection of rides isn't so good. You should build some more.",
+		["ShopsPoorSelection"] = "Your selection of shops isn't great. You should build some more.",
+		["SideshowsPoorSelection"] = "Your park doesn't have a great selection of sideshows. You should build some more.",
 		["StaffZoneHandymen"] = "Your cleaners could do a better job if you set their patrol areas.",
 		["StaffZoneGuards"] = "If you set their patrol areas, your guards would be more efficient.",
 		["StaffZoneEntertainers"] = "Your entertainers are covering too wide an area. It would help if you set their patrol areas.",
@@ -131,6 +134,7 @@ public static class AdvisorTips
 		["StaffMaxHandyman"] = 136, ["StaffMaxEntertainer"] = 138, ["StaffMaxMechanic"] = 140, ["StaffMaxGuard"] = 142,
 		["StaffMaxResearcher"] = 144,
 		["StaffZoneMechanics"] = 24, ["StaffZoneHandymen"] = 26, ["StaffZoneGuards"] = 29, ["StaffZoneEntertainers"] = 31,
+		["RidesPoorSelection"] = 65, ["ShopsPoorSelection"] = 75, ["SideshowsPoorSelection"] = 79,
 		// Research: hire scientists (21: most rides built, 22: all built) / research more rides (66).
 		["StaffHireResearchers1"] = 21, ["StaffHireResearchers2"] = 22, ["RidesResearchMore"] = 66,
 		["ShopsBuildMoreShops"] = 78,

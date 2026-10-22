@@ -48,7 +48,9 @@ public readonly record struct ParkFacilities(
 	int PoorFood = 0, int PoorGoods = 0, int Fatty = 0, int Salty = 0, int Icy = 0, int TooSweet = 0, int NotSweet = 0,
 	int CheapPrizes = 0, int SlimChances = 0,
 	// Staff left to roam the whole park, by role, among roles with at least three hired (TAG_SYSTEM 24 / 26 / 29 / 31).
-	int UnzonedMechanics = 0, int UnzonedHandymen = 0, int UnzonedGuards = 0, int UnzonedEntertainers = 0 );
+	int UnzonedMechanics = 0, int UnzonedHandymen = 0, int UnzonedGuards = 0, int UnzonedEntertainers = 0,
+	// Variety: the kinds of stall and sideshow the park may build and how many of them it has (-1 = not counted).
+	int ShopKindsAvailable = -1, int ShopKindsBuilt = 0, int SideshowKindsAvailable = -1, int SideshowKindsBuilt = 0 );
 
 /// <summary>
 /// Maps the live park state to advisor message candidates — <c>(id, group, score)</c> for the
@@ -220,6 +222,17 @@ public static class AdvisorAdvice
 		// Full queues (LongQueuesBoredVisitors; Advisor.sam gives it no parameters): shorter rides, or an entertainer.
 		if ( f.FullQueues > 0 )
 			Add( "LongQueuesBoredVisitors", P( "LongQueuesBoredVisitors", "Score", 60f ) + 10f * (f.FullQueues - 1) );
+
+		// A poor selection (<X>PoorSelection.PoorerThan % of the kinds on offer built, with more than MoreXThan of them):
+		// "your selection of rides / shops / sideshows isn't so good".
+		void Selection( string id, string more, int count, int built, int available, float poorerThan, float moreThan )
+		{
+			if ( available > 0 && count > P( id, more, moreThan ) && 100f * built / available < P( id, "PoorerThan", poorerThan ) )
+				Add( id, P( id, "Score", 40f ) );
+		}
+		Selection( "RidesPoorSelection", "MoreRidesThan", f.Rides, f.RideKindsBuilt, f.RideKindsAvailable, 30f, 3f );
+		Selection( "ShopsPoorSelection", "MoreShopsThan", f.Shops, f.ShopKindsBuilt, f.ShopKindsAvailable, 25f, 2f );
+		Selection( "SideshowsPoorSelection", "MoreSideshowsThan", f.Sideshows, f.SideshowKindsBuilt, f.SideshowKindsAvailable, 15f, 2f );
 
 		// Three or more of a job and none given a patrol area: "they'd be more efficient if you set their patrol areas".
 		foreach ( var (id, count) in new[] { ("StaffZoneMechanics", f.UnzonedMechanics), ("StaffZoneHandymen", f.UnzonedHandymen),

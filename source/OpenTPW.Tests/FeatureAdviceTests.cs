@@ -40,6 +40,14 @@ public class FeatureAdviceTests
 	}
 
 	[TestMethod]
+	public void ManyOfTheSameShopsIsAPoorSelection()
+	{
+		var park = new ParkFacilities( 1, 1, 1, 1, 3, 0, 0, 2, 0, 1, 0, 50, 0, 0, Days: 10, Features: 2 );
+		CollectionAssert.Contains( Ids( park with { Shops = 6, ShopKindsAvailable = 8, ShopKindsBuilt = 1 } ), "ShopsPoorSelection" );
+		CollectionAssert.DoesNotContain( Ids( park with { Shops = 6, ShopKindsAvailable = 8, ShopKindsBuilt = 4 } ), "ShopsPoorSelection" );
+	}
+
+	[TestMethod]
 	public void FullQueuesBoreVisitors()
 	{
 		var park = new ParkFacilities( 1, 1, 1, 1, 3, 0, 0, 2, 0, 1, 0, 50, 0, 0, Days: 10, Features: 2 );

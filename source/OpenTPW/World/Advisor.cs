@@ -446,11 +446,26 @@ public sealed class Advisor : Entity
 			SlimChances: rides.Count( r => r.IsSideshow && r.SideshowChanceOfLoosing > SlimChance ),
 			UnzonedMechanics: Unzoned( StaffRole.Mechanic ), UnzonedHandymen: Unzoned( StaffRole.Handyman ),
 			UnzonedGuards: Unzoned( StaffRole.Guard ), UnzonedEntertainers: Unzoned( StaffRole.Entertainer ),
+			ShopKindsAvailable: Kinds( BuildCategory.Shops, available: true ), ShopKindsBuilt: Kinds( BuildCategory.Shops, available: false ),
+			SideshowKindsAvailable: Kinds( BuildCategory.Sideshows, available: true ), SideshowKindsBuilt: Kinds( BuildCategory.Sideshows, available: false ),
 			RideKindsAvailable: RideKinds( available: true ), RideKindsBuilt: RideKinds( available: false ),
 			RidesToResearch: BuildMode.Current?.Catalog.Count( c => c.Category == BuildCategory.Rides && !(ItemResearch.Current?.IsUnlocked( c.Name ) ?? true) ) ?? 0 );
 	}
 
 	// The researched kinds of ride in the catalog (available) or those of them the park has built.
+	// The kinds of stall or sideshow on offer (researched), or how many of them the park has built.
+	private static int Kinds( BuildCategory category, bool available )
+	{
+		var kinds = BuildMode.Current?.Catalog.Where( c => c.Category == category && (ItemResearch.Current?.IsUnlocked( c.Name ) ?? true) ).ToList();
+		if ( kinds == null )
+			return -1;
+		if ( available )
+			return kinds.Count;
+		var built = Entity.All.OfType<Ride>().Select( r => System.IO.Path.GetFileName( r.Archive ) )
+			.Concat( Shop.Stalls.Select( s => s.CatalogKey ) ).ToHashSet( StringComparer.OrdinalIgnoreCase );
+		return kinds.Count( c => built.Contains( c.Name ) || (c.RidePath != null && built.Contains( System.IO.Path.GetFileName( c.RidePath ) )) );
+	}
+
 	private static int RideKinds( bool available )
 	{
 		var rides = BuildMode.Current?.Catalog.Where( c => c.Category == BuildCategory.Rides && (ItemResearch.Current?.IsUnlocked( c.Name ) ?? true) ).ToList();
