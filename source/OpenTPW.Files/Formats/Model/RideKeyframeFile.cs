@@ -173,7 +173,7 @@ public sealed class RideKeyframeFile
 			ReadTrack( d, scaleOff, NextBound( scaleOff ), 3, 0x0000, U32, F32, ( t, v ) => anim.Scale.Add( (t, new SVector3( v[0], v[1], v[2] )) ) );
 
 			if ( (anim.Flags & FlagVertexMorph) != 0 )
-				ReadMorph( d, (int)U32( rec + 0x28 ), U16, U32, F32, anim );
+				anim.Morph.AddRange( ReadMorph( d, (int)U32( rec + 0x28 ) ) );
 
 			if ( anim.HasAnimation )
 			{
@@ -190,17 +190,22 @@ public sealed class RideKeyframeFile
 	// 0x14-byte sub-entries, each describing a set of vertices whose positions are keyframed. A vertex
 	// is a packed 32-bit int holding three 10-bit signed components, dequantised as
 	// component = signed10 * scaleAxis + offsetAxis. Decoded from FUN_004714a0 / FUN_00470e90.
-	private static void ReadMorph( byte[] d, int block, Func<int, ushort> U16, Func<int, uint> U32, Func<int, float> F32, SurfaceAnim anim )
+	public static List<MorphSub> ReadMorph( byte[] d, int block )
 	{
+		ushort U16( int o ) => o >= 0 && o + 2 <= d.Length ? (ushort)(d[o] | (d[o + 1] << 8)) : (ushort)0;
+		uint U32( int o ) => o >= 0 && o + 4 <= d.Length ? (uint)(d[o] | (d[o + 1] << 8) | (d[o + 2] << 16) | (d[o + 3] << 24)) : 0u;
+		float F32( int o ) => o >= 0 && o + 4 <= d.Length ? BitConverter.ToSingle( d, o ) : 0f;
+
+		var result = new List<MorphSub>();
 		if ( block <= 0 || block + 0x2c > d.Length )
-			return;
+			return result;
 
 		var offset = new SVector3( F32( block + 0x14 ), F32( block + 0x18 ), F32( block + 0x1c ) );
 		var scale = new SVector3( F32( block + 0x20 ), F32( block + 0x24 ), F32( block + 0x28 ) );
 		int nsub = U16( block + 2 );
 		int sub0 = (int)U32( block + 0x0c );
 		if ( sub0 <= 0 || nsub <= 0 || nsub > 4096 )
-			return;
+			return result;
 
 		// Dequantise one packed vertex (three 10-bit signed components) with the block's bbox transform.
 		SVector3 Dequant( uint p ) => new(
@@ -246,8 +251,9 @@ public sealed class RideKeyframeFile
 					frames[f][v] = Dequant( U32( packPtr + (f * vc + v) * 4 ) );
 			}
 
-			anim.Morph.Add( new MorphSub { VertexSlots = slots, Times = times.ToArray(), Frames = frames } );
+			result.Add( new MorphSub { VertexSlots = slots, Times = times.ToArray(), Frames = frames } );
 		}
+		return result;
 	}
 
 	// Sign-extend the low 10 bits of a packed value to a signed int.

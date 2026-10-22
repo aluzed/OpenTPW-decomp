@@ -40,6 +40,10 @@ public sealed class Advisor : Entity
 		public bool AlwaysShown;
 		public MouthShape? Viseme; // set for the five "Mouth - *" parts
 		public int Mesh;           // its number in the model's object tree
+		// For a gesture's vertex morph (the gloves' fingers): the rest positions, and each mesh position's vertices.
+		public Vector3[] Rest = Array.Empty<Vector3>();
+		public int[][] VerticesOf = Array.Empty<int[]>();
+		public bool Morphed;
 	}
 
 	// The model's object tree and his gestures; the one playing (null: at rest) and when it started.
@@ -170,6 +174,9 @@ public sealed class Advisor : Entity
 				AlwaysShown = isBase && !hiddenAtRest,
 				Viseme = viseme,
 				Mesh = index,
+				Rest = built.Vertices.Select( v => v.Position ).ToArray(),
+				VerticesOf = Enumerable.Range( 0, mesh.VertexOrder.Length == 0 ? 0 : mesh.VertexOrder.Max() + 1 )
+					.Select( position => Enumerable.Range( 0, mesh.VertexOrder.Length ).Where( j => mesh.VertexOrder[j] == position ).ToArray() ).ToArray(),
 			} );
 		}
 		Log.Info( $"[advisor] built {parts.Count} part(s) (5 visemes + body), head {headUnits:0.#} units" );
@@ -531,6 +538,7 @@ public sealed class Advisor : Entity
 			else
 				part.Entity.Model = (TrackOf( part.Mesh )?.VisibleAt( frame ) ?? part.AlwaysShown) ? part.Model : null;
 
+			Morph( part, frame );
 			var (localOffset, localRotation, localScale) = pose?[part.Mesh] ?? (part.LocalOffset, part.LocalRotation, part.LocalScale);
 			var offset = System.Numerics.Vector3.Transform( (localOffset * groupScale).GetSystemVector3(), groupRot );
 			part.Entity.Position = groupPos + (Vector3)offset;
@@ -560,6 +568,30 @@ public sealed class Advisor : Entity
 		var fitting = kind.Where( g => g.Seconds <= longest ).ToList();
 		gesture = fitting.Count > 0 ? fitting[Random.Shared.Next( fitting.Count )] : kind.MinBy( g => g.Seconds );
 		gestureStart = Time.Now;
+	}
+
+	// A gesture's vertex morph on a part (the gloves' finger poses): its rest shape with the morphed positions written
+	// over it (the loader's Y/Z swap applied); back to rest once the gesture is over.
+	private void Morph( Part part, float frame )
+	{
+		var morphs = TrackOf( part.Mesh )?.Morph;
+		if ( (morphs == null || morphs.Count == 0) && !part.Morphed )
+			return;
+		var vertices = part.Model.Vertices;
+		for ( int i = 0; i < vertices.Length && i < part.Rest.Length; i++ )
+			vertices[i].Position = part.Rest[i];
+		part.Morphed = false;
+		foreach ( var m in morphs ?? new() )
+			for ( int i = 0; i < m.VertexSlots.Length; i++ )
+			{
+				if ( m.VertexSlots[i] >= part.VerticesOf.Length )
+					continue;
+				var p = m.Sample( i, frame );
+				foreach ( int j in part.VerticesOf[m.VertexSlots[i]] )
+					vertices[j].Position = new Vector3( p.X, p.Z, p.Y );
+				part.Morphed = true;
+			}
+		part.Model.UploadVertices();
 	}
 
 	private GestureFile.Track? TrackOf( int index ) => gesture?.Tracks.FirstOrDefault( t => t.Target == index );

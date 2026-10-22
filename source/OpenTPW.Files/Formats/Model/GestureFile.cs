@@ -10,8 +10,9 @@ namespace OpenTPW;
 /// <c>+0x12</c>, its 0x40-byte records at <c>+0x2c</c>, the length in frames at <c>+0x08</c>), but its records address
 /// the model's whole object tree (<see cref="ModelHierarchy"/>) and carry other tracks:
 /// <list type="bullet">
-/// <item><c>+0x04</c> flags: <c>0x8</c> rotation, <c>0x80</c> scale, <c>0x20000</c> visibility (<c>0x1</c> translation and
-/// <c>0x1000</c> morph are not read: the advisor's translations are all zero);</item>
+/// <item><c>+0x04</c> flags: <c>0x8</c> rotation, <c>0x80</c> scale, <c>0x1000</c> vertex morph (the rides' format, at
+/// <c>+0x28</c>, by position index), <c>0x20000</c> visibility (<c>0x1</c> translation and <c>0x2000</c> are not read:
+/// the advisor's translations are all zero);</item>
 /// <item><c>+0x10</c> the rotation key count, <c>+0x12</c> the scale key count, <c>+0x14</c> the object;</item>
 /// <item><c>+0x1c</c> rotation keys, 20 bytes: <c>(index &lt;&lt; 16 | frame)</c> — the last index <c>0xFFFF</c> — then the
 /// object's whole local rotation as <c>(x, y, z, w)</c>;</item>
@@ -23,7 +24,7 @@ namespace OpenTPW;
 /// </summary>
 public sealed class GestureFile
 {
-	public const uint FlagRotation = 0x8, FlagScale = 0x80, FlagVisibility = 0x20000;
+	public const uint FlagRotation = 0x8, FlagScale = 0x80, FlagMorph = 0x1000, FlagVisibility = 0x20000;
 	public const float FramesPerSecond = 30f;
 
 	public sealed class Track
@@ -31,6 +32,8 @@ public sealed class GestureFile
 		public int Target { get; init; }
 		public List<(float Frame, Quaternion Value)> Rotation { get; } = new();
 		public List<(float Frame, SVector3 Value)> Scale { get; } = new();
+		/// <summary>Vertex morphs of the mesh (the gloves' finger poses), by position index (<see cref="ModelFile.Mesh.VertexOrder"/>).</summary>
+		public List<RideKeyframeFile.MorphSub> Morph { get; } = new();
 		/// <summary>Visibility changes, in frame order (empty: the track doesn't touch it).</summary>
 		public List<(float Frame, bool Visible)> Visibility { get; } = new();
 
@@ -109,6 +112,8 @@ public sealed class GestureFile
 					track.Scale.Add( (frame, new SVector3( F32( o + 4 ), F32( o + 8 ), F32( o + 12 ) )) );
 				}
 			}
+			if ( (flags & FlagMorph) != 0 )
+				track.Morph.AddRange( RideKeyframeFile.ReadMorph( d, (int)U32( rec + 0x28 ) ) );
 			if ( (flags & FlagVisibility) != 0 )
 			{
 				int o = (int)U32( rec + 0x30 );
@@ -123,7 +128,7 @@ public sealed class GestureFile
 					last = frame;
 				}
 			}
-			if ( track.Rotation.Count > 0 || track.Scale.Count > 0 || track.Visibility.Count > 0 )
+			if ( track.Rotation.Count > 0 || track.Scale.Count > 0 || track.Visibility.Count > 0 || track.Morph.Count > 0 )
 				tracks.Add( track );
 		}
 	}

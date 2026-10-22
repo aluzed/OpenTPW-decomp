@@ -103,6 +103,9 @@ public partial class ModelFile : BaseFormat
 		public uint VertexOrderLen { get; set; }
 		public uint VertexOrderOffset { get; set; }
 		public Vertex[] Vertices { get; set; } = null!;
+		/// <summary>Which of the mesh's positions each of <see cref="Vertices"/> is (a position is repeated for each UV
+		/// it takes) — the animations' vertex morphs address positions.</summary>
+		public ushort[] VertexOrder { get; set; } = Array.Empty<ushort>();
 		public uint[] Indices { get; set; } = null!;
 		public Vector2[] TexCoords { get; set; } = null!;
 		public Matrix4x4 TransformMatrix { get; set; }
@@ -418,6 +421,7 @@ public partial class ModelFile : BaseFormat
 				}
 
 				mesh.Vertices = reorderedVertices;
+				mesh.VertexOrder = vertexOrder;
 
 				// Parse face data
 				reader.BaseStream.Seek( mesh.FaceOffset, SeekOrigin.Begin );
