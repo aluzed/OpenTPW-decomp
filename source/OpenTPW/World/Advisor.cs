@@ -473,6 +473,7 @@ public sealed class Advisor : Entity
 			ShopsToResearch: ToResearch( BuildCategory.Shops ), SideshowsToResearch: ToResearch( BuildCategory.Sideshows ),
 			FeatureKindsAvailable: Kinds( BuildCategory.Features, available: true ), FeatureKindsBuilt: Kinds( BuildCategory.Features, available: false ),
 			FeaturesToResearch: ToResearch( BuildCategory.Features ),
+			LowestStaffMorale: staff.Count == 0 ? -1f : staff.Min( s => s.Morale ),
 			UncoveredByMechanics: Uncovered( StaffRole.Mechanic, rides.Select( r => r.Position ) ),
 			UncoveredByHandymen: Uncovered( StaffRole.Handyman, Attractions() ),
 			UncoveredByGuards: Uncovered( StaffRole.Guard, Attractions() ),

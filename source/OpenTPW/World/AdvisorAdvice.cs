@@ -59,7 +59,9 @@ public readonly record struct ParkFacilities(
 	int ShopsToResearch = 0, int SideshowsToResearch = 0, int FeatureKindsAvailable = -1, int FeatureKindsBuilt = 0,
 	int FeaturesToResearch = 0,
 	// Attractions outside every patrol area of a job whose staff all have one (TAG_SYSTEM 25 / 27 / 30 / 32).
-	int UncoveredByMechanics = 0, int UncoveredByHandymen = 0, int UncoveredByGuards = 0, int UncoveredByEntertainers = 0 );
+	int UncoveredByMechanics = 0, int UncoveredByHandymen = 0, int UncoveredByGuards = 0, int UncoveredByEntertainers = 0,
+	// The unhappiest member of staff's morale (0–100; -1 = no staff), for CongratStaffHappy.
+	float LowestStaffMorale = -1f );
 
 /// <summary>
 /// Maps the live park state to advisor message candidates — <c>(id, group, score)</c> for the
@@ -104,6 +106,8 @@ public static class AdvisorAdvice
 	/// <summary>The candidate tips justified by <paramref name="s"/>, scored via <paramref name="c"/>.</summary>
 	// The average grade (0–4) that counts as well trained.
 	private const float WellTrained = 3.5f;
+	// The morale every member of staff must have for "your staff are all happy".
+	private const float StaffAllHappy = 80f;
 
 	// How many visitors far from a toilet are worth FeaturesFarToToilets.
 	private const int FarFromToiletEnough = 3;
@@ -338,6 +342,10 @@ public static class AdvisorAdvice
 					list.Add( ($"CongratTrained{StaffStrikes.AdvisorName( StaffStrikes.Roles[i] )}", GroupCongrats,
 						c.Param( $"CongratTrained{StaffStrikes.AdvisorName( StaffStrikes.Roles[i] )}", "Score" ) ?? CongratScore) );
 		}
+
+		// All the staff happy (TAG_SYSTEM 160: "keep them that way to avoid strikes").
+		if ( f.LowestStaffMorale >= StaffAllHappy && f.Mechanics + f.Handymen + f.Guards + f.Entertainers + f.Researchers >= 3 )
+			list.Add( ("CongratStaffHappy", GroupCongrats, c.Param( "CongratStaffHappy", "Score" ) ?? CongratScore) );
 
 		// Too many of one kind of staff (Max*.MoreThan 10).
 		foreach ( var (id, hired) in new[] { ("MaxHandymen", f.Handymen), ("MaxEntertainers", f.Entertainers),
