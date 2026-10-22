@@ -51,15 +51,66 @@ public sealed class LobbyIsland : Entity
 			var rotation = new Quaternion( rot.X, rot.Z, rot.Y, -rot.W );
 			var scale = new Vector3( scl.X, scl.Z, scl.Y );
 
-			foreach ( var model in MaterialSlots.BuildModels( [.. vertices], mesh.Indices, textures,
-				() => new Material<ObjectUniformBuffer>( "content/shaders/test.shader" ) ) )
-				_ = new ModelEntity()
+			var models = MaterialSlots.BuildModels( [.. vertices], mesh.Indices, textures,
+				() => new Material<ObjectUniformBuffer>( "content/shaders/test.shader" ) );
+			for ( int m = 0; m < models.Count; m++ )
+			{
+				var entity = new ModelEntity()
 				{
-					Model = model,
+					Model = models[m],
 					Scale = scale,
 					Rotation = rotation,
 					Position = position + Position,
 				};
+				if ( m == 0 )
+					parts.Add( entity ); // the mesh's part (the rest are extra material groups)
+			}
 		}
+
+		LoadAnimation( $"lobby/terrain/{modelPrefix}_isle", modelFile );
+	}
+
+	// The island's own animation (its M1, M2 … files: the waterfalls, the windmill), posed through its object tree.
+	private readonly List<ModelEntity> parts = new();
+	private KeyframePoser? poser;
+	private RideKeyframeFile? animation;
+
+	private void LoadAnimation( string stem, ModelFile modelFile )
+	{
+		static byte[]? Read( string path )
+		{
+			try
+			{
+				using var stream = FileSystem.OpenRead( path );
+				using var bytes = new MemoryStream();
+				stream.CopyTo( bytes );
+				return bytes.ToArray();
+			}
+			catch { return null; }
+		}
+		if ( parts.Count != modelFile.Meshes.Count || Read( $"{stem}.md2" ) is not { } data || ModelHierarchy.Read( data ) is not { } tree )
+			return;
+		for ( int n = 1; n <= 9 && Read( $"{stem}M{n}.md2" ) is { } file; n++ )
+		{
+			var kf = new RideKeyframeFile( file );
+			if ( kf.Surfaces.Count == 0 )
+				continue;
+			if ( animation == null )
+				animation = kf;
+			else
+				animation.AddVariant( kf );
+		}
+		if ( animation == null || animation.Duration <= 0f )
+			return;
+		poser = new KeyframePoser( tree, KeyframePoser.PlacementsOf( parts ), parts.Select( e => e.Model ).ToList(),
+			modelFile.Meshes.Select( m => m.VertexOrder ).ToList() );
+	}
+
+	protected override void OnUpdate()
+	{
+		if ( poser == null || animation == null )
+			return;
+		poser.Apply( animation, Time.Now * GestureFile.FramesPerSecond, loop: true );
+		poser.PoseEntities( parts );
 	}
 }
