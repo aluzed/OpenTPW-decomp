@@ -163,7 +163,8 @@ internal sealed class ItemInfoWindow : GameWindow
 		if ( ride.Queue is { } queue )
 			StatRow( "Queue", $"{queue.LineLength} / {Math.Max( 1, queue.Waypoints.Count - 1 ) * RideQueue.PeepsPerCell}{(queue.IsFull ? "  full" : "")}" );
 		if ( !ride.IsSideshow && ride.Upgrades.Count > 1 )
-			StatRow( Localization.Get( UIStrings.Upgrades, "Upgrades" ), $"level {ride.UpgradeLevel + 1} / {ride.Upgrades.Count}" );
+			StatRow( Localization.Get( UIStrings.Upgrades, "Upgrades" ), ride.UpgradePending ? "mechanic on his way"
+				: $"level {ride.UpgradeLevel + 1} / {ride.Upgrades.Count}" );
 		if ( ride.IsResearching )
 			StatRow( "Upgrade research", null, ride.ResearchFraction );
 		StatRow( Localization.Get( UIStrings.ScrapValue, "Scrap value" ), $"$ {ride.BuildCost * Ride.SellRefundFraction:0}" );
@@ -213,14 +214,11 @@ internal sealed class ItemInfoWindow : GameWindow
 			Staff.CallMechanic( ride );
 		// Upgrade: research the next level, then buy it (the R / U keys).
 		bool canResearch = ride.HasNextLevel && !ride.NextResearched && !ride.IsResearching && fin.CanAfford( ride.NextResearchCost );
-		bool canUpgrade = ride.NextResearched && fin.CanAfford( ride.NextUpgradeCost );
+		bool canUpgrade = ride.NextResearched && !ride.UpgradePending && fin.CanAfford( ride.NextUpgradeCost );
 		if ( RoundButton( Action( 600f ), "b_upgrade", hint: 19, enabled: canResearch || canUpgrade ) )
 		{
 			if ( canUpgrade )
-			{
-				fin.PayBuild( ride.NextUpgradeCost );
-				ride.ApplyUpgrade();
-			}
+				ride.OrderUpgrade( fin ); // a mechanic comes to fit it
 			else
 			{
 				fin.PayBuild( ride.NextResearchCost );

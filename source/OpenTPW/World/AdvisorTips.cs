@@ -51,6 +51,8 @@ public static class AdvisorTips
 		["ParkNowOpen"] = "Your park is now open.",
 		["ParkNowClosed"] = "Your park is now closed.",
 		["PrankStinkBomb"] = "Some prankster has left a stink bomb in your park. Get it cleaned up before too many people get ill.",
+		["UpgradeNeedsMechanic"] = "You need to hire a mechanic before you can upgrade your rides.",
+		["UpgradeMechanicsStrike"] = "You can't upgrade your rides until your mechanics' strike is over!",
 		["StaffMaxHandyman"] = "You have employed the maximum number of cleaners for a park: train them to do better.",
 		["StaffZoneMechanics"] = "Your mechanics could be more efficient if you set their patrol areas.",
 		["RidesPoorSelection"] = "Your selection of rides isn't so good. You should build some more.",
@@ -130,6 +132,7 @@ public static class AdvisorTips
 		["SideshowsSlimChances"] = 113,    // "… their chances of winning some of your sideshows are too slim. …"
 		["ParkNowOpen"] = 149, ["ParkNowClosed"] = 150, // "Your park is now open." / "… closed."
 		["PrankStinkBomb"] = 146,          // "Some prankster has left a stink bomb in your park. …"
+		["UpgradeNeedsMechanic"] = 151, ["UpgradeMechanicsStrike"] = 152,
 		// "You have employed the maximum number of … for a park … you'll have to train them."
 		["StaffMaxHandyman"] = 136, ["StaffMaxEntertainer"] = 138, ["StaffMaxMechanic"] = 140, ["StaffMaxGuard"] = 142,
 		["StaffMaxResearcher"] = 144,

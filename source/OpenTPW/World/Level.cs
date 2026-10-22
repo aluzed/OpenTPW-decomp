@@ -714,7 +714,7 @@ public class Level
 				Kind = "ride", Name = Path.GetFileName( r.Archive ), Title = r.Renamed ? r.Name : null,
 				TileX = r.TileX, TileY = r.TileY, Rotation = r.Rotation, TicketPrice = r.TicketPrice,
 				// Progression (T-059 v2): research/upgrade level + condition + the park-wide research-queue slot.
-				UpgradeLevel = r.UpgradeLevel, ResearchedLevel = r.ResearchedLevel,
+				UpgradeLevel = r.UpgradeLevel + (r.UpgradePending ? 1 : 0), ResearchedLevel = r.ResearchedLevel, // a bought upgrade is kept
 				Researching = r.IsResearching, ResearchFraction = r.ResearchFraction,
 				ResearchQueuePos = ResearchQueue.Position( r ),
 				Reliability = r.Reliability, Broken = r.IsBroken, Closed = r.IsClosed,

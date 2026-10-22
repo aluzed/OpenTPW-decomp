@@ -410,11 +410,8 @@ public sealed class BuildMode : Entity
 					fin.PayBuild( sel.NextResearchCost );
 					sel.StartResearch();
 				}
-				if ( Hit( Key.U ) && sel.NextResearched && fin.CanAfford( sel.NextUpgradeCost ) )
-				{
-					fin.PayBuild( sel.NextUpgradeCost );
-					sel.ApplyUpgrade();
-				}
+				if ( Hit( Key.U ) )
+					sel.OrderUpgrade( fin ); // a mechanic comes to fit it
 				if ( Hit( Key.Delete ) ) SellSelected(); // sell/demolish the selected ride (T-041)
 			}
 			// Selected shop: snack/drink price (, .) — a toilet stays free (T-041).

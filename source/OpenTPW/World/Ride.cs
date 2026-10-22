@@ -91,6 +91,34 @@ public class Ride : Entity
 	}
 
 	/// <summary>Apply the researched next level (caller pays <see cref="NextUpgradeCost"/>); bumps capacity.</summary>
+	/// <summary>An upgrade bought and waiting for a mechanic to fit it (the original's "UPGRADE: Mechanic is on his
+	/// way", UITEXT 369).</summary>
+	public bool UpgradePending { get; private set; }
+
+	/// <summary>Buy the next (researched) upgrade: paid now, fitted when a mechanic comes to service the ride — one is
+	/// called. Without a mechanic, or while they strike, the advisor says so (TAG_SYSTEM 151 / 152) and nothing is
+	/// bought.</summary>
+	public bool OrderUpgrade( ParkFinances fin )
+	{
+		if ( UpgradePending || !NextResearched || !fin.CanAfford( NextUpgradeCost ) )
+			return false;
+		if ( !Entity.All.Any( e => e is Staff { Role: StaffRole.Mechanic } ) )
+		{
+			Advisor.Notice( "UpgradeNeedsMechanic" );
+			return false;
+		}
+		if ( StaffStrikes.Current?.IsStriking( StaffRole.Mechanic ) == true )
+		{
+			Advisor.Notice( "UpgradeMechanicsStrike" );
+			return false;
+		}
+		fin.PayBuild( NextUpgradeCost );
+		UpgradePending = true;
+		Staff.CallMechanic( this );
+		Log.Info( $"[ride] {Name}: upgrade bought, a mechanic is on the way" );
+		return true;
+	}
+
 	public void ApplyUpgrade()
 	{
 		if ( NextResearched )
@@ -352,7 +380,7 @@ public class Ride : Entity
 	private const float BreakdownFxPeriod = 1.8f; // seconds between spark bursts
 	private float breakdownFxTimer;
 
-	private bool breakDemoDone;
+	private bool breakDemoDone, upgradeDemoDone;
 
 	private void BreakDown()
 	{
@@ -380,6 +408,12 @@ public class Ride : Entity
 	/// <summary>Service a running ride (a mechanic called to it from the ride window): its wear is made good.</summary>
 	public void Service()
 	{
+		if ( UpgradePending ) // the mechanic fits the bought upgrade
+		{
+			UpgradePending = false;
+			ApplyUpgrade();
+			Log.Info( $"[ride] {Name} upgraded to level {UpgradeLevel + 1}" );
+		}
 		if ( IsBroken )
 		{
 			Repair();
@@ -992,6 +1026,19 @@ public class Ride : Entity
 		{
 			breakDemoDone = true;
 			BreakDown();
+		}
+
+		// Dev aid: OPENTPW_UPGRADE_DEMO=<name> researches and orders that ride's next upgrade half a minute in.
+		if ( !upgradeDemoDone && Time.Now > 30f && Environment.GetEnvironmentVariable( "OPENTPW_UPGRADE_DEMO" ) is { Length: > 0 } wanted
+			&& Name.Contains( wanted, StringComparison.OrdinalIgnoreCase ) && ParkFinances.Current is { } demoFin )
+		{
+			upgradeDemoDone = true;
+			if ( !NextResearched && HasNextLevel )
+			{
+				StartResearch();
+				TickResearch( 1000f, 1 );
+			}
+			OrderUpgrade( demoFin );
 		}
 
 		// While broken, periodically spark + zap at the ride so the fault is visible/audible until repaired.
