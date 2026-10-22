@@ -778,18 +778,7 @@ public sealed class RideEngine : IRideEngine
 	/// </summary>
 	public void SetChannelKeyframes( int anim, RideKeyframeFile keyframes )
 	{
-		// A rotation track's first key is its object's bind rotation: read in the order that makes it so.
-		if ( tree != null )
-			foreach ( var sa in keyframes.Surfaces )
-			{
-				if ( sa.Rotation.Count == 0 || sa.SurfaceIndex >= tree.ObjectCount
-					|| !Matrix4x4.Decompose( tree.Local[sa.SurfaceIndex], out _, out var bind, out _ ) )
-					continue;
-				var q = sa.Rotation[0].Value;
-				var other = sa.WFirst ? new Quaternion( q.W, q.X, q.Y, q.Z ) : new Quaternion( q.Y, q.Z, q.W, q.X );
-				if ( MathF.Abs( Quaternion.Dot( bind, other ) ) > MathF.Abs( Quaternion.Dot( bind, q ) ) + 0.01f )
-					sa.SwapRotationOrder();
-			}
+		FixRotationOrder( keyframes );
 		if ( keyframes.Surfaces.Count > 0 )
 			channelAnims[anim] = keyframes;
 	}
@@ -1093,10 +1082,32 @@ public sealed class RideEngine : IRideEngine
 	private Matrix4x4[]? bindWorld;
 	private static readonly Matrix4x4 SwapYZ = new( 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1 );
 
+	// A rotation track's first key is its object's bind rotation: read each track in the component order that makes
+	// it so (once the tree is known — the keyframes may come before or after it).
+	private readonly HashSet<RideKeyframeFile.SurfaceAnim> orderChecked = new();
+
+	private void FixRotationOrder( RideKeyframeFile keyframes )
+	{
+		if ( tree == null )
+			return;
+		foreach ( var sa in keyframes.Surfaces )
+		{
+			if ( sa.Rotation.Count == 0 || sa.SurfaceIndex >= tree.ObjectCount || !orderChecked.Add( sa )
+				|| !Matrix4x4.Decompose( tree.Local[sa.SurfaceIndex], out _, out var bind, out _ ) )
+				continue;
+			var q = sa.Rotation[0].Value;
+			var other = sa.WFirst ? new Quaternion( q.W, q.X, q.Y, q.Z ) : new Quaternion( q.Y, q.Z, q.W, q.X );
+			if ( MathF.Abs( Quaternion.Dot( bind, other ) ) > MathF.Abs( Quaternion.Dot( bind, q ) ) + 0.01f )
+				sa.SwapRotationOrder();
+		}
+	}
+
 	/// <summary>The ride model's object tree (from its .md2), so keyframes pose the parts through it.</summary>
 	public void SetHierarchy( ModelHierarchy? hierarchy )
 	{
 		tree = hierarchy;
+		foreach ( var kf in channelAnims.Values )
+			FixRotationOrder( kf );
 		bindWorld = null;
 		if ( tree == null )
 			return;
