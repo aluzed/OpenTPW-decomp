@@ -38,6 +38,7 @@ public static class AdvisorTips
 		["StaffHireEntertainers1"] = "The park is getting busy — hire some entertainers.",
 		["RidesBuildRides"] = "Your park has no rides yet.",
 		["ShopsBuildShops"] = "You haven't built any shops yet.",
+		["LongQueuesBoredVisitors"] = "Visitors are getting bored waiting in your long queues. Shorten the rides, or place an entertainer nearby.",
 		["SideshowsBuildSideshows"] = "Your park has no sideshows yet.",
 		["FeaturesNoToilets"] = "Your park needs some toilets.",
 		["ShopsBuildMoreShops"] = "A park this size should have more shops.",
@@ -97,6 +98,7 @@ public static class AdvisorTips
 		["SideshowsBuildSideshows"] = 81,
 		["FeaturesNoToilets"] = 86,
 		["FeaturesNotEnoughToilets"] = 88, // "A park this size should have more toilets."
+		["LongQueuesBoredVisitors"] = 63,  // "Visitors are getting bored waiting in your long queues. …"
 		// Research: hire scientists (21: most rides built, 22: all built) / research more rides (66).
 		["StaffHireResearchers1"] = 21, ["StaffHireResearchers2"] = 22, ["RidesResearchMore"] = 66,
 		["ShopsBuildMoreShops"] = 78,

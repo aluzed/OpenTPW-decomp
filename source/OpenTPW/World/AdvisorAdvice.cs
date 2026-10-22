@@ -40,7 +40,9 @@ public readonly record struct ParkFacilities(
 	float ToiletQueue = 0f,
 	// Research (T-044): the kinds of ride the park may build, how many of them it has built, and how many are still
 	// to be researched (-1 = not counted).
-	int RideKindsAvailable = -1, int RideKindsBuilt = 0, int RidesToResearch = 0 );
+	int RideKindsAvailable = -1, int RideKindsBuilt = 0, int RidesToResearch = 0,
+	// Rides whose queue is full (visitors turned away, bored waiting): LongQueuesBoredVisitors.
+	int FullQueues = 0 );
 
 /// <summary>
 /// Maps the live park state to advisor message candidates — <c>(id, group, score)</c> for the
@@ -205,6 +207,10 @@ public static class AdvisorAdvice
 		// Toilet queues (FeaturesNotEnoughToilets.AverageQueueLongerThan 2.5): "a park this size should have more".
 		if ( f.Toilets > 0 && f.ToiletQueue > P( "FeaturesNotEnoughToilets", "AverageQueueLongerThan", 2.5f ) )
 			Add( "FeaturesNotEnoughToilets", P( "FeaturesNotEnoughToilets", "Score", 100f ) );
+
+		// Full queues (LongQueuesBoredVisitors; Advisor.sam gives it no parameters): shorter rides, or an entertainer.
+		if ( f.FullQueues > 0 )
+			Add( "LongQueuesBoredVisitors", P( "LongQueuesBoredVisitors", "Score", 60f ) + 10f * (f.FullQueues - 1) );
 
 		// Money to spare: spend it, or repay what's owed (WealthHigh / WealthHighRepayLoan).
 		if ( f.Debt > 0f && f.Money > f.Debt * P( "WealthHighRepayLoan", "Margin", 1.2f ) )

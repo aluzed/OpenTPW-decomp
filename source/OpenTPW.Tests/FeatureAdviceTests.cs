@@ -21,6 +21,14 @@ public class FeatureAdviceTests
 	}
 
 	[TestMethod]
+	public void FullQueuesBoreVisitors()
+	{
+		var park = new ParkFacilities( 1, 1, 1, 1, 3, 0, 0, 2, 0, 1, 0, 50, 0, 0, Days: 10, Features: 2 );
+		CollectionAssert.DoesNotContain( Ids( park ), "LongQueuesBoredVisitors" );
+		CollectionAssert.Contains( Ids( park with { FullQueues = 2 } ), "LongQueuesBoredVisitors" );
+	}
+
+	[TestMethod]
 	public void TroubleWithoutACameraAsksForOne()
 	{
 		var f = new ParkFacilities( 1, 1, 2, 1, 3, 0, 0, 2, 0, 1, 0, 50, 0, Misbehaving: 6, Days: 10, Features: 2, Cameras: 0 );

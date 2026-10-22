@@ -427,6 +427,7 @@ public sealed class Advisor : Entity
 			StaffNotices: PendingStaffNotices(),
 			Features: Ride.Features.Count, Cameras: Ride.Features.Count( r => r.ProvidesSecurity ),
 			ToiletQueue: Shop.AverageToiletQueue(),
+			FullQueues: rides.Count( r => r.Queue is { IsFull: true } ),
 			RideKindsAvailable: RideKinds( available: true ), RideKindsBuilt: RideKinds( available: false ),
 			RidesToResearch: BuildMode.Current?.Catalog.Count( c => c.Category == BuildCategory.Rides && !(ItemResearch.Current?.IsUnlocked( c.Name ) ?? true) ) ?? 0 );
 	}
