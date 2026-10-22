@@ -39,6 +39,15 @@ public static class AdvisorTips
 		["RidesBuildRides"] = "Your park has no rides yet.",
 		["ShopsBuildShops"] = "You haven't built any shops yet.",
 		["LongQueuesBoredVisitors"] = "Visitors are getting bored waiting in your long queues. Shorten the rides, or place an entertainer nearby.",
+		["ShopsPoorFood"] = "Visitors think some of your food is poor. Have you considered increasing the quality?",
+		["ShopsPoorGoods"] = "Visitors are complaining about the quality of some of your goods. You could increase it.",
+		["ShopsTooFatty"] = "If you reduced the fat content of your burgers, your customers might be happier.",
+		["ShopsTooSalty"] = "Visitors think your fries are too salty. Perhaps you should reduce the salt?",
+		["ShopsTooIcy"] = "Your drinks aren't quenching the visitors' thirst. If you reduced the ice, that might improve.",
+		["ShopsTooSweet"] = "Some people think your ice creams are too sweet. You could reduce the sugar.",
+		["ShopsNotSweet"] = "Visitors think your ice creams aren't sweet enough. If you increased the sugar, they might buy more.",
+		["SideshowsCheapPrizes"] = "Some of your sideshow prizes are too cheap. Increasing the prizes might keep visitors happy.",
+		["SideshowsSlimChances"] = "Visitors think their chances of winning some of your sideshows are too slim.",
 		["SideshowsBuildSideshows"] = "Your park has no sideshows yet.",
 		["FeaturesNoToilets"] = "Your park needs some toilets.",
 		["ShopsBuildMoreShops"] = "A park this size should have more shops.",
@@ -99,6 +108,11 @@ public static class AdvisorTips
 		["FeaturesNoToilets"] = 86,
 		["FeaturesNotEnoughToilets"] = 88, // "A park this size should have more toilets."
 		["LongQueuesBoredVisitors"] = 63,  // "Visitors are getting bored waiting in your long queues. …"
+		["ShopsPoorFood"] = 104,           // "Visitors think some of your food is poor. …"
+		["ShopsPoorGoods"] = 105,          // "Visitors are complaining about the quality of some of your goods. …"
+		["ShopsTooFatty"] = 106, ["ShopsTooSalty"] = 107, ["ShopsTooIcy"] = 108, ["ShopsTooSweet"] = 109, ["ShopsNotSweet"] = 110,
+		["SideshowsCheapPrizes"] = 112,    // "… some of your sideshow prizes are too cheap. …"
+		["SideshowsSlimChances"] = 113,    // "… their chances of winning some of your sideshows are too slim. …"
 		// Research: hire scientists (21: most rides built, 22: all built) / research more rides (66).
 		["StaffHireResearchers1"] = 21, ["StaffHireResearchers2"] = 22, ["RidesResearchMore"] = 66,
 		["ShopsBuildMoreShops"] = 78,

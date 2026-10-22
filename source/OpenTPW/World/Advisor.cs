@@ -395,6 +395,12 @@ public sealed class Advisor : Entity
 			Facilities: Facilities() );
 	}
 
+	// The shop and sideshow settings visitors complain about (the windows' sliders pushed too far).
+	private const float PoorQuality = 30f, TooMuch = 80f, TooLittle = 15f;
+	private const int CheapPrize = 10, SlimChance = 85; // a prize under a third of the usual 30; under 15 % to win
+	private static IEnumerable<Shop> Selling() => Shop.Stalls.Where( s => !s.IsFree && !s.IsClosed );
+	private static IEnumerable<Shop> Dosing( int ingredient ) => Selling().Where( s => s.Stats?.Ingredient == ingredient );
+
 	// What the park has built and hired, for the staffing / building advice.
 	private ParkFacilities Facilities()
 	{
@@ -428,6 +434,15 @@ public sealed class Advisor : Entity
 			Features: Ride.Features.Count, Cameras: Ride.Features.Count( r => r.ProvidesSecurity ),
 			ToiletQueue: Shop.AverageToiletQueue(),
 			FullQueues: rides.Count( r => r.Queue is { IsFull: true } ),
+			PoorFood: Selling().Count( s => s.Kind is ShopKind.Food or ShopKind.Drink && s.Quality < PoorQuality ),
+			PoorGoods: Selling().Count( s => s.Kind == ShopKind.Item && s.Quality < PoorQuality ),
+			Fatty: Dosing( ShopBuilding.Fat ).Count( s => s.IngredientAmount > TooMuch ),
+			Salty: Dosing( ShopBuilding.Salt ).Count( s => s.IngredientAmount > TooMuch ),
+			Icy: Dosing( ShopBuilding.Ice ).Count( s => s.IngredientAmount > TooMuch ),
+			TooSweet: Dosing( ShopBuilding.Sugar ).Count( s => s.IngredientAmount > TooMuch ),
+			NotSweet: Dosing( ShopBuilding.Sugar ).Count( s => s.IngredientAmount < TooLittle ),
+			CheapPrizes: rides.Count( r => r.IsSideshow && r.SideshowCostOfGoods < CheapPrize ),
+			SlimChances: rides.Count( r => r.IsSideshow && r.SideshowChanceOfLoosing > SlimChance ),
 			RideKindsAvailable: RideKinds( available: true ), RideKindsBuilt: RideKinds( available: false ),
 			RidesToResearch: BuildMode.Current?.Catalog.Count( c => c.Category == BuildCategory.Rides && !(ItemResearch.Current?.IsUnlocked( c.Name ) ?? true) ) ?? 0 );
 	}

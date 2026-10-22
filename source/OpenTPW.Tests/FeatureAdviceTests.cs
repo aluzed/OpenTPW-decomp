@@ -21,6 +21,17 @@ public class FeatureAdviceTests
 	}
 
 	[TestMethod]
+	public void OverdoneStallsAndMeanSideshowsDrawComplaints()
+	{
+		var park = new ParkFacilities( 1, 1, 1, 1, 3, 0, 0, 2, 0, 1, 0, 50, 0, 0, Days: 10, Features: 2 );
+		var ids = Ids( park with { Salty = 1, NotSweet = 1, SlimChances = 2 } );
+		CollectionAssert.Contains( ids, "ShopsTooSalty" );
+		CollectionAssert.Contains( ids, "ShopsNotSweet" );
+		CollectionAssert.Contains( ids, "SideshowsSlimChances" );
+		CollectionAssert.DoesNotContain( ids, "ShopsPoorFood" );
+	}
+
+	[TestMethod]
 	public void FullQueuesBoreVisitors()
 	{
 		var park = new ParkFacilities( 1, 1, 1, 1, 3, 0, 0, 2, 0, 1, 0, 50, 0, 0, Days: 10, Features: 2 );

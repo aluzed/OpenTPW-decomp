@@ -1135,6 +1135,10 @@ public sealed class Peep : ModelEntity
 				case ShopBuilding.Sugar: energy = Math.Min( MaxEnergy, energy + MaxEnergy * 0.2f * dose ); break;
 				case ShopBuilding.Ice: thirst = thirstBefore - (thirstBefore - thirst) * (1.25f - dose / 2f); break;
 			}
+			// Overdone (or, for sugar, too little): the complaints the advisor passes on (TAG_SYSTEM 106–110).
+			if ( dose > 0.8f && stats.Ingredient is ShopBuilding.Fat or ShopBuilding.Salt or ShopBuilding.Sugar
+				|| dose < 0.15f && stats.Ingredient == ShopBuilding.Sugar )
+				happiness = MathF.Max( 0f, happiness - 4f );
 			if ( stats.LitterEffect > 0f && Random.Shared.NextDouble() * 100f < stats.LitterEffect )
 				wrapperTimer = 4f + 8f * (float)Random.Shared.NextDouble();
 		}

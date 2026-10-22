@@ -42,7 +42,11 @@ public readonly record struct ParkFacilities(
 	// to be researched (-1 = not counted).
 	int RideKindsAvailable = -1, int RideKindsBuilt = 0, int RidesToResearch = 0,
 	// Rides whose queue is full (visitors turned away, bored waiting): LongQueuesBoredVisitors.
-	int FullQueues = 0 );
+	int FullQueues = 0,
+	// The shop and sideshow windows' settings gone too far (TAG_SYSTEM 104-113): stalls of poor quality food or goods,
+	// too much fat / salt / ice / sugar or too little sugar, prizes too cheap, chances too slim.
+	int PoorFood = 0, int PoorGoods = 0, int Fatty = 0, int Salty = 0, int Icy = 0, int TooSweet = 0, int NotSweet = 0,
+	int CheapPrizes = 0, int SlimChances = 0 );
 
 /// <summary>
 /// Maps the live park state to advisor message candidates — <c>(id, group, score)</c> for the
@@ -211,6 +215,13 @@ public static class AdvisorAdvice
 		// Full queues (LongQueuesBoredVisitors; Advisor.sam gives it no parameters): shorter rides, or an entertainer.
 		if ( f.FullQueues > 0 )
 			Add( "LongQueuesBoredVisitors", P( "LongQueuesBoredVisitors", "Score", 60f ) + 10f * (f.FullQueues - 1) );
+
+		// The shop and sideshow settings (the windows' sliders): what visitors complain about.
+		foreach ( var (id, count) in new[] { ("ShopsPoorFood", f.PoorFood), ("ShopsPoorGoods", f.PoorGoods), ("ShopsTooFatty", f.Fatty),
+			("ShopsTooSalty", f.Salty), ("ShopsTooIcy", f.Icy), ("ShopsTooSweet", f.TooSweet), ("ShopsNotSweet", f.NotSweet),
+			("SideshowsCheapPrizes", f.CheapPrizes), ("SideshowsSlimChances", f.SlimChances) } )
+			if ( count > 0 )
+				Add( id, P( id, "Score", 50f ) + 10f * (count - 1) );
 
 		// Money to spare: spend it, or repay what's owed (WealthHigh / WealthHighRepayLoan).
 		if ( f.Debt > 0f && f.Money > f.Debt * P( "WealthHighRepayLoan", "Margin", 1.2f ) )
