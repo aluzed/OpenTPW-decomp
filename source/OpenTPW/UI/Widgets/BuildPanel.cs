@@ -209,7 +209,7 @@ internal sealed class BuildPanel : GameWindow
 		Fill( At( 784f, HeaderTop, 57f, HeaderHeight ), Header );
 		bool hiring = tab == BuildCategory.Staff;
 		Text( Small, hiring ? Localization.Get( UIStrings.CandidateName, "Candidate Name" ) : Localization.Get( UIStrings.Name, "Name" ), 580f, HeaderTop + 16f, 13f, HeaderInk, TextAlign.Center );
-		Text( Small, hiring ? "Monthly Wage" : Localization.Get( UIStrings.Price, "Price" ), 731f, HeaderTop + 16f, 13f, HeaderInk, TextAlign.Center );
+		Text( Small, hiring ? Localization.Get( UIStrings.MonthlyWageStaff, "Monthly Wage" ) : Localization.Get( UIStrings.Price, "Price" ), 731f, HeaderTop + 16f, 13f, HeaderInk, TextAlign.Center );
 		if ( !hiring )
 			Text( Small, "Owned", 812f, HeaderTop + 16f, 11f, HeaderInk, TextAlign.Center );
 		if ( sortColumn >= 0 && SortHint( sortColumn ) >= 0 )
@@ -282,7 +282,7 @@ internal sealed class BuildPanel : GameWindow
 		Text( Small, StaffNames.For( c.Role ), 133f, 300f, 11f );
 		Text( Small, "Grade", 133f, 324f, 11f );
 		DrawGauge( At( 338f, 325f, 110f, 9f ), (c.Grade + 1f) / (StaffGrades.MaxGrade + 1f) );
-		Text( Small, "Monthly wage", 133f, 348f, 11f );
+		Text( Small, Localization.Get( UIStrings.MonthlyWage, "Monthly wage" ), 133f, 348f, 11f );
 		Text( Small, $"$ {c.MonthlyWage:0}", 338f, 348f, 11f );
 	}
 

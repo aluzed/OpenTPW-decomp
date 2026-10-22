@@ -79,13 +79,13 @@ internal sealed class SavePanel : GameWindow
 			Text( Small, slots[i] is { ParkName.Length: > 0 } save ? $"Slot {slot} - {save.ParkName}" : $"Slot {slot}", 152f, top, 13f, TitleInk );
 			Text( Small, slots[i]?.Summary() ?? "- empty -", 152f, top + 22f, 11f, filled ? default : new( 0.6f, 0.6f, 0.6f ) );
 
-			Text( Small, "Save", 626f, top + 10f, 11f, default, TextAlign.Right );
+			Text( Small, Localization.Get( UIStrings.Save, "Save" ), 626f, top + 10f, 11f, default, TextAlign.Right );
 			if ( RoundButton( At( 630f, top, 34f, 34f ), "b_okay" ) )
 			{
 				Level.CaptureSave().WriteToFile( SaveGame.SlotPath( slot ) );
 				Refresh();
 			}
-			Text( Small, "Load", 708f, top + 10f, 11f, default, TextAlign.Right );
+			Text( Small, Localization.Get( UIStrings.Load, "Load" ), 708f, top + 10f, 11f, default, TextAlign.Right );
 			if ( RoundButton( At( 712f, top, 34f, 34f ), "b_entpark", enabled: filled )
 				&& SaveGame.ReadFromFile( SaveGame.SlotPath( slot ) ) is { } g )
 				Level.ApplySave( g );
