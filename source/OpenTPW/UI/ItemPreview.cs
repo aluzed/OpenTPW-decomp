@@ -117,6 +117,16 @@ internal sealed class ItemPreview
 		}
 		poser = new KeyframePoser( tree, parts.Select( p => p.Local ).ToList(), parts.Select( p => (Model?)p.Model ).ToList(),
 			file.Meshes.Select( m => m.VertexOrder ).ToList() );
+
+		// Fit the box to the whole motion, not just the rest pose (the Crazy Ape swings its arms out wide).
+		for ( int step = 0; step < 8; step++ )
+		{
+			poser.Apply( animation, animation.Duration * step / 8f, loop: true );
+			for ( int i = 0; i < parts.Count; i++ )
+				foreach ( var v in parts[i].Model.Vertices )
+					radius = MathF.Max( radius, SVector3.Distance( SVector3.Transform( v.Position.GetSystemVector3(), poser.Pose[i] ), centre ) );
+		}
+		poser.Rest();
 	}
 
 	/// <summary>Show the preview in <paramref name="box"/> (base 1280×720 space) this frame.</summary>
