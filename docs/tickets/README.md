@@ -10,9 +10,9 @@ Tickets derived from the 2026-06-15 analysis (build + tests run on Linux with
 ## Build / test state (observed)
 
 - **Build**: ✅ `dotnet build OpenTPW.sln` → 6 projects, **0 errors** (T-009).
-- **Tests**: ✅ `dotnet test` → **0 failed, 282 passed, 19 inconclusive/ignored** on a clean Linux
-  machine; **300 passed / 1 ignored** (no original `.TPWS` save, T-017) with the real game data (`tools/run-integration-tests.sh`,
-  re-run 2026-10-21). The inconclusive ones are integration tests that need a game install (`OPENTPW_GAMEPATH`)
+- **Tests**: ✅ `dotnet test` → **0 failed, 401 passed, 25 inconclusive/ignored** on a clean Linux
+  machine; **425 passed / 1 ignored** (no original `.TPWS` save, T-017) with the real game data (`tools/run-integration-tests.sh`,
+  re-run 2026-10-24). The inconclusive ones are integration tests that need a game install (`OPENTPW_GAMEPATH`)
   or a real asset sample (`TPW_VIDEO_SAMPLE`, `TPW_FONT_SAMPLE`, `TPW_MODEL_SAMPLE`, `TPW_MAP_SAMPLE`,
   `TPW_PLB_SAMPLE`, `TPW_MTR_SAMPLE`, `TPW_LIP_SAMPLE`). All pass when the samples are provided.
 

@@ -381,4 +381,4 @@ dumps
 /install/
 
 # Claude Code local session state
-/.claude/*.local.md
+**/.claude/*.local.md
