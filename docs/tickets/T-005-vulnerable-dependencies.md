@@ -27,7 +27,11 @@ High  System.Text.RegularExpressions 4.3.0 (test only)   → dropped by test-pkg
 ## Fix applied
 
 - **ImageSharp** `3.1.6 → 3.1.12` (latest patch on the 3.1 line) in
-  `source/OpenTPW.ModKit/OpenTPW.ModKit.csproj`.
+  `source/OpenTPW.ModKit/OpenTPW.ModKit.csproj`. **2026-10-25**: ImageSharp dropped. 3.1.12 had four new
+  advisories (GHSA-j3p4-wp97-rph4, GHSA-j9gm-c75j-xc9q, GHSA-jjfr-hcj7-qf5w, GHSA-gwg2-r3hj-4w44), fixed only in
+  4.1.2+, whose Release builds require a Six Labors licence key. The ModKit only wrote 16x16 PNG thumbnails, so it
+  now box-filters them itself and writes them with `StbImageWriteSharp` (MIT), the sibling of the game's
+  `StbImageSharp`.
 - **Zio** `0.17.0 → 0.22.2` (advisory patched version) in
   `source/OpenTPW.Common/OpenTPW.Common.csproj`. Note: Zio is currently unused in code.
 - **Newtonsoft.Json**: central security pin `13.0.4` in `source/Directory.Build.props`

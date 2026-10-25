@@ -1,8 +1,6 @@
 ﻿using ImGuiNET;
 using OpenTPW.ModKit;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
-using SixLabors.ImageSharp.Processing;
+using StbImageWriteSharp;
 using System.Reflection;
 using Veldrid;
 
@@ -133,18 +131,26 @@ public partial class Editor
 			var textureFile = new TextureFile( path );
 			var t = textureFile.Data;
 
-			var pixelData = new Rgba32[t.Width * t.Height];
+			// A 16x16 box-filtered thumbnail: each pixel averages its block of the source.
+			const int size = 16;
+			var thumbnail = new byte[size * size * 4];
+			for ( int y = 0; y < size; y++ )
+				for ( int x = 0; x < size; x++ )
+				{
+					int x0 = x * t.Width / size, x1 = Math.Max( x0 + 1, (x + 1) * t.Width / size );
+					int y0 = y * t.Height / size, y1 = Math.Max( y0 + 1, (y + 1) * t.Height / size );
+					for ( int c = 0; c < 4; c++ )
+					{
+						int sum = 0;
+						for ( int sy = y0; sy < y1; sy++ )
+							for ( int sx = x0; sx < x1; sx++ )
+								sum += t.Data[(sy * t.Width + sx) * 4 + c];
+						thumbnail[(y * size + x) * 4 + c] = (byte)(sum / ((x1 - x0) * (y1 - y0)));
+					}
+				}
 
-			for ( int i = 0; i < t.Width * t.Height; ++i )
-			{
-				var tInd = i * 4;
-				pixelData[i] = new Rgba32( t.Data[tInd], t.Data[tInd + 1], t.Data[tInd + 2], t.Data[tInd + 3] );
-			}
-
-			using var img = Image.LoadPixelData<Rgba32>( pixelData, t.Width, t.Height );
 			using var writeStream = CacheFileSystem.OpenWrite( thumbnailPath );
-			img.Mutate( x => x.Resize( 16, 16 ) );
-			img.SaveAsPng( writeStream );
+			new ImageWriter().WritePng( thumbnail, size, size, ColorComponents.RedGreenBlueAlpha, writeStream );
 
 			Log.Info( $"Cached to {thumbnailPath}" );
 		} );
